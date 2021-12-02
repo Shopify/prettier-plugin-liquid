@@ -1,0 +1,8 @@
+{
+  "name": "@shopify/prettier-plugin-liquid",
+  "version": "0.1.0",
+  "description": "Opinionated liquid + HTML formatter for Shopify Themes",
+  "main": "dist/index.js",
+  "author": "CP Clermont",
+  "license": "MIT"
+}
