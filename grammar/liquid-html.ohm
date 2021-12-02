@@ -1,0 +1,54 @@
+LiquidHTML {
+  Node
+    = (HtmlNode | liquidNode | textNode)*
+
+  HtmlNode =
+    VoidElement | SelfClosingElement | TagClose | TagOpen
+
+  VoidElement =
+  	#("<" voidElementName) AttrList ">"
+
+  SelfClosingElement =
+    #("<" tagName) AttrList "/>"
+
+  TagOpen =
+    #("<" tagName) AttrList ">"
+
+  TagClose =
+    #("</" tagName) ">"
+
+  tagName =
+    letter alnum*
+
+   AttrList = Attr*
+
+   Attr =
+   	 AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty | liquidNode
+
+   attrEmpty = attrName
+
+   AttrUnquoted = attrName "=" attrUnquotedValue
+   AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
+   AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
+
+   attrName = (letter | "-")+
+   attrUnquotedValue = (~(space | quotes | "=" | "<" | ">" | "`") any)+
+   attrSingleQuotedValue = (liquidNode | anyExcept<"'">)*
+   attrDoubleQuotedValue = (liquidNode | anyExcept<"\"">)*
+
+   quotes =  "'" | "\""
+
+   voidElementName = "img" | "video" | "audio"
+
+   LiquidNode = liquidNode
+   liquidNode = liquidDrop | liquidTag
+
+   liquidTag = "{%" "-"? anyExceptGreed<"%}"> "%}"
+   liquidDrop = "{{" "-"? anyExceptGreed<"}}"> "}}"
+
+   anyExcept<lit> = (~ lit any)
+   anyExceptGreed<lit> = (~ lit any)*
+
+   textNode = anyExcept<openControl> anyExceptGreed<openControl>
+   openControl = "<" | "{{" | "{%"
+}
