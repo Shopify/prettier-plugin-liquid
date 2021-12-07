@@ -11,7 +11,10 @@ import {
 } from './liquid-html-cst';
 import * as R from 'ramda';
 
+class ParsingError extends Error {}
+
 export enum NodeTypes {
+  Document = 'Document',
   LiquidTag = 'LiquidTag',
   LiquidDrop = 'LiquidDrop',
   SelfClosingElementNode = 'SelfClosingElementNode',
@@ -26,17 +29,22 @@ export enum NodeTypes {
 
 export type LiquidHtmlAST = LiquidHtmlNode[];
 
-export type LiquidHtmlNode = LiquidNode | HtmlNode | TextNode;
+export type LiquidHtmlNode = DocumentNode | LiquidNode | HtmlNode | TextNode;
+
+export interface DocumentNode extends ASTNode<NodeTypes.Document> {
+  source: string;
+  children: LiquidHtmlAST;
+}
 
 export type LiquidNode = LiquidTag | LiquidDrop;
 
-export interface LiquidTag extends ASTNode<'LiquidTag'> {
+export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   name: string;
   markup: string;
   children?: LiquidHtmlAST;
 }
 
-export interface LiquidDrop extends ASTNode<'LiquidDrop'> {
+export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   markup: string;
 }
 
@@ -45,13 +53,13 @@ export type HtmlNode =
   | SelfClosingElementNode
   | VoidElementNode;
 
-export interface ElementNode extends HtmlNodeBase<'ElementNode'> {
+export interface ElementNode extends HtmlNodeBase<NodeTypes.ElementNode> {
   children: LiquidHtmlAST;
 }
 export interface SelfClosingElementNode
-  extends HtmlNodeBase<'SelfClosingElementNode'> {}
+  extends HtmlNodeBase<NodeTypes.SelfClosingElementNode> {}
 export interface VoidElementNode
-  extends HtmlNodeBase<'VoidElementNode'> {}
+  extends HtmlNodeBase<NodeTypes.VoidElementNode> {}
 
 export interface HtmlNodeBase<T> extends ASTNode<T> {
   name: string;
@@ -79,7 +87,7 @@ export interface AttributeNodeBase<T> extends ASTNode<T> {
   value: (TextNode | LiquidNode)[];
 }
 
-export interface TextNode extends ASTNode<'TextNode'> {
+export interface TextNode extends ASTNode<NodeTypes.TextNode> {
   value: string;
 }
 
@@ -91,10 +99,17 @@ export interface ASTNode<T> {
   };
 }
 
-class ParsingError extends Error {}
-
-function assertNever(x: never): never {
-  throw new Error(`Unexpected object: ${x}`);
+export function toLiquidHtmlAST(text: string): DocumentNode {
+  const cst = toLiquidHtmlCST(text);
+  return {
+    type: NodeTypes.Document,
+    source: text,
+    children: cstToAst(cst),
+    position: {
+      start: 0,
+      end: text.length,
+    },
+  };
 }
 
 class ASTBuilder {
@@ -154,7 +169,7 @@ class ASTBuilder {
   }
 }
 
-function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
+export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
   const builder = new ASTBuilder();
 
   for (const node of cst) {
@@ -257,11 +272,6 @@ function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
   return builder.ast;
 }
 
-export function toLiquidHtmlAST(text: string): LiquidHtmlAST {
-  const cst = toLiquidHtmlCST(text);
-  return cstToAst(cst);
-}
-
 function toAttribute(node: ConcreteAttributeNode): AttributeNode {
   switch (node.type) {
     case ConcreteNodeTypes.AttrEmpty: {
@@ -305,4 +315,8 @@ function position(
     start: node.locStart,
     end: node.locEnd,
   };
+}
+
+function assertNever(x: never): never {
+  throw new Error(`Unexpected object: ${x}`);
 }

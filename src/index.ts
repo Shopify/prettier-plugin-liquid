@@ -1,17 +1,23 @@
-interface Printers {
-  [astFormat: string]: Printer;
-}
+import { Plugin } from 'prettier';
+import { parsers, LiquidHtmlNode, liquidHtmlLanguageName } from './parsers';
+import { printers } from './printers';
 
-interface Printer {
-  print: () => void;
-}
+const languages = [
+  {
+    name: 'LiquidHTML',
+    parsers: [liquidHtmlLanguageName],
+  },
+];
 
-// function print(
-//   astPath: ASTPath,
-// )
+const options = {};
+const defaultOptions = {};
 
-export const printer: Printers = {
-  'liquid-html': {
-    print,
-  }
-}
+const plugin: Plugin<LiquidHtmlNode> = {
+  languages,
+  parsers,
+  printers,
+  options,
+  defaultOptions,
+};
+
+export = plugin;
