@@ -12,12 +12,16 @@ describe('Unit: toLiquidHtmlAST', () => {
   });
 
   it('should transform a basic Liquid Tag into a LiquidTag', () => {
-    const ast = toLiquidHtmlAST('{% name %}');
+    const ast = toLiquidHtmlAST('{% name %}{% if -%}{%- endif %}');
     expectPath(ast, 'children.0').to.exist;
     expectPath(ast, 'children.0.type').to.eql('LiquidTag');
     expectPath(ast, 'children.0.name').to.eql('name');
     expectPath(ast, 'children.0.markup').to.eql('');
     expectPath(ast, 'children.0.children').to.be.undefined;
+    expectPath(ast, 'children.1.whitespaceStart').to.eql('');
+    expectPath(ast, 'children.1.whitespaceEnd').to.eql('-');
+    expectPath(ast, 'children.1.delimiterWhitespaceStart').to.eql('-');
+    expectPath(ast, 'children.1.delimiterWhitespaceEnd').to.eql('');
     expectPosition(ast, 'children.0');
   });
 

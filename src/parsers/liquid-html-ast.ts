@@ -43,10 +43,16 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   name: string;
   markup: string;
   children?: LiquidHtmlAST;
+  whitespaceStart: '-' | '';
+  whitespaceEnd: '-' | '';
+  delimiterWhitespaceStart?: '-' | '';
+  delimiterWhitespaceEnd?: '-' | '';
 }
 
 export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   markup: string;
+  whitespaceStart: '-' | '';
+  whitespaceEnd: '-' | '';
 }
 
 export type HtmlNode =
@@ -165,6 +171,10 @@ class ASTBuilder {
     }
     // The parent end is the end of the outer tag.
     this.parent.position.end = node.locEnd;
+    if (this.parent.type == NodeTypes.LiquidTag && node.type == ConcreteNodeTypes.LiquidTagClose) {
+      this.parent.delimiterWhitespaceStart = node.whitespaceStart ?? '';
+      this.parent.delimiterWhitespaceEnd = node.whitespaceEnd ?? '';
+    }
     this.cursor.pop();
     this.cursor.pop();
   }
@@ -188,10 +198,9 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
         builder.push({
           type: NodeTypes.LiquidDrop,
           markup: node.markup,
-          position: {
-            start: node.locStart,
-            end: node.locEnd,
-          },
+          whitespaceStart: node.whitespaceStart ?? '',
+          whitespaceEnd: node.whitespaceEnd ?? '',
+          position: position(node),
         });
         break;
       }
@@ -203,6 +212,8 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
           position: position(node),
           children: [],
           name: node.name,
+          whitespaceStart: node.whitespaceStart ?? '',
+          whitespaceEnd: node.whitespaceEnd ?? '',
         });
         break;
       }
@@ -218,6 +229,8 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
           markup: node.markup,
           position: position(node),
           name: node.name,
+          whitespaceStart: node.whitespaceStart ?? '',
+          whitespaceEnd: node.whitespaceEnd ?? '',
         });
         break;
       }
