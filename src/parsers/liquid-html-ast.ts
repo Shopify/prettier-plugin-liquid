@@ -9,6 +9,7 @@ import {
   ConcreteLiquidTagClose,
   LiquidHtmlCST,
 } from './liquid-html-cst';
+import { assertNever } from '../utils';
 import * as R from 'ramda';
 
 class ParsingError extends Error {}
@@ -315,8 +316,4 @@ function position(
     start: node.locStart,
     end: node.locEnd,
   };
-}
-
-function assertNever(x: never): never {
-  throw new Error(`Unexpected object: ${x}`);
 }
