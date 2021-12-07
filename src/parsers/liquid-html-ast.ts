@@ -30,7 +30,7 @@ export enum NodeTypes {
 
 export type LiquidHtmlAST = LiquidHtmlNode[];
 
-export type LiquidHtmlNode = DocumentNode | LiquidNode | HtmlNode | TextNode;
+export type LiquidHtmlNode = DocumentNode | LiquidNode | HtmlNode | AttributeNode | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   source: string;
