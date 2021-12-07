@@ -2,78 +2,99 @@ LiquidHTML {
   Node
     = (HtmlNode | liquidNode | textNode)*
 
-    HtmlNode =
-      VoidElement | SelfClosingElement | TagClose | TagOpen
+  HtmlNode =
+    VoidElement | SelfClosingElement | TagClose | TagOpen
 
-    VoidElement =
-      #("<" voidElementName) AttrList ">"
+  VoidElement =
+    #("<" voidElementName) AttrList ">"
 
-    SelfClosingElement =
-      #("<" tagName) AttrList "/>"
+  SelfClosingElement =
+    #("<" tagName) AttrList "/>"
 
-    TagOpen =
-      #("<" tagName) AttrList ">"
+  TagOpen =
+    #("<" tagName) AttrList ">"
 
-    TagClose =
-      #("</" tagName) ">"
+  TagClose =
+    #("</" tagName) ">"
 
-    tagName =
-      "!"? letter (alnum | "-")*
+  tagName =
+    letter (alnum | "-")*
 
-    liquidTagName =
-      letter (alnum)*
+  liquidTagName =
+    letter (alnum)*
 
-    AttrList = Attr*
+  AttrList = Attr*
 
-    Attr =
-      AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
+  Attr =
+    AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
 
-    attrEmpty = attrName
+  attrEmpty = attrName
 
-    AttrUnquoted = attrName "=" attrUnquotedValue
-    AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
-    AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
+  AttrUnquoted = attrName "=" attrUnquotedValue
+  AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
+  AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
 
-    attrName = letter (letter | digit | "-" )+
-    attrUnquotedValue = (liquidNode | attrUnquotedTextNode)+
-    attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)+
-    attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)+
+  attrName = letter (letter | digit | "-" )+
+  attrUnquotedValue = (liquidNode | attrUnquotedTextNode)+
+  attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)+
+  attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)+
 
-    attrUnquotedTextNode = (anyExcept<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>)+
-    attrSingleQuotedTextNode = (anyExcept<("'" | "{{" | "{%")>)+
-    attrDoubleQuotedTextNode = (anyExcept<("\""| "{{" | "{%")>)+
+  attrUnquotedTextNode = anyExceptPlus<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>
+  attrSingleQuotedTextNode = anyExceptPlus<("'" | "{{" | "{%")>
+  attrDoubleQuotedTextNode = anyExceptPlus<("\""| "{{" | "{%")>
 
-    quotes =  "'" | "\""
+  quotes =  "'" | "\""
 
-    LiquidNode = liquidNode
-    liquidNode = liquidDrop | liquidTagOpen | liquidTagClose | liquidTag
+  LiquidNode = liquidNode
+  liquidNode = liquidDrop | liquidTagOpen | liquidTagClose | liquidTag
 
-    liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
-    liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
-    liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
-    liquidDrop = "{{" "-"? anyExceptGreed<("-}}" | "}}")> "-"? "}}"
+  liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
+  liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
+  liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
+  liquidDrop = "{{" "-"? anyExceptStar<("-}}" | "}}")> "-"? "}}"
 
-    voidElementName =
-      | "img"
-      | "video"
-      | "audio"
-      | "link"
+  // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
+  // Cheating a bit with by stretching it to the doctype
+  voidElementName =
+    | caseInsensitive<"!doctype">
+    | caseInsensitive<"area">
+    | caseInsensitive<"base">
+    | caseInsensitive<"br">
+    | caseInsensitive<"col">
+    | caseInsensitive<"command">
+    | caseInsensitive<"embed">
+    | caseInsensitive<"hr">
+    | caseInsensitive<"img">
+    | caseInsensitive<"input">
+    | caseInsensitive<"keygen">
+    | caseInsensitive<"link">
+    | caseInsensitive<"meta">
+    | caseInsensitive<"param">
+    | caseInsensitive<"source">
+    | caseInsensitive<"track">
+    | caseInsensitive<"wbr">
 
-    blockName =
-      | "capture"
-      | "case"
-      | "comment"
-      | "for"
-      | "ifchanged"
-      | "if"
-      | "raw"
-      | "tablerow"
+  blockName =
+    // Shopify blocks
+    | "style"
+    | "form"
+    | "paginate"
+    // Base blocks
+    | "capture"
+    | "case"
+    | "comment"
+    | "for"
+    | "ifchanged"
+    | "if"
+    | "raw"
+    | "tablerow"
 
-    tagMarkup = anyExceptGreed<("-%}"| "%}")>
+  tagMarkup = anyExceptStar<("-%}"| "%}")>
 
-    anyExcept<lit> = (~ lit any)
-    anyExceptGreed<lit> = (~ lit any)*
+  anyExcept<lit> = (~ lit any)
+  anyExceptStar<lit> = (~ lit any)*
+  anyExceptPlus<lit> = (~ lit any)+
 
-    textNode = anyExcept<openControl> anyExceptGreed<openControl>
-    openControl = "<" | "{{" | "{%"
+  textNode = anyExcept<openControl> anyExceptStar<openControl>
+  openControl = "<" | "{{" | "{%"
 }
