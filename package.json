@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc src/index.ts",
-    "test": "yarn test:spec 'src/**/*.spec.ts'",
+    "test": "yarn test:spec '{src,test}/**/*.spec.ts'",
     "test:spec": "./node_modules/.bin/_mocha"
   },
   "devDependencies": {
