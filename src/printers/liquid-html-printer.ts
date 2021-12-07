@@ -1,5 +1,5 @@
-import { Printer, Doc, doc } from 'prettier';
-import { LiquidHtmlNode, NodeTypes } from '../parsers';
+import { Printer, AstPath, Doc, ParserOptions, doc } from 'prettier';
+import { LiquidHtmlNode, NodeTypes, DocumentNode } from '../parsers';
 import { assertNever } from '../utils';
 
 const { builders } = doc;
@@ -19,13 +19,47 @@ function attributes(path: any, _options: any, print: any): Doc {
   );
 }
 
+/**
+ * This one is a bit like path.map except that it tries to maintain new
+ * lines in between nodes. And it will shrink multiple new lines into one.
+ */
+function mapWithNewLine(
+  path: AstPath<LiquidHtmlNode>,
+  options: ParserOptions<LiquidHtmlNode>,
+  print: (path: AstPath<LiquidHtmlNode>) => Doc,
+  property: string,
+): Doc[] {
+  const doc: Doc[] = [];
+  const source = (path.stack[0] as DocumentNode).source;
+  let curr: LiquidHtmlNode | null = null;
+  let prev: LiquidHtmlNode | null = null;
+  path.each((path) => {
+    curr = path.getValue();
+    if (curr && prev && options.locEnd(prev) < options.locStart(curr)) {
+      const gap = source.slice(options.locEnd(prev), options.locStart(curr));
+      // if we have more than one new line between nodes, insert an empty
+      // node in between the result of the `map`. This way we can join with
+      // hardline or softline and maintain 'em.
+      if (gap.replace(/ |\t/g, '').length > 1) {
+        doc.push('');
+      }
+    }
+    doc.push(print(path));
+    prev = curr;
+  }, property);
+  return doc;
+}
+
 export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
   print(path, options, print) {
     const node = path.getValue();
     switch (node.type) {
       case NodeTypes.Document: {
         return [
-          join(hardline, path.map(print, 'children')),
+          join(
+            hardline,
+            mapWithNewLine(path, options, print, 'children'),
+          ),
           hardline,
         ];
       }
@@ -41,7 +75,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             ]),
             indent([
               softline,
-              join(softline, path.map(print, 'children')),
+              join(softline, mapWithNewLine(path, options, print, 'children')),
             ]),
             softline,
             group(['</', node.name, '>']),
@@ -94,20 +128,22 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           node.whitespaceEnd,
           '%}',
         ]);
-        const blockEnd = node.children && group([
-          '{%',
-          node.delimiterWhitespaceStart ?? '',
-          ` end${node.name} `,
-          node.delimiterWhitespaceEnd ?? '',
-          '%}',
-        ]);
+        const blockEnd =
+          node.children &&
+          group([
+            '{%',
+            node.delimiterWhitespaceStart ?? '',
+            ` end${node.name} `,
+            node.delimiterWhitespaceEnd ?? '',
+            '%}',
+          ]);
         if (blockEnd) {
           return group([
             blockStart,
             group([
               indent([
                 softline,
-                join(softline, path.map(print, 'children'))
+                join(softline, mapWithNewLine(path, options, print, 'children')),
               ]),
               softline,
             ]),

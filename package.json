@@ -2,11 +2,12 @@
   "name": "@shopify/prettier-plugin-liquid",
   "version": "0.1.0",
   "description": "Opinionated liquid + HTML formatter for Shopify Themes",
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "author": "CP Clermont",
   "license": "MIT",
   "scripts": {
-    "build": "tsc src/index.ts",
+    "build": "tsc -p .",
+    "example": "prettier --plugin . example.liquid",
     "test": "yarn test:spec '{src,test}/**/*.spec.ts'",
     "test:spec": "./node_modules/.bin/_mocha"
   },
