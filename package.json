@@ -7,10 +7,12 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc src/index.ts",
-    "test": "./node_modules/.bin/_mocha 'src/**/*.spec.ts'"
+    "test": "yarn test:spec 'src/**/*.spec.ts'",
+    "test:spec": "./node_modules/.bin/_mocha"
   },
   "devDependencies": {
     "@tsconfig/node14": "^1.0.1",
+    "@types/chai": "^4.2.22",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.11",
     "chai": "^4.3.4",
@@ -20,7 +22,9 @@
   },
   "dependencies": {
     "@types/prettier": "^2.4.2",
+    "@types/ramda": "^0.27.58",
     "ohm-js": "^16.0.0",
-    "prettier": "^2.5.0"
+    "prettier": "^2.5.0",
+    "ramda": "^0.27.1"
   }
 }

@@ -1,0 +1,308 @@
+import {
+  ConcreteNodeTypes,
+  toLiquidHtmlCST,
+  LiquidHtmlConcreteNode,
+  ConcreteAttributeNode,
+  ConcreteLiquidNode,
+  ConcreteTextNode,
+  ConcreteTagClose,
+  ConcreteLiquidTagClose,
+  LiquidHtmlCST,
+} from './liquid-html-cst';
+import * as R from 'ramda';
+
+export enum NodeTypes {
+  LiquidTag = 'LiquidTag',
+  LiquidDrop = 'LiquidDrop',
+  SelfClosingElementNode = 'SelfClosingElementNode',
+  VoidElementNode = 'VoidElementNode',
+  ElementNode = 'ElementNode',
+  AttrSingleQuoted = 'AttrSingleQuoted',
+  AttrDoubleQuoted = 'AttrDoubleQuoted',
+  AttrUnquoted = 'AttrUnquoted',
+  AttrEmpty = 'AttrEmpty',
+  TextNode = 'TextNode',
+}
+
+export type LiquidHtmlAST = LiquidHtmlNode[];
+
+export type LiquidHtmlNode = LiquidNode | HtmlNode | TextNode;
+
+export type LiquidNode = LiquidTag | LiquidDrop;
+
+export interface LiquidTag extends ASTNode<'LiquidTag'> {
+  name: string;
+  markup: string;
+  children?: LiquidHtmlAST;
+}
+
+export interface LiquidDrop extends ASTNode<'LiquidDrop'> {
+  markup: string;
+}
+
+export type HtmlNode =
+  | ElementNode
+  | SelfClosingElementNode
+  | VoidElementNode;
+
+export interface ElementNode extends HtmlNodeBase<'ElementNode'> {
+  children: LiquidHtmlAST;
+}
+export interface SelfClosingElementNode
+  extends HtmlNodeBase<'SelfClosingElementNode'> {}
+export interface VoidElementNode
+  extends HtmlNodeBase<'VoidElementNode'> {}
+
+export interface HtmlNodeBase<T> extends ASTNode<T> {
+  name: string;
+  attributes: AttributeNode[];
+}
+
+export type AttributeNode =
+  | AttrSingleQuoted
+  | AttrDoubleQuoted
+  | AttrUnquoted
+  | AttrEmpty;
+
+export interface AttrSingleQuoted
+  extends AttributeNodeBase<NodeTypes.AttrSingleQuoted> {}
+export interface AttrDoubleQuoted
+  extends AttributeNodeBase<NodeTypes.AttrDoubleQuoted> {}
+export interface AttrUnquoted
+  extends AttributeNodeBase<NodeTypes.AttrUnquoted> {}
+export interface AttrEmpty extends ASTNode<NodeTypes.AttrEmpty> {
+  name: string;
+}
+
+export interface AttributeNodeBase<T> extends ASTNode<T> {
+  name: string;
+  value: (TextNode | LiquidNode)[];
+}
+
+export interface TextNode extends ASTNode<'TextNode'> {
+  value: string;
+}
+
+export interface ASTNode<T> {
+  type: T;
+  position: {
+    start: number;
+    end: number;
+  };
+}
+
+class ParsingError extends Error {}
+
+function assertNever(x: never): never {
+  throw new Error(`Unexpected object: ${x}`);
+}
+
+class ASTBuilder {
+  ast: LiquidHtmlAST;
+  cursor: (string | number)[];
+
+  constructor() {
+    this.ast = [];
+    this.cursor = [];
+  }
+
+  get current() {
+    return R.path<LiquidHtmlAST>(
+      this.cursor,
+      this.ast,
+    ) as LiquidHtmlAST;
+  }
+
+  get currentPosition(): number {
+    return R.length(this.current || []) - 1;
+  }
+
+  get parent(): LiquidTag | ElementNode | undefined {
+    if (this.cursor.length == 0) return undefined;
+    return R.path<LiquidTag | ElementNode>(
+      R.dropLast(1, this.cursor),
+      this.ast,
+    );
+  }
+
+  open(node: LiquidHtmlNode) {
+    this.current.push(node);
+    this.cursor.push(this.currentPosition);
+    this.cursor.push('children');
+  }
+
+  push(node: LiquidHtmlNode) {
+    this.current.push(node);
+  }
+
+  close(
+    node: ConcreteLiquidTagClose | ConcreteTagClose,
+    nodeType: NodeTypes.LiquidTag | NodeTypes.ElementNode,
+  ) {
+    if (
+      this.parent?.name !== node.name ||
+      this.parent?.type !== nodeType
+    ) {
+      throw new ParsingError(
+        `Attempting to close ${nodeType} '${node.name}' before ${this.parent?.type} '${this.parent?.name}' was closed`,
+      );
+    }
+    // The parent end is the end of the outer tag.
+    this.parent.position.end = node.locEnd;
+    this.cursor.pop();
+    this.cursor.pop();
+  }
+}
+
+function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
+  const builder = new ASTBuilder();
+
+  for (const node of cst) {
+    switch (node.type) {
+      case ConcreteNodeTypes.TextNode: {
+        builder.push({
+          type: NodeTypes.TextNode,
+          value: node.value,
+          position: position(node),
+        });
+        break;
+      }
+
+      case ConcreteNodeTypes.LiquidDrop: {
+        builder.push({
+          type: NodeTypes.LiquidDrop,
+          markup: node.markup,
+          position: {
+            start: node.locStart,
+            end: node.locEnd,
+          },
+        });
+        break;
+      }
+
+      case ConcreteNodeTypes.LiquidTagOpen: {
+        builder.open({
+          type: NodeTypes.LiquidTag,
+          markup: node.markup,
+          position: position(node),
+          children: [],
+          name: node.name,
+        });
+        break;
+      }
+
+      case ConcreteNodeTypes.LiquidTagClose: {
+        builder.close(node, NodeTypes.LiquidTag);
+        break;
+      }
+
+      case ConcreteNodeTypes.LiquidTag: {
+        builder.push({
+          type: NodeTypes.LiquidTag,
+          markup: node.markup,
+          position: position(node),
+          name: node.name,
+        });
+        break;
+      }
+
+      case ConcreteNodeTypes.TagOpen: {
+        builder.open({
+          type: NodeTypes.ElementNode,
+          name: node.name,
+          attributes: node.attrList
+            ? node.attrList.map(toAttribute)
+            : [],
+          position: position(node),
+          children: [],
+        } as HtmlNode);
+        break;
+      }
+
+      case ConcreteNodeTypes.TagClose: {
+        builder.close(node, NodeTypes.ElementNode);
+        break;
+      }
+
+      case ConcreteNodeTypes.SelfClosingElement: {
+        builder.push({
+          type: NodeTypes.SelfClosingElementNode,
+          name: node.name,
+          attributes: node.attrList
+            ? node.attrList.map(toAttribute)
+            : [],
+          position: position(node),
+        } as HtmlNode);
+        break;
+      }
+
+      case ConcreteNodeTypes.VoidElement: {
+        builder.push({
+          type: NodeTypes.VoidElementNode,
+          name: node.name,
+          attributes: node.attrList
+            ? node.attrList.map(toAttribute)
+            : [],
+          position: position(node),
+        } as HtmlNode);
+        break;
+      }
+
+      default: {
+        assertNever(node);
+      }
+    }
+  }
+
+  return builder.ast;
+}
+
+export function toLiquidHtmlAST(text: string): LiquidHtmlAST {
+  const cst = toLiquidHtmlCST(text);
+  return cstToAst(cst);
+}
+
+function toAttribute(node: ConcreteAttributeNode): AttributeNode {
+  switch (node.type) {
+    case ConcreteNodeTypes.AttrEmpty: {
+      return {
+        type: NodeTypes.AttrEmpty,
+        name: node.name,
+        position: position(node),
+      };
+    }
+
+    case ConcreteNodeTypes.AttrSingleQuoted:
+    case ConcreteNodeTypes.AttrDoubleQuoted:
+    case ConcreteNodeTypes.AttrUnquoted: {
+      return {
+        type: node.type as unknown as
+          | NodeTypes.AttrUnquoted
+          | NodeTypes.AttrDoubleQuoted
+          | NodeTypes.AttrUnquoted,
+        name: node.name,
+        value: toAttributeValue(node.value),
+        position: position(node),
+      };
+    }
+
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
+function toAttributeValue(
+  value: (ConcreteLiquidNode | ConcreteTextNode)[],
+): (LiquidNode | TextNode)[] {
+  return cstToAst(value) as (LiquidNode | TextNode)[];
+}
+
+function position(
+  node: LiquidHtmlConcreteNode | ConcreteAttributeNode,
+): { start: number; end: number } {
+  return {
+    start: node.locStart,
+    end: node.locEnd,
+  };
+}

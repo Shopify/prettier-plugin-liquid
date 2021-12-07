@@ -2,53 +2,75 @@ LiquidHTML {
   Node
     = (HtmlNode | liquidNode | textNode)*
 
-  HtmlNode =
-    VoidElement | SelfClosingElement | TagClose | TagOpen
+    HtmlNode =
+      VoidElement | SelfClosingElement | TagClose | TagOpen
 
-  VoidElement =
-  	#("<" voidElementName) AttrList ">"
+    VoidElement =
+      #("<" voidElementName) AttrList ">"
 
-  SelfClosingElement =
-    #("<" tagName) AttrList "/>"
+    SelfClosingElement =
+      #("<" tagName) AttrList "/>"
 
-  TagOpen =
-    #("<" tagName) AttrList ">"
+    TagOpen =
+      #("<" tagName) AttrList ">"
 
-  TagClose =
-    #("</" tagName) ">"
+    TagClose =
+      #("</" tagName) ">"
 
-  tagName =
-    letter alnum*
+    tagName =
+      letter (alnum | "-")*
 
-   AttrList = Attr*
+    AttrList = Attr*
 
-   Attr =
-   	 AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty | liquidNode
+    Attr =
+      AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
 
-   attrEmpty = attrName
+    attrEmpty = attrName
 
-   AttrUnquoted = attrName "=" attrUnquotedValue
-   AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
-   AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
+    AttrUnquoted = attrName "=" attrUnquotedValue
+    AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
+    AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
 
-   attrName = (letter | "-")+
-   attrUnquotedValue = (~(space | quotes | "=" | "<" | ">" | "`") any)+
-   attrSingleQuotedValue = (liquidNode | anyExcept<"'">)*
-   attrDoubleQuotedValue = (liquidNode | anyExcept<"\"">)*
+    attrName = letter (letter | digit | "-" )+
+    attrUnquotedValue = (liquidNode | attrUnquotedTextNode)+
+    attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)+
+    attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)+
 
-   quotes =  "'" | "\""
+    attrUnquotedTextNode = (anyExcept<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>)+
+    attrSingleQuotedTextNode = (anyExcept<("'" | "{{" | "{%")>)+
+    attrDoubleQuotedTextNode = (anyExcept<("\""| "{{" | "{%")>)+
 
-   voidElementName = "img" | "video" | "audio"
+    quotes =  "'" | "\""
 
-   LiquidNode = liquidNode
-   liquidNode = liquidDrop | liquidTag
+    LiquidNode = liquidNode
+    liquidNode = liquidDrop | liquidTagOpen | liquidTagClose | liquidTag
 
-   liquidTag = "{%" "-"? anyExceptGreed<"%}"> "%}"
-   liquidDrop = "{{" "-"? anyExceptGreed<"}}"> "}}"
+    liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
+    liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
+    liquidTag = "{%" "-"? space* tagName space? tagMarkup "-"? "%}"
+    liquidDrop = "{{" "-"? anyExceptGreed<("-}}" | "}}")> "-"? "}}"
 
-   anyExcept<lit> = (~ lit any)
-   anyExceptGreed<lit> = (~ lit any)*
+    voidElementName =
+      | "img"
+      | "video"
+      | "audio"
+      | "link"
 
-   textNode = anyExcept<openControl> anyExceptGreed<openControl>
-   openControl = "<" | "{{" | "{%"
+    blockName =
+      | "capture"
+      | "case"
+      | "comment"
+      | "for"
+      | "ifchanged"
+      | "if"
+      | "raw"
+      | "tablerow"
+
+    tagMarkup = anyExceptGreed<("-%}"| "%}")>
+
+    anyExcept<lit> = (~ lit any)
+    anyExceptGreed<lit> = (~ lit any)*
+
+    textNode = anyExcept<openControl> anyExceptGreed<openControl>
+    openControl = "<" | "{{" | "{%"
 }
