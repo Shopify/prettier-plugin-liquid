@@ -18,7 +18,10 @@ LiquidHTML {
       #("</" tagName) ">"
 
     tagName =
-      letter (alnum | "-")*
+      "!"? letter (alnum | "-")*
+
+    liquidTagName =
+      letter (alnum)*
 
     AttrList = Attr*
 
@@ -47,7 +50,7 @@ LiquidHTML {
 
     liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
     liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
-    liquidTag = "{%" "-"? space* tagName space? tagMarkup "-"? "%}"
+    liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
     liquidDrop = "{{" "-"? anyExceptGreed<("-}}" | "}}")> "-"? "}}"
 
     voidElementName =
