@@ -1,9 +1,59 @@
 import { Printer, AstPath, Doc, ParserOptions, doc } from 'prettier';
-import { LiquidHtmlNode, NodeTypes, DocumentNode } from '../parsers';
+import {
+  LiquidHtmlNode,
+  NodeTypes,
+  DocumentNode,
+  LiquidTag,
+  LiquidDrop,
+} from '../parsers';
 import { assertNever } from '../utils';
 
 const { builders } = doc;
 const { group, line, softline, hardline, join, indent } = builders;
+
+function markupLines(node: LiquidTag | LiquidDrop): string[] {
+  return node.markup
+    .trim()
+    .split('\n')
+    .map((line: string) => line.trim());
+}
+
+function blockStart(node: LiquidTag): Doc {
+  const lines = markupLines(node);
+  if (lines.length > 1 && node.name !== 'liquid') {
+    return group([
+      '{%',
+      node.whitespaceStart,
+      indent([hardline, node.name, ' ', join(hardline, lines)]),
+      hardline,
+      node.whitespaceEnd,
+      '%}',
+    ]);
+  }
+
+  const markup = node.markup.trim();
+  return group([
+    '{%',
+    node.whitespaceStart,
+    ' ',
+    node.name,
+    markup ? ` ${markup}` : '',
+    ' ',
+    node.whitespaceEnd,
+    '%}',
+  ]);
+}
+
+function blockEnd(node: LiquidTag): Doc {
+  if (!node.children) return '';
+  return group([
+    '{%',
+    node.delimiterWhitespaceStart ?? '',
+    ` end${node.name} `,
+    node.delimiterWhitespaceEnd ?? '',
+    '%}',
+  ]);
+}
 
 function attributes(path: any, _options: any, print: any): Doc {
   const node = path.getValue();
@@ -119,12 +169,13 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           .replace(/^\n|\n$/g, '') // only want the meat
           .split('\n');
         const minIndentLevel = bodyLines
-          .filter(line => line.length > 0)
+          .filter((line) => line.length > 0)
           .map((line) => (line.match(/^\s*/) as any)[0].length)
           .reduce((a, b) => Math.min(a, b), Infinity);
         const indentStrip = ' '.repeat(minIndentLevel);
-        const body = bodyLines
-          .map(line => line.replace(indentStrip, ''))
+        const body = bodyLines.map((line) =>
+          line.replace(indentStrip, ''),
+        );
 
         return [
           group([
@@ -135,15 +186,22 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           ]),
           indent([hardline, join(hardline, body)]),
           hardline,
-          [
-            '</',
-            node.name,
-            '>'
-          ]
+          ['</', node.name, '>'],
         ];
       }
 
       case NodeTypes.LiquidDrop: {
+        const lines = markupLines(node);
+        if (lines.length > 1) {
+          return group([
+            '{{',
+            node.whitespaceStart,
+            indent([hardline, join(hardline, lines)]),
+            hardline,
+            node.whitespaceEnd,
+            '}}',
+          ]);
+        }
         return group([
           '{{',
           node.whitespaceStart,
@@ -156,29 +214,9 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.LiquidTag: {
-        const markup = node.markup.trim();
-        const blockStart = group([
-          '{%',
-          node.whitespaceStart,
-          ' ',
-          node.name,
-          markup ? ` ${markup}` : '',
-          ' ',
-          node.whitespaceEnd,
-          '%}',
-        ]);
-        const blockEnd =
-          node.children &&
-          group([
-            '{%',
-            node.delimiterWhitespaceStart ?? '',
-            ` end${node.name} `,
-            node.delimiterWhitespaceEnd ?? '',
-            '%}',
-          ]);
-        if (blockEnd) {
+        if (node.children) {
           return group([
-            blockStart,
+            blockStart(node),
             group([
               indent([
                 softline,
@@ -189,10 +227,10 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
               ]),
               softline,
             ]),
-            blockEnd,
+            blockEnd(node),
           ]);
         } else {
-          return blockStart;
+          return blockStart(node);
         }
       }
 

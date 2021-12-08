@@ -1,6 +1,6 @@
 import { Parsers, liquidHtmlParser, liquidHtmlAstFormat, liquidHtmlLanguageName } from './liquid-html-parser';
 
-export { LiquidHtmlNode, NodeTypes, DocumentNode } from './liquid-html-ast';
+export { LiquidHtmlNode, NodeTypes, DocumentNode, LiquidTag, LiquidDrop } from './liquid-html-ast';
 
 export { liquidHtmlLanguageName, liquidHtmlAstFormat };
 
