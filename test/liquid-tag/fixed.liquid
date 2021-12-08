@@ -1,0 +1,18 @@
+<div>
+  {% liquid
+    assign x = 1
+    assign y = 2
+    if A
+      assign z = 1
+    endif
+  %}
+</div>
+<div>
+  {%- liquid
+    assign x = 1
+    assign y = 2
+    if A
+      assign z = 1
+    endif
+  -%}
+</div>

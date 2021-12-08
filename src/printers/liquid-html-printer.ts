@@ -11,20 +11,48 @@ import { assertNever } from '../utils';
 const { builders } = doc;
 const { group, line, softline, hardline, join, indent } = builders;
 
+const trim = (x: string) => x.trim();
+const trimEnd = (x: string) => x.trimEnd();
+
 function markupLines(node: LiquidTag | LiquidDrop): string[] {
-  return node.markup
-    .trim()
-    .split('\n')
-    .map((line: string) => line.trim());
+  return node.markup.trim().split('\n');
+}
+
+function reindent(lines: string[], skipFirst = false): string[] {
+  const minIndentLevel = lines
+    .filter((_, i) => skipFirst ? i > 0 : true)
+    .filter((line) => line.length > 0)
+    .map((line) => (line.match(/^\s*/) as any)[0].length)
+    .reduce((a, b) => Math.min(a, b), Infinity);
+  const indentStrip = ' '.repeat(minIndentLevel);
+  return lines
+    .map((line) => line.replace(indentStrip, ''))
+    .map(trimEnd);
 }
 
 function blockStart(node: LiquidTag): Doc {
   const lines = markupLines(node);
-  if (lines.length > 1 && node.name !== 'liquid') {
+  if (node.name === 'liquid') {
     return group([
       '{%',
       node.whitespaceStart,
-      indent([hardline, node.name, ' ', join(hardline, lines)]),
+      ' ',
+      node.name,
+      indent([hardline, join(hardline, reindent(lines, true))]),
+      hardline,
+      node.whitespaceEnd,
+      '%}',
+    ]);
+  } else if (lines.length > 1) {
+    return group([
+      '{%',
+      node.whitespaceStart,
+      indent([
+        hardline,
+        node.name,
+        ' ',
+        join(hardline, lines.map(trim)),
+      ]),
       hardline,
       node.whitespaceEnd,
       '%}',
@@ -168,14 +196,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         const bodyLines = node.body
           .replace(/^\n|\n$/g, '') // only want the meat
           .split('\n');
-        const minIndentLevel = bodyLines
-          .filter((line) => line.length > 0)
-          .map((line) => (line.match(/^\s*/) as any)[0].length)
-          .reduce((a, b) => Math.min(a, b), Infinity);
-        const indentStrip = ' '.repeat(minIndentLevel);
-        const body = bodyLines.map((line) =>
-          line.replace(indentStrip, ''),
-        );
+        const body = reindent(bodyLines);
 
         return [
           group([
@@ -196,7 +217,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           return group([
             '{{',
             node.whitespaceStart,
-            indent([hardline, join(hardline, lines)]),
+            indent([hardline, join(hardline, lines.map(trim))]),
             hardline,
             node.whitespaceEnd,
             '}}',
