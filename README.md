@@ -67,13 +67,6 @@ Then, we can take that AST and print it into something _prettier_.
 
 - It's a _subset_ of Liquid. Need to inform folks that you need to write your liquid this way or else we can't make your code pretty.
 
-## Missing pieces
-
-There's some stuff I didn't do (yet?) that would need to be done for this to be "production" ready.
-
-- We're only _reindenting_ the contents of `<script>` tags. We don't do LiquidJS.
-- Liquid + CSS // or a way to ignore the nodes and not mess with the formatting.
-
 ## Things that would be nice
 
 - Formatting of the _insides_ of Liquid nodes (e.g. spaces around operators, breaking of pipelines, etc.)

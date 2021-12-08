@@ -54,11 +54,19 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPosition(ast, 'children.0.attributes.2');
   });
 
-  it('should parse script tags', () => {
+  it('should parse script tags as raw', () => {
     const ast = toLiquidHtmlAST(`<script>\n  const a = {{ product | json }};\n</script>`);
-    expectPath(ast, 'children.0.type').to.eql('ScriptTagNode');
+    expectPath(ast, 'children.0.type').to.eql('RawNode');
     expectPath(ast, 'children.0.name').to.eql('script');
     expectPath(ast, 'children.0.body').to.eql('\n  const a = {{ product | json }};\n');
+    expectPosition(ast, 'children.0')
+  });
+
+  it('should parse style tags as raw', () => {
+    const ast = toLiquidHtmlAST(`<style>\n  :root { --bg: {{ settings.bg }}}\n</style>`);
+    expectPath(ast, 'children.0.type').to.eql('RawNode');
+    expectPath(ast, 'children.0.name').to.eql('style');
+    expectPath(ast, 'children.0.body').to.eql('\n  :root { --bg: {{ settings.bg }}}\n');
     expectPosition(ast, 'children.0')
   })
 

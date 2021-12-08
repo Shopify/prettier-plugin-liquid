@@ -3,13 +3,20 @@ LiquidHTML {
     = (HtmlNode | liquidNode | textNode)*
 
   HtmlNode =
-    ScriptTag | VoidElement | SelfClosingElement | TagClose | TagOpen
+    | RawTag
+    | VoidElement
+    | SelfClosingElement
+    | TagClose
+    | TagOpen
 
-  ScriptTag =
-    "<script" AttrList #(">" scriptTagBody "</script>")
+  RawTag =
+    BlackHoleTag<rawTagName>
 
-  scriptTagBody =
-    anyExceptStar<"</script>">
+  BlackHoleTag<name> =
+    #("<" name) AttrList #(">" anyExceptStar<endTag<name>> endTag<name>)
+
+  endTag<name> =
+    "</" name space* ">"
 
   VoidElement =
     #("<" voidElementName) AttrList ">"
@@ -94,6 +101,11 @@ LiquidHTML {
     | "if"
     | "raw"
     | "tablerow"
+
+  // These we'll just gloss over.
+  rawTagName =
+    | "script"
+    | "style"
 
   tagMarkup = anyExceptStar<("-%}"| "%}")>
 

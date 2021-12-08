@@ -21,7 +21,7 @@ export enum NodeTypes {
   SelfClosingElementNode = 'SelfClosingElementNode',
   VoidElementNode = 'VoidElementNode',
   ElementNode = 'ElementNode',
-  ScriptTagNode = 'ScriptTagNode',
+  RawNode = 'RawNode',
   AttrSingleQuoted = 'AttrSingleQuoted',
   AttrDoubleQuoted = 'AttrDoubleQuoted',
   AttrUnquoted = 'AttrUnquoted',
@@ -65,7 +65,7 @@ export type HtmlNode =
   | ElementNode
   | SelfClosingElementNode
   | VoidElementNode
-  | ScriptTagNode;
+  | RawNode;
 
 export interface ElementNode
   extends HtmlNodeBase<NodeTypes.ElementNode> {
@@ -75,8 +75,8 @@ export interface SelfClosingElementNode
   extends HtmlNodeBase<NodeTypes.SelfClosingElementNode> {}
 export interface VoidElementNode
   extends HtmlNodeBase<NodeTypes.VoidElementNode> {}
-export interface ScriptTagNode
-  extends HtmlNodeBase<NodeTypes.ScriptTagNode> {
+export interface RawNode
+  extends HtmlNodeBase<NodeTypes.RawNode> {
   body: string;
 }
 
@@ -293,10 +293,10 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
         break;
       }
 
-      case ConcreteNodeTypes.ScriptTag: {
+      case ConcreteNodeTypes.RawTag: {
         builder.push({
-          type: NodeTypes.ScriptTagNode,
-          name: 'script',
+          type: NodeTypes.RawNode,
+          name: node.name,
           body: node.body,
           attributes: node.attrList
             ? node.attrList.map(toAttribute)

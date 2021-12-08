@@ -18,10 +18,14 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
   });
 
-  it('should parse script tags as a dump', () => {
-    const ast = toLiquidHtmlCST('<script>\nconst a = {{ product | json }}\n</script>')
-    expectPath(ast, '0.type').to.eql('ScriptTag');
+  it('should parse script and style tags as a dump', () => {
+    const ast = toLiquidHtmlCST('<script>\nconst a = {{ product | json }}\n</script><style>\n#id {}\n</style>')
+    expectPath(ast, '0.type').to.eql('RawTag');
+    expectPath(ast, '0.name').to.eql('script');
     expectPath(ast, '0.body').to.eql('\nconst a = {{ product | json }}\n');
+    expectPath(ast, '1.type').to.eql('RawTag');
+    expectPath(ast, '1.name').to.eql('style');
+    expectPath(ast, '1.body').to.eql('\n#id {}\n');
     expectLocation(ast, [0]);
   })
 

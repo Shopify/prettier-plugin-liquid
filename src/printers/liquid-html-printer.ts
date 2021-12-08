@@ -114,7 +114,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         ]);
       }
 
-      case NodeTypes.ScriptTagNode: {
+      case NodeTypes.RawNode: {
         const bodyLines = node.body
           .replace(/^\n|\n$/g, '') // only want the meat
           .split('\n');
@@ -135,7 +135,11 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           ]),
           indent([hardline, join(hardline, body)]),
           hardline,
-          '</script>',
+          [
+            '</',
+            node.name,
+            '>'
+          ]
         ];
       }
 

@@ -3,7 +3,7 @@ import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from './grammar';
 
 export enum ConcreteNodeTypes {
-  ScriptTag = 'ScriptTag',
+  RawTag = 'RawTag',
   SelfClosingElement = 'SelfClosingElement',
   VoidElement = 'VoidElement',
   TagOpen = 'TagOpen',
@@ -35,8 +35,8 @@ export interface ConcreteHtmlNodeBase<T>
   attrList?: ConcreteAttributeNode[];
 }
 
-export interface ConcreteScriptTag
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.ScriptTag> {
+export interface ConcreteRawTag
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.RawTag> {
   body: string;
 }
 export interface ConcreteSelfClosingElement
@@ -105,7 +105,7 @@ export interface ConcreteLiquidDrop
 }
 
 export type ConcreteHtmlNode =
-  | ConcreteScriptTag
+  | ConcreteRawTag
   | ConcreteVoidElement
   | ConcreteSelfClosingElement
   | ConcreteTagOpen
@@ -137,10 +137,11 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   };
   const res = liquidHtmlGrammar.match(text);
   const ohmAST = toAST(res, {
-    ScriptTag: {
-      name: 'script',
-      attrList: 1,
-      body: 3,
+    BlackHoleTag: {
+      type: 'RawTag',
+      name: 1,
+      attrList: 2,
+      body: 4,
       locStart,
       locEnd,
     },
