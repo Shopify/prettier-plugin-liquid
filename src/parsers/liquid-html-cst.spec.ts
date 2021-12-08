@@ -18,6 +18,13 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
   });
 
+  it('should parse script tags as a dump', () => {
+    const ast = toLiquidHtmlCST('<script>\nconst a = {{ product | json }}\n</script>')
+    expectPath(ast, '0.type').to.eql('ScriptTag');
+    expectPath(ast, '0.body').to.eql('\nconst a = {{ product | json }}\n');
+    expectLocation(ast, [0]);
+  })
+
   it('should parse void elements', () => {
     VOID_ELEMENTS.forEach((voidElementName) => {
       const ast = toLiquidHtmlCST(`<${voidElementName} disabled>`);

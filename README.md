@@ -71,7 +71,7 @@ Then, we can take that AST and print it into something _prettier_.
 
 There's some stuff I didn't do (yet?) that would need to be done for this to be "production" ready.
 
-- Liquid + JavaScript // or a way to ignore the nodes and not mess with the formatting.
+- We're only _reindenting_ the contents of `<script>` tags. We don't do LiquidJS.
 - Liquid + CSS // or a way to ignore the nodes and not mess with the formatting.
 
 ## Things that would be nice

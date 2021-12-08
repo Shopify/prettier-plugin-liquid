@@ -3,6 +3,7 @@ import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from './grammar';
 
 export enum ConcreteNodeTypes {
+  ScriptTag = 'ScriptTag',
   SelfClosingElement = 'SelfClosingElement',
   VoidElement = 'VoidElement',
   TagOpen = 'TagOpen',
@@ -34,6 +35,10 @@ export interface ConcreteHtmlNodeBase<T>
   attrList?: ConcreteAttributeNode[];
 }
 
+export interface ConcreteScriptTag
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.ScriptTag> {
+  body: string;
+}
 export interface ConcreteSelfClosingElement
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.SelfClosingElement> {}
 export interface ConcreteVoidElement
@@ -100,6 +105,7 @@ export interface ConcreteLiquidDrop
 }
 
 export type ConcreteHtmlNode =
+  | ConcreteScriptTag
   | ConcreteVoidElement
   | ConcreteSelfClosingElement
   | ConcreteTagOpen
@@ -131,53 +137,69 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   };
   const res = liquidHtmlGrammar.match(text);
   const ohmAST = toAST(res, {
+    ScriptTag: {
+      name: 'script',
+      attrList: 1,
+      body: 3,
+      locStart,
+      locEnd,
+    },
+
     SelfClosingElement: {
       name: 1,
       attrList: 2,
       locStart,
       locEnd,
     },
+
     VoidElement: {
       name: 1,
       attrList: 2,
       locStart,
       locEnd,
     },
+
     TagOpen: {
       name: 1,
       attrList: 2,
       locStart,
       locEnd,
     },
+
     TagClose: {
       name: 1,
       locStart,
       locEnd,
     },
+
     AttrUnquoted: {
       name: 0,
       value: 2,
       locStart,
       locEnd,
     },
+
     AttrSingleQuoted: {
       name: 0,
       value: 3,
       locStart,
       locEnd,
     },
+
     AttrDoubleQuoted: {
       name: 0,
       value: 3,
       locStart,
       locEnd,
     },
+
     attrEmpty: {
       type: ConcreteNodeTypes.AttrEmpty,
       name: 0,
       locStart,
       locEnd,
     },
+
     attrDoubleQuotedValue: 0,
     attrSingleQuotedValue: 0,
     attrUnquotedValue: 0,
@@ -194,6 +216,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
     liquidTagClose: {
       type: ConcreteNodeTypes.LiquidTagClose,
       name: 4,
@@ -202,6 +225,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
     liquidTag: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
@@ -211,6 +235,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
     liquidDrop: {
       type: ConcreteNodeTypes.LiquidDrop,
       markup: 2,
@@ -219,6 +244,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
     textNode,
   });
 

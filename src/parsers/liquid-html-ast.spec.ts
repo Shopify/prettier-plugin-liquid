@@ -54,6 +54,14 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPosition(ast, 'children.0.attributes.2');
   });
 
+  it('should parse script tags', () => {
+    const ast = toLiquidHtmlAST(`<script>\n  const a = {{ product | json }};\n</script>`);
+    expectPath(ast, 'children.0.type').to.eql('ScriptTagNode');
+    expectPath(ast, 'children.0.name').to.eql('script');
+    expectPath(ast, 'children.0.body').to.eql('\n  const a = {{ product | json }};\n');
+    expectPosition(ast, 'children.0')
+  })
+
   it('should parse liquid ifs', () => {
     const ast = toLiquidHtmlAST(`{% if A %}A{% elsif B %}B{% else %}C{% endif %}`);
     expectPath(ast, 'children.0').to.exist;

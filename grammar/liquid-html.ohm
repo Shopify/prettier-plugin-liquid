@@ -3,7 +3,13 @@ LiquidHTML {
     = (HtmlNode | liquidNode | textNode)*
 
   HtmlNode =
-    VoidElement | SelfClosingElement | TagClose | TagOpen
+    ScriptTag | VoidElement | SelfClosingElement | TagClose | TagOpen
+
+  ScriptTag =
+    "<script" AttrList #(">" scriptTagBody "</script>")
+
+  scriptTagBody =
+    anyExceptStar<"</script>">
 
   VoidElement =
     #("<" voidElementName) AttrList ">"

@@ -21,6 +21,7 @@ export enum NodeTypes {
   SelfClosingElementNode = 'SelfClosingElementNode',
   VoidElementNode = 'VoidElementNode',
   ElementNode = 'ElementNode',
+  ScriptTagNode = 'ScriptTagNode',
   AttrSingleQuoted = 'AttrSingleQuoted',
   AttrDoubleQuoted = 'AttrDoubleQuoted',
   AttrUnquoted = 'AttrUnquoted',
@@ -30,7 +31,12 @@ export enum NodeTypes {
 
 export type LiquidHtmlAST = LiquidHtmlNode[];
 
-export type LiquidHtmlNode = DocumentNode | LiquidNode | HtmlNode | AttributeNode | TextNode;
+export type LiquidHtmlNode =
+  | DocumentNode
+  | LiquidNode
+  | HtmlNode
+  | AttributeNode
+  | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   source: string;
@@ -58,15 +64,21 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
 export type HtmlNode =
   | ElementNode
   | SelfClosingElementNode
-  | VoidElementNode;
+  | VoidElementNode
+  | ScriptTagNode;
 
-export interface ElementNode extends HtmlNodeBase<NodeTypes.ElementNode> {
+export interface ElementNode
+  extends HtmlNodeBase<NodeTypes.ElementNode> {
   children: LiquidHtmlAST;
 }
 export interface SelfClosingElementNode
   extends HtmlNodeBase<NodeTypes.SelfClosingElementNode> {}
 export interface VoidElementNode
   extends HtmlNodeBase<NodeTypes.VoidElementNode> {}
+export interface ScriptTagNode
+  extends HtmlNodeBase<NodeTypes.ScriptTagNode> {
+  body: string;
+}
 
 export interface HtmlNodeBase<T> extends ASTNode<T> {
   name: string;
@@ -171,8 +183,12 @@ class ASTBuilder {
     }
     // The parent end is the end of the outer tag.
     this.parent.position.end = node.locEnd;
-    if (this.parent.type == NodeTypes.LiquidTag && node.type == ConcreteNodeTypes.LiquidTagClose) {
-      this.parent.delimiterWhitespaceStart = node.whitespaceStart ?? '';
+    if (
+      this.parent.type == NodeTypes.LiquidTag &&
+      node.type == ConcreteNodeTypes.LiquidTagClose
+    ) {
+      this.parent.delimiterWhitespaceStart =
+        node.whitespaceStart ?? '';
       this.parent.delimiterWhitespaceEnd = node.whitespaceEnd ?? '';
     }
     this.cursor.pop();
@@ -274,6 +290,19 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
             : [],
           position: position(node),
         } as HtmlNode);
+        break;
+      }
+
+      case ConcreteNodeTypes.ScriptTag: {
+        builder.push({
+          type: NodeTypes.ScriptTagNode,
+          name: 'script',
+          body: node.body,
+          attributes: node.attrList
+            ? node.attrList.map(toAttribute)
+            : [],
+          position: position(node),
+        })
         break;
       }
 

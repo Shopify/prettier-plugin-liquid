@@ -35,8 +35,15 @@ function mapWithNewLine(
   let prev: LiquidHtmlNode | null = null;
   path.each((path) => {
     curr = path.getValue();
-    if (curr && prev && options.locEnd(prev) < options.locStart(curr)) {
-      const gap = source.slice(options.locEnd(prev), options.locStart(curr));
+    if (
+      curr &&
+      prev &&
+      options.locEnd(prev) < options.locStart(curr)
+    ) {
+      const gap = source.slice(
+        options.locEnd(prev),
+        options.locStart(curr),
+      );
       // if we have more than one new line between nodes, insert an empty
       // node in between the result of the `map`. This way we can join with
       // hardline or softline and maintain 'em.
@@ -75,7 +82,10 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             ]),
             indent([
               softline,
-              join(softline, mapWithNewLine(path, options, print, 'children')),
+              join(
+                softline,
+                mapWithNewLine(path, options, print, 'children'),
+              ),
             ]),
             softline,
             group(['</', node.name, '>']),
@@ -102,6 +112,31 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           attributes(path, options, print),
           '/>',
         ]);
+      }
+
+      case NodeTypes.ScriptTagNode: {
+        const bodyLines = node.body
+          .replace(/^\n|\n$/g, '') // only want the meat
+          .split('\n');
+        const minIndentLevel = bodyLines
+          .filter(line => line.length > 0)
+          .map((line) => (line.match(/^\s*/) as any)[0].length)
+          .reduce((a, b) => Math.min(a, b), Infinity);
+        const indentStrip = ' '.repeat(minIndentLevel);
+        const body = bodyLines
+          .map(line => line.replace(indentStrip, ''))
+
+        return [
+          group([
+            '<',
+            node.name,
+            attributes(path, options, print),
+            '>',
+          ]),
+          indent([hardline, join(hardline, body)]),
+          hardline,
+          '</script>',
+        ];
       }
 
       case NodeTypes.LiquidDrop: {
@@ -143,7 +178,10 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             group([
               indent([
                 softline,
-                join(softline, mapWithNewLine(path, options, print, 'children')),
+                join(
+                  softline,
+                  mapWithNewLine(path, options, print, 'children'),
+                ),
               ]),
               softline,
             ]),
