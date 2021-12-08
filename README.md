@@ -6,6 +6,8 @@ Our biggest problem is that Liquid is a _templating_ language. As such, its Abst
 
 And since [prettier](https://prettier.io/) is really a `function(ast) -> string`, you can't make pretty Liquid + HTML if the AST you have has no notion of HTML.
 
+https://user-images.githubusercontent.com/4990691/145229362-568ab7d4-4345-42b7-8794-59f7683a88a3.mp4
+
 ## How we can handle it
 
 First, we need to make a Liquid + HTML parser that supports a stricter form of Liquid.
