@@ -5,6 +5,7 @@ LiquidHTML {
   HtmlNode =
     | HtmlRawTag
     | HtmlVoidElement
+    | HtmlSelfClosingElement
     | HtmlTagClose
     | HtmlTagOpen
 
@@ -20,6 +21,9 @@ LiquidHTML {
   HtmlVoidElement =
     #("<" voidElementName) AttrList "/"? ">"
 
+  HtmlSelfClosingElement =
+    #("<" tagName) AttrList "/>"
+
   HtmlTagOpen =
     #("<" tagName) AttrList ">"
 
@@ -27,7 +31,7 @@ LiquidHTML {
     #("</" tagName) ">"
 
   tagName =
-    letter (alnum | "-")*
+    letter (alnum | "-" | ":")*
 
   liquidTagName =
     letter (alnum)*

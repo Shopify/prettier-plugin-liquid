@@ -209,6 +209,15 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         ]);
       }
 
+      case NodeTypes.HtmlSelfClosingElement: {
+        return group([
+          '<',
+          node.name,
+          attributes(path, options, print),
+          '/>',
+        ]);
+      }
+
       case NodeTypes.HtmlRawNode: {
         const lines = bodyLines(node.body);
         const body =

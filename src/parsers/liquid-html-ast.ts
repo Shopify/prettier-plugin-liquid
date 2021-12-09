@@ -19,6 +19,7 @@ export enum NodeTypes {
   LiquidRawTag = 'LiquidRawTag',
   LiquidTag = 'LiquidTag',
   LiquidDrop = 'LiquidDrop',
+  HtmlSelfClosingElement = 'HtmlSelfClosingElement',
   HtmlVoidElement = 'HtmlVoidElement',
   HtmlElement = 'HtmlElement',
   HtmlRawNode = 'HtmlRawNode',
@@ -71,7 +72,7 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   whitespaceEnd: '-' | '';
 }
 
-export type HtmlNode = HtmlElement | HtmlVoidElement | HtmlRawNode;
+export type HtmlNode = HtmlElement | HtmlVoidElement | HtmlSelfClosingElement | HtmlRawNode;
 
 export interface HtmlElement
   extends HtmlNodeBase<NodeTypes.HtmlElement> {
@@ -79,6 +80,8 @@ export interface HtmlElement
 }
 export interface HtmlVoidElement
   extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {}
+export interface HtmlSelfClosingElement
+  extends HtmlNodeBase<NodeTypes.HtmlSelfClosingElement> {}
 export interface HtmlRawNode
   extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
   body: string;
@@ -292,6 +295,16 @@ export function cstToAst(
       case ConcreteNodeTypes.HtmlVoidElement: {
         builder.push({
           type: NodeTypes.HtmlVoidElement,
+          name: node.name,
+          attributes: toAttributes(node.attrList || []),
+          position: position(node),
+        } as HtmlNode);
+        break;
+      }
+
+      case ConcreteNodeTypes.HtmlSelfClosingElement: {
+        builder.push({
+          type: NodeTypes.HtmlSelfClosingElement,
           name: node.name,
           attributes: toAttributes(node.attrList || []),
           position: position(node),

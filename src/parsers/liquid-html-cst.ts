@@ -41,6 +41,7 @@ class LiquidHTMLParsingError extends SyntaxError {
 export enum ConcreteNodeTypes {
   HtmlRawTag = 'HtmlRawTag',
   HtmlVoidElement = 'HtmlVoidElement',
+  HtmlSelfClosingElement = 'HtmlSelfClosingElement',
   HtmlTagOpen = 'HtmlTagOpen',
   HtmlTagClose = 'HtmlTagClose',
   AttrSingleQuoted = 'AttrSingleQuoted',
@@ -77,6 +78,8 @@ export interface ConcreteHtmlRawTag
 }
 export interface ConcreteHtmlVoidElement
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlVoidElement> {}
+export interface ConcreteHtmlSelfClosingElement
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlSelfClosingElement> {}
 export interface ConcreteHtmlTagOpen
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagOpen> {}
 export interface ConcreteHtmlTagClose
@@ -151,6 +154,7 @@ export interface ConcreteLiquidDrop
 export type ConcreteHtmlNode =
   | ConcreteHtmlRawTag
   | ConcreteHtmlVoidElement
+  | ConcreteHtmlSelfClosingElement
   | ConcreteHtmlTagOpen
   | ConcreteHtmlTagClose;
 
@@ -195,6 +199,13 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     HtmlVoidElement: {
+      name: 1,
+      attrList: 2,
+      locStart,
+      locEnd,
+    },
+
+    HtmlSelfClosingElement: {
       name: 1,
       attrList: 2,
       locStart,
