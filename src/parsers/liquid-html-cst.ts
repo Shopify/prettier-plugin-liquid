@@ -1,6 +1,40 @@
 import { Parser } from 'prettier';
+import { MatchResult } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from './grammar';
+import lineColumn from 'line-column';
+
+interface LineColPosition {
+  line: number;
+  column: number;
+}
+
+class ParsingError extends Error {
+  loc?: { start: LineColPosition; end: LineColPosition };
+
+  constructor(ohm: MatchResult) {
+    super(ohm.shortMessage);
+    const lineCol = lineColumn((ohm as any).input).fromIndex(
+      (ohm as any)._rightmostFailurePosition,
+    );
+
+    // Plugging ourselves into @babel/code-frame since this is how
+    // the babel parser can print where the parsing error occured.
+    // https://github.com/prettier/prettier/blob/cd4a57b113177c105a7ceb94e71f3a5a53535b81/src/main/parser.js
+    if (lineCol) {
+      this.loc = {
+        start: {
+          line: lineCol.line,
+          column: lineCol.col,
+        },
+        end: {
+          line: lineCol.line,
+          column: lineCol.col,
+        },
+      };
+    }
+  }
+}
 
 export enum ConcreteNodeTypes {
   RawTag = 'RawTag',
@@ -136,6 +170,11 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     locEnd,
   };
   const res = liquidHtmlGrammar.match(text);
+
+  if (res.failed()) {
+    throw new ParsingError(res);
+  }
+
   const ohmAST = toAST(res, {
     BlackHoleTag: {
       type: 'RawTag',
