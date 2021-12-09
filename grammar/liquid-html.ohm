@@ -3,27 +3,27 @@ LiquidHTML {
     = (HtmlNode | liquidNode | textNode)*
 
   HtmlNode =
-    | RawTag
-    | VoidElement
-    | TagClose
-    | TagOpen
+    | HtmlRawTag
+    | HtmlVoidElement
+    | HtmlTagClose
+    | HtmlTagOpen
 
-  RawTag =
-    BlackHoleTag<rawTagName>
+  HtmlRawTag =
+    HtmlRawTagImpl<htmlRawTagName>
 
-  BlackHoleTag<name> =
+  HtmlRawTagImpl<name> =
     #("<" name) AttrList #(">" anyExceptStar<endTag<name>> endTag<name>)
 
   endTag<name> =
     "</" name space* ">"
 
-  VoidElement =
+  HtmlVoidElement =
     #("<" voidElementName) AttrList "/"? ">"
 
-  TagOpen =
+  HtmlTagOpen =
     #("<" tagName) AttrList ">"
 
-  TagClose =
+  HtmlTagClose =
     #("</" tagName) ">"
 
   tagName =
@@ -35,7 +35,7 @@ LiquidHTML {
   AttrList = Attr*
 
   Attr =
-    AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
+    liquidNode | AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
 
   attrEmpty = attrName
 
@@ -44,7 +44,7 @@ LiquidHTML {
   AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
 
   attrName = letter (letter | digit | "-" )*
-  attrUnquotedValue = (liquidNode | attrUnquotedTextNode)+
+  attrUnquotedValue = (attrUnquotedTextNode)*
   attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
   attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
 
@@ -62,8 +62,8 @@ LiquidHTML {
   liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
   liquidDrop = "{{" "-"? anyExceptStar<("-}}" | "}}")> "-"? "}}"
 
-  liquidRawTag = liquidRawTagLiteral<liquidRawTagName>
-  liquidRawTagLiteral<name> =
+  liquidRawTag = liquidRawTagImpl<liquidRawTagName>
+  liquidRawTagImpl<name> =
     "{%" "-"? space* name space* "-"? "%}"
     anyExceptStar<liquidRawTagClose<name>>
     "{%" "-"? space* "end" name space* "-"? "%}"
@@ -108,13 +108,15 @@ LiquidHTML {
     | "for"
     | "ifchanged"
     | "if"
+    | "unless"
     | "raw"
     | "tablerow"
 
   // These we'll just gloss over.
-  rawTagName =
+  htmlRawTagName =
     | "script"
     | "style"
+    | "svg"
 
   tagMarkup = anyExceptStar<("-%}"| "%}")>
 

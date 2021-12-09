@@ -11,6 +11,19 @@ import { assertNever } from '../utils';
 const { builders } = doc;
 const { group, line, softline, hardline, join, indent } = builders;
 
+const HTML_TAGS_THAT_ALWAYS_BREAK = [
+  'html',
+  'body',
+  'head',
+  'main',
+  'header',
+  'footer',
+];
+const LIQUID_TAGS_THAT_ALWAYS_BREAK = [
+  'for',
+  'case',
+];
+
 const trim = (x: string) => x.trim();
 const trimEnd = (x: string) => x.trimEnd();
 
@@ -182,7 +195,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             group(['</', node.name, '>']),
           ],
           {
-            shouldBreak: ['html', 'body', 'head'].includes(node.name),
+            shouldBreak: HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
           },
         );
       }
@@ -196,7 +209,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         ]);
       }
 
-      case NodeTypes.RawNode: {
+      case NodeTypes.HtmlRawNode: {
         const lines = bodyLines(node.body);
         const body =
           lines.length > 0 && lines[0] !== ''
@@ -285,7 +298,9 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
               softline,
             ]),
             blockEnd(node),
-          ]);
+          ], {
+            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
+          });
         } else {
           return blockStart(node);
         }

@@ -15,7 +15,10 @@
   width="320"
   height="240"
   loading="lazy"
+  {{ block.shopify_attributes }}
+  {% if A %}
   disabled
+  {% endif %}
 />
 <a width='320' disabled>Click me</a>
 <a disabled width="320">Click me</a>

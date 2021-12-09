@@ -33,16 +33,15 @@ describe('Unit: liquidHtmlGrammar', () => {
         </body>
       </html>
     `).to.be.true;
+    expectMatchSucceeded(
+      '<img {% if aboveFold %} loading="lazy"{% endif %} />',
+    ).to.be.true;
+    expectMatchSucceeded(
+      '<svg><use></svg>',
+    ).to.be.true;
   });
 
   it('should fail at parsing invalid HTML+Liquid', () => {
-    // LiquidTags in the place of arguments is not parseable. (Or else how
-    // would you distinguish between attrEmpty and textNode?) Should fail
-    // early when this happens.
-    expectMatchSucceeded(
-      '<img {% if aboveFold %} loading="lazy"{% endif %} />',
-    ).to.be.false;
-
     // Not valid HTML tag
     expectMatchSucceeded('<6h>').to.be.false;
   });

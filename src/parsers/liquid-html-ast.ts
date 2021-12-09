@@ -5,7 +5,7 @@ import {
   ConcreteAttributeNode,
   ConcreteLiquidNode,
   ConcreteTextNode,
-  ConcreteTagClose,
+  ConcreteHtmlTagClose,
   ConcreteLiquidTagClose,
   LiquidHtmlCST,
 } from './liquid-html-cst';
@@ -21,7 +21,7 @@ export enum NodeTypes {
   LiquidDrop = 'LiquidDrop',
   HtmlVoidElement = 'HtmlVoidElement',
   HtmlElement = 'HtmlElement',
-  RawNode = 'RawNode',
+  HtmlRawNode = 'HtmlRawNode',
   AttrSingleQuoted = 'AttrSingleQuoted',
   AttrDoubleQuoted = 'AttrDoubleQuoted',
   AttrUnquoted = 'AttrUnquoted',
@@ -71,10 +71,7 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   whitespaceEnd: '-' | '';
 }
 
-export type HtmlNode =
-  | HtmlElement
-  | HtmlVoidElement
-  | RawNode;
+export type HtmlNode = HtmlElement | HtmlVoidElement | HtmlRawNode;
 
 export interface HtmlElement
   extends HtmlNodeBase<NodeTypes.HtmlElement> {
@@ -82,7 +79,8 @@ export interface HtmlElement
 }
 export interface HtmlVoidElement
   extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {}
-export interface RawNode extends HtmlNodeBase<NodeTypes.RawNode> {
+export interface HtmlRawNode
+  extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
   body: string;
 }
 
@@ -92,6 +90,7 @@ export interface HtmlNodeBase<T> extends ASTNode<T> {
 }
 
 export type AttributeNode =
+  | LiquidNode
   | AttrSingleQuoted
   | AttrDoubleQuoted
   | AttrUnquoted
@@ -176,7 +175,7 @@ class ASTBuilder {
   }
 
   close(
-    node: ConcreteLiquidTagClose | ConcreteTagClose,
+    node: ConcreteLiquidTagClose | ConcreteHtmlTagClose,
     nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
     if (
@@ -202,7 +201,9 @@ class ASTBuilder {
   }
 }
 
-export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
+export function cstToAst(
+  cst: LiquidHtmlCST | ConcreteAttributeNode[],
+): LiquidHtmlAST {
   const builder = new ASTBuilder();
 
   for (const node of cst) {
@@ -272,44 +273,62 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
         break;
       }
 
-      case ConcreteNodeTypes.TagOpen: {
+      case ConcreteNodeTypes.HtmlTagOpen: {
         builder.open({
           type: NodeTypes.HtmlElement,
           name: node.name,
-          attributes: node.attrList
-            ? node.attrList.map(toAttribute)
-            : [],
+          attributes: toAttributes(node.attrList || []),
           position: position(node),
           children: [],
         } as HtmlNode);
         break;
       }
 
-      case ConcreteNodeTypes.TagClose: {
+      case ConcreteNodeTypes.HtmlTagClose: {
         builder.close(node, NodeTypes.HtmlElement);
         break;
       }
 
-      case ConcreteNodeTypes.VoidElement: {
+      case ConcreteNodeTypes.HtmlVoidElement: {
         builder.push({
           type: NodeTypes.HtmlVoidElement,
           name: node.name,
-          attributes: node.attrList
-            ? node.attrList.map(toAttribute)
-            : [],
+          attributes: toAttributes(node.attrList || []),
           position: position(node),
         } as HtmlNode);
         break;
       }
 
-      case ConcreteNodeTypes.RawTag: {
+      case ConcreteNodeTypes.HtmlRawTag: {
         builder.push({
-          type: NodeTypes.RawNode,
+          type: NodeTypes.HtmlRawNode,
           name: node.name,
           body: node.body,
-          attributes: node.attrList
-            ? node.attrList.map(toAttribute)
-            : [],
+          attributes: toAttributes(node.attrList || []),
+          position: position(node),
+        });
+        break;
+      }
+
+      case ConcreteNodeTypes.AttrEmpty: {
+        builder.push({
+          type: NodeTypes.AttrEmpty,
+          name: node.name,
+          position: position(node),
+        });
+        break;
+      }
+
+      case ConcreteNodeTypes.AttrSingleQuoted:
+      case ConcreteNodeTypes.AttrDoubleQuoted:
+      case ConcreteNodeTypes.AttrUnquoted: {
+        builder.push({
+          type: node.type as unknown as
+            | NodeTypes.AttrUnquoted
+            | NodeTypes.AttrDoubleQuoted
+            | NodeTypes.AttrUnquoted,
+          name: node.name,
+          value: toAttributeValue(node.value),
           position: position(node),
         });
         break;
@@ -324,40 +343,16 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
   return builder.ast;
 }
 
-function toAttribute(node: ConcreteAttributeNode): AttributeNode {
-  switch (node.type) {
-    case ConcreteNodeTypes.AttrEmpty: {
-      return {
-        type: NodeTypes.AttrEmpty,
-        name: node.name,
-        position: position(node),
-      };
-    }
-
-    case ConcreteNodeTypes.AttrSingleQuoted:
-    case ConcreteNodeTypes.AttrDoubleQuoted:
-    case ConcreteNodeTypes.AttrUnquoted: {
-      return {
-        type: node.type as unknown as
-          | NodeTypes.AttrUnquoted
-          | NodeTypes.AttrDoubleQuoted
-          | NodeTypes.AttrUnquoted,
-        name: node.name,
-        value: toAttributeValue(node.value),
-        position: position(node),
-      };
-    }
-
-    default: {
-      return assertNever(node);
-    }
-  }
-}
-
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
 ): (LiquidNode | TextNode)[] {
   return cstToAst(value) as (LiquidNode | TextNode)[];
+}
+
+function toAttributes(
+  attrList: ConcreteAttributeNode[],
+): (AttributeNode)[] {
+  return cstToAst(attrList) as AttributeNode[]
 }
 
 function position(

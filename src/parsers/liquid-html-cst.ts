@@ -9,11 +9,13 @@ interface LineColPosition {
   column: number;
 }
 
-class ParsingError extends Error {
+class LiquidHTMLParsingError extends SyntaxError {
   loc?: { start: LineColPosition; end: LineColPosition };
 
   constructor(ohm: MatchResult) {
     super(ohm.shortMessage);
+    this.name = 'LiquidHTMLParsingError';
+
     const lineCol = lineColumn((ohm as any).input).fromIndex(
       (ohm as any)._rightmostFailurePosition,
     );
@@ -37,10 +39,10 @@ class ParsingError extends Error {
 }
 
 export enum ConcreteNodeTypes {
-  RawTag = 'RawTag',
-  VoidElement = 'VoidElement',
-  TagOpen = 'TagOpen',
-  TagClose = 'TagClose',
+  HtmlRawTag = 'HtmlRawTag',
+  HtmlVoidElement = 'HtmlVoidElement',
+  HtmlTagOpen = 'HtmlTagOpen',
+  HtmlTagClose = 'HtmlTagClose',
   AttrSingleQuoted = 'AttrSingleQuoted',
   AttrDoubleQuoted = 'AttrDoubleQuoted',
   AttrUnquoted = 'AttrUnquoted',
@@ -69,16 +71,16 @@ export interface ConcreteHtmlNodeBase<T>
   attrList?: ConcreteAttributeNode[];
 }
 
-export interface ConcreteRawTag
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.RawTag> {
+export interface ConcreteHtmlRawTag
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlRawTag> {
   body: string;
 }
-export interface ConcreteVoidElement
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.VoidElement> {}
-export interface ConcreteTagOpen
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.TagOpen> {}
-export interface ConcreteTagClose
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.TagClose> {}
+export interface ConcreteHtmlVoidElement
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlVoidElement> {}
+export interface ConcreteHtmlTagOpen
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagOpen> {}
+export interface ConcreteHtmlTagClose
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagClose> {}
 
 export interface ConcreteAttributeNodeBase<T>
   extends ConcreteBasicNode<T> {
@@ -87,6 +89,7 @@ export interface ConcreteAttributeNodeBase<T>
 }
 
 export type ConcreteAttributeNode =
+  | ConcreteLiquidNode
   | ConcreteAttrSingleQuoted
   | ConcreteAttrDoubleQuoted
   | ConcreteAttrUnquoted
@@ -146,10 +149,10 @@ export interface ConcreteLiquidDrop
 }
 
 export type ConcreteHtmlNode =
-  | ConcreteRawTag
-  | ConcreteVoidElement
-  | ConcreteTagOpen
-  | ConcreteTagClose;
+  | ConcreteHtmlRawTag
+  | ConcreteHtmlVoidElement
+  | ConcreteHtmlTagOpen
+  | ConcreteHtmlTagClose;
 
 export interface ConcreteTextNode
   extends ConcreteBasicNode<ConcreteNodeTypes.TextNode> {
@@ -178,12 +181,12 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   const res = liquidHtmlGrammar.match(text);
 
   if (res.failed()) {
-    throw new ParsingError(res);
+    throw new LiquidHTMLParsingError(res);
   }
 
   const ohmAST = toAST(res, {
-    BlackHoleTag: {
-      type: 'RawTag',
+    HtmlRawTagImpl: {
+      type: 'HtmlRawTag',
       name: 1,
       attrList: 2,
       body: 4,
@@ -191,21 +194,21 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
-    VoidElement: {
+    HtmlVoidElement: {
       name: 1,
       attrList: 2,
       locStart,
       locEnd,
     },
 
-    TagOpen: {
+    HtmlTagOpen: {
       name: 1,
       attrList: 2,
       locStart,
       locEnd,
     },
 
-    TagClose: {
+    HtmlTagClose: {
       name: 1,
       locStart,
       locEnd,
@@ -247,7 +250,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     attrUnquotedTextNode: textNode,
     liquidNode: 0,
     liquidRawTag: 0,
-    liquidRawTagLiteral: {
+    liquidRawTagImpl: {
       type: ConcreteNodeTypes.LiquidRawTag,
       name: 3,
       body: 7,
