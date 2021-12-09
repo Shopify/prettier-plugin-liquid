@@ -24,6 +24,11 @@ function reindent(lines: string[], skipFirst = false): string[] {
     .filter((line) => line.length > 0)
     .map((line) => (line.match(/^\s*/) as any)[0].length)
     .reduce((a, b) => Math.min(a, b), Infinity);
+
+  if (minIndentLevel === Infinity) {
+    return lines;
+  }
+
   const indentStrip = ' '.repeat(minIndentLevel);
   return lines
     .map((line) => line.replace(indentStrip, ''))
