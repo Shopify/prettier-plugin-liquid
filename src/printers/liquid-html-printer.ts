@@ -163,13 +163,13 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
               attributes(path, options, print),
               '>',
             ]),
-            indent([
+            node.children.length > 0 ? indent([
               softline,
               join(
                 softline,
                 mapWithNewLine(path, options, print, 'children'),
               ),
-            ]),
+            ]) : '',
             softline,
             group(['</', node.name, '>']),
           ],
@@ -192,19 +192,23 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         const bodyLines = node.body
           .replace(/^\n|\n$/g, '') // only want the meat
           .split('\n');
-        const body = reindent(bodyLines);
+        const body = bodyLines.length > 0 && bodyLines[0] !== '' ? [
+          indent([hardline, join(hardline, reindent(bodyLines))]),
+          hardline,
+        ] : [
+          softline,
+        ];
 
-        return [
+        return group([
           group([
             '<',
             node.name,
             attributes(path, options, print),
             '>',
           ]),
-          indent([hardline, join(hardline, body)]),
-          hardline,
+          body,
           ['</', node.name, '>'],
-        ];
+        ]);
       }
 
       case NodeTypes.LiquidDrop: {

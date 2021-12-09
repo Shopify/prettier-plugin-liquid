@@ -1,4 +1,14 @@
 <div>
+  <script></script>
+  <script src="//short.js" defer="defer"></script>
+  <script src="{{ 'very-long-line-oh-my-god.js' | asset_url }}" defer="defer">
+  </script>
+  <script
+    src="{{ 'very-long-line-oh-my-god.js' | asset_url }}"
+    crossorigin="anonymous"
+    defer="defer"
+  >
+  </script>
   <script>
     const a = [1, 2, 3];
     const b = function() {
