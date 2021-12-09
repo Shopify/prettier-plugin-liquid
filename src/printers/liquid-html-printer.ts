@@ -14,14 +14,20 @@ const { group, line, softline, hardline, join, indent } = builders;
 const trim = (x: string) => x.trim();
 const trimEnd = (x: string) => x.trimEnd();
 
+function bodyLines(str: string): string[] {
+  return str
+    .replace(/^\n*|\s*$/g, '') // only want the meat
+    .split('\n');
+}
+
 function markupLines(node: LiquidTag | LiquidDrop): string[] {
   return node.markup.trim().split('\n');
 }
 
 function reindent(lines: string[], skipFirst = false): string[] {
   const minIndentLevel = lines
-    .filter((_, i) => skipFirst ? i > 0 : true)
-    .filter((line) => line.length > 0)
+    .filter((_, i) => (skipFirst ? i > 0 : true))
+    .filter((line) => line.trim().length > 0)
     .map((line) => (line.match(/^\s*/) as any)[0].length)
     .reduce((a, b) => Math.min(a, b), Infinity);
 
@@ -163,13 +169,15 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
               attributes(path, options, print),
               '>',
             ]),
-            node.children.length > 0 ? indent([
-              softline,
-              join(
-                softline,
-                mapWithNewLine(path, options, print, 'children'),
-              ),
-            ]) : '',
+            node.children.length > 0
+              ? indent([
+                  softline,
+                  join(
+                    softline,
+                    mapWithNewLine(path, options, print, 'children'),
+                  ),
+                ])
+              : '',
             softline,
             group(['</', node.name, '>']),
           ],
@@ -189,15 +197,14 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.RawNode: {
-        const bodyLines = node.body
-          .replace(/^\n|\n$/g, '') // only want the meat
-          .split('\n');
-        const body = bodyLines.length > 0 && bodyLines[0] !== '' ? [
-          indent([hardline, join(hardline, reindent(bodyLines))]),
-          hardline,
-        ] : [
-          softline,
-        ];
+        const lines = bodyLines(node.body);
+        const body =
+          lines.length > 0 && lines[0] !== ''
+            ? [
+                indent([hardline, join(hardline, reindent(lines))]),
+                hardline,
+              ]
+            : [softline];
 
         return group([
           group([
@@ -235,10 +242,8 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.LiquidRawTag: {
-        const bodyLines = node.body
-          .replace(/^\n|\n$/g, '') // only want the meat
-          .split('\n');
-        const body = reindent(bodyLines);
+        const lines = bodyLines(node.body);
+        const body = reindent(lines);
 
         return [
           group([
