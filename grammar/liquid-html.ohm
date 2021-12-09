@@ -49,8 +49,8 @@ LiquidHTML {
 
   attrName = letter (letter | digit | "-" )+
   attrUnquotedValue = (liquidNode | attrUnquotedTextNode)+
-  attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)+
-  attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)+
+  attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
+  attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
 
   attrUnquotedTextNode = anyExceptPlus<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>
   attrSingleQuotedTextNode = anyExceptPlus<("'" | "{{" | "{%")>
