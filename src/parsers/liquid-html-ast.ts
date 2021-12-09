@@ -16,6 +16,7 @@ class ParsingError extends Error {}
 
 export enum NodeTypes {
   Document = 'Document',
+  LiquidRawTag = 'LiquidRawTag',
   LiquidTag = 'LiquidTag',
   LiquidDrop = 'LiquidDrop',
   SelfClosingElementNode = 'SelfClosingElementNode',
@@ -43,7 +44,17 @@ export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   children: LiquidHtmlAST;
 }
 
-export type LiquidNode = LiquidTag | LiquidDrop;
+export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop;
+
+export interface LiquidRawTag
+  extends ASTNode<NodeTypes.LiquidRawTag> {
+  name: string;
+  body: string;
+  whitespaceStart: '-' | '';
+  whitespaceEnd: '-' | '';
+  delimiterWhitespaceStart: '-' | '';
+  delimiterWhitespaceEnd: '-' | '';
+}
 
 export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   name: string;
@@ -75,8 +86,7 @@ export interface SelfClosingElementNode
   extends HtmlNodeBase<NodeTypes.SelfClosingElementNode> {}
 export interface VoidElementNode
   extends HtmlNodeBase<NodeTypes.VoidElementNode> {}
-export interface RawNode
-  extends HtmlNodeBase<NodeTypes.RawNode> {
+export interface RawNode extends HtmlNodeBase<NodeTypes.RawNode> {
   body: string;
 }
 
@@ -251,6 +261,21 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
         break;
       }
 
+      case ConcreteNodeTypes.LiquidRawTag: {
+        builder.push({
+          type: NodeTypes.LiquidRawTag,
+          name: node.name,
+          body: node.body,
+          whitespaceStart: node.whitespaceStart ?? '',
+          whitespaceEnd: node.whitespaceEnd ?? '',
+          delimiterWhitespaceStart:
+            node.delimiterWhitespaceStart ?? '',
+          delimiterWhitespaceEnd: node.delimiterWhitespaceEnd ?? '',
+          position: position(node),
+        });
+        break;
+      }
+
       case ConcreteNodeTypes.TagOpen: {
         builder.open({
           type: NodeTypes.ElementNode,
@@ -302,7 +327,7 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
             ? node.attrList.map(toAttribute)
             : [],
           position: position(node),
-        })
+        });
         break;
       }
 

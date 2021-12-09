@@ -239,6 +239,37 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         ]);
       }
 
+      case NodeTypes.LiquidRawTag: {
+        const bodyLines = node.body
+          .replace(/^\n|\n$/g, '') // only want the meat
+          .split('\n');
+        const body = reindent(bodyLines);
+
+        return [
+          group([
+            '{%',
+            node.whitespaceStart,
+            ' ',
+            node.name,
+            ' ',
+            node.whitespaceEnd,
+            '%}',
+          ]),
+          indent([hardline, join(hardline, body)]),
+          hardline,
+          [
+            '{%',
+            node.whitespaceStart,
+            ' ',
+            'end',
+            node.name,
+            ' ',
+            node.whitespaceEnd,
+            '%}',
+          ],
+        ];
+      }
+
       case NodeTypes.LiquidTag: {
         if (node.children) {
           return group([

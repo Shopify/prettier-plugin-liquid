@@ -109,6 +109,19 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectLocation(ast, [0]);
     });
 
+    it('should parse raw tags', () => {
+      ['style', 'raw'].forEach(raw => {
+        const ast = toLiquidHtmlCST(`{% ${raw} -%}<div>{%- end${raw} %}`);
+        expectPath(ast, '0.type').to.equal('LiquidRawTag');
+        expectPath(ast, '0.body').to.equal('<div>');
+        expectPath(ast, '0.whitespaceStart').to.equal(null);
+        expectPath(ast, '0.whitespaceEnd').to.equal('-');
+        expectPath(ast, '0.delimiterWhitespaceStart').to.equal('-');
+        expectPath(ast, '0.delimiterWhitespaceEnd').to.equal(null);
+        expectLocation(ast, [0]);
+      })
+    });
+
     it('should basically parse liquid tags', () => {
       const ast = toLiquidHtmlCST(
         '{%   assign x = 1 %}{% if hi -%}{%- endif %}',

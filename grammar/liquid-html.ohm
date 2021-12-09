@@ -59,12 +59,24 @@ LiquidHTML {
   quotes =  "'" | "\""
 
   LiquidNode = liquidNode
-  liquidNode = liquidDrop | liquidTagOpen | liquidTagClose | liquidTag
+  liquidNode = liquidRawTag | liquidDrop | liquidTagOpen | liquidTagClose | liquidTag
 
   liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
   liquidDrop = "{{" "-"? anyExceptStar<("-}}" | "}}")> "-"? "}}"
+
+  liquidRawTag = liquidRawTagLiteral<liquidRawTagName>
+  liquidRawTagLiteral<name> =
+    "{%" "-"? space* name space* "-"? "%}"
+    anyExceptStar<liquidRawTagClose<name>>
+    "{%" "-"? space* "end" name space* "-"? "%}"
+  liquidRawTagClose<name> =
+    "{%" "-"? space* "end" name space* "-"? "%}"
+  liquidRawTagName =
+    | "javascript"
+    | "raw"
+    | "style"
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype

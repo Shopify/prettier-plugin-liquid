@@ -47,6 +47,7 @@ export enum ConcreteNodeTypes {
   AttrUnquoted = 'AttrUnquoted',
   AttrEmpty = 'AttrEmpty',
   LiquidDrop = 'LiquidDrop',
+  LiquidRawTag = 'LiquidRawTag',
   LiquidTag = 'LiquidTag',
   LiquidTagOpen = 'LiquidTagOpen',
   LiquidTagClose = 'LiquidTagClose',
@@ -106,6 +107,7 @@ export interface ConcreteAttrEmpty
 }
 
 export type ConcreteLiquidNode =
+  | ConcreteLiquidRawTag
   | ConcreteLiquidTagOpen
   | ConcreteLiquidTagClose
   | ConcreteLiquidTag
@@ -114,6 +116,14 @@ export type ConcreteLiquidNode =
 interface ConcreteBasicLiquidNode<T> extends ConcreteBasicNode<T> {
   whitespaceStart: null | '-';
   whitespaceEnd: null | '-';
+}
+
+export interface ConcreteLiquidRawTag
+  extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidRawTag> {
+  name: string;
+  body: string;
+  delimiterWhitespaceStart: null | '-';
+  delimiterWhitespaceEnd: null | '-';
 }
 
 export interface ConcreteLiquidTagOpen
@@ -247,6 +257,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     attrSingleQuotedTextNode: textNode,
     attrUnquotedTextNode: textNode,
     liquidNode: 0,
+    liquidRawTag: 0,
+    liquidRawTagLiteral: {
+      type: ConcreteNodeTypes.LiquidRawTag,
+      name: 3,
+      body: 7,
+      whitespaceStart: 1,
+      whitespaceEnd: 5,
+      delimiterWhitespaceStart: 9,
+      delimiterWhitespaceEnd: 14,
+      locStart,
+      locEnd,
+    },
+
     liquidTagOpen: {
       type: ConcreteNodeTypes.LiquidTagOpen,
       name: 3,
