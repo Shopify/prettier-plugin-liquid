@@ -36,7 +36,7 @@ describe('Unit: toLiquidHtmlAST', () => {
   it('should parse HTML attributes', () => {
     const ast = toLiquidHtmlAST(`<img src="https://1234" loading='lazy' disabled>`);
     expectPath(ast, 'children.0').to.exist;
-    expectPath(ast, 'children.0.type').to.eql('VoidElementNode');
+    expectPath(ast, 'children.0.type').to.eql('HtmlVoidElement');
     expectPath(ast, 'children.0.name').to.eql('img');
     expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
     expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');

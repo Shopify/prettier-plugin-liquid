@@ -154,7 +154,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         ];
       }
 
-      case NodeTypes.ElementNode: {
+      case NodeTypes.HtmlElement: {
         return group(
           [
             group([
@@ -179,21 +179,12 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
         );
       }
 
-      case NodeTypes.VoidElementNode: {
+      case NodeTypes.HtmlVoidElement: {
         return group([
           '<',
           node.name,
           attributes(path, options, print),
           '>',
-        ]);
-      }
-
-      case NodeTypes.SelfClosingElementNode: {
-        return group([
-          '<',
-          node.name,
-          attributes(path, options, print),
-          '/>',
         ]);
       }
 

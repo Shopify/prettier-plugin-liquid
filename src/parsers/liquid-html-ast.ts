@@ -19,9 +19,8 @@ export enum NodeTypes {
   LiquidRawTag = 'LiquidRawTag',
   LiquidTag = 'LiquidTag',
   LiquidDrop = 'LiquidDrop',
-  SelfClosingElementNode = 'SelfClosingElementNode',
-  VoidElementNode = 'VoidElementNode',
-  ElementNode = 'ElementNode',
+  HtmlVoidElement = 'HtmlVoidElement',
+  HtmlElement = 'HtmlElement',
   RawNode = 'RawNode',
   AttrSingleQuoted = 'AttrSingleQuoted',
   AttrDoubleQuoted = 'AttrDoubleQuoted',
@@ -73,19 +72,16 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
 }
 
 export type HtmlNode =
-  | ElementNode
-  | SelfClosingElementNode
-  | VoidElementNode
+  | HtmlElement
+  | HtmlVoidElement
   | RawNode;
 
-export interface ElementNode
-  extends HtmlNodeBase<NodeTypes.ElementNode> {
+export interface HtmlElement
+  extends HtmlNodeBase<NodeTypes.HtmlElement> {
   children: LiquidHtmlAST;
 }
-export interface SelfClosingElementNode
-  extends HtmlNodeBase<NodeTypes.SelfClosingElementNode> {}
-export interface VoidElementNode
-  extends HtmlNodeBase<NodeTypes.VoidElementNode> {}
+export interface HtmlVoidElement
+  extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {}
 export interface RawNode extends HtmlNodeBase<NodeTypes.RawNode> {
   body: string;
 }
@@ -161,9 +157,9 @@ class ASTBuilder {
     return R.length(this.current || []) - 1;
   }
 
-  get parent(): LiquidTag | ElementNode | undefined {
+  get parent(): LiquidTag | HtmlElement | undefined {
     if (this.cursor.length == 0) return undefined;
-    return R.path<LiquidTag | ElementNode>(
+    return R.path<LiquidTag | HtmlElement>(
       R.dropLast(1, this.cursor),
       this.ast,
     );
@@ -181,7 +177,7 @@ class ASTBuilder {
 
   close(
     node: ConcreteLiquidTagClose | ConcreteTagClose,
-    nodeType: NodeTypes.LiquidTag | NodeTypes.ElementNode,
+    nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
     if (
       this.parent?.name !== node.name ||
@@ -278,7 +274,7 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
 
       case ConcreteNodeTypes.TagOpen: {
         builder.open({
-          type: NodeTypes.ElementNode,
+          type: NodeTypes.HtmlElement,
           name: node.name,
           attributes: node.attrList
             ? node.attrList.map(toAttribute)
@@ -290,25 +286,13 @@ export function cstToAst(cst: LiquidHtmlCST): LiquidHtmlAST {
       }
 
       case ConcreteNodeTypes.TagClose: {
-        builder.close(node, NodeTypes.ElementNode);
-        break;
-      }
-
-      case ConcreteNodeTypes.SelfClosingElement: {
-        builder.push({
-          type: NodeTypes.SelfClosingElementNode,
-          name: node.name,
-          attributes: node.attrList
-            ? node.attrList.map(toAttribute)
-            : [],
-          position: position(node),
-        } as HtmlNode);
+        builder.close(node, NodeTypes.HtmlElement);
         break;
       }
 
       case ConcreteNodeTypes.VoidElement: {
         builder.push({
-          type: NodeTypes.VoidElementNode,
+          type: NodeTypes.HtmlVoidElement,
           name: node.name,
           attributes: node.attrList
             ? node.attrList.map(toAttribute)

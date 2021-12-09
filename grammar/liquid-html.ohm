@@ -5,7 +5,6 @@ LiquidHTML {
   HtmlNode =
     | RawTag
     | VoidElement
-    | SelfClosingElement
     | TagClose
     | TagOpen
 
@@ -19,10 +18,7 @@ LiquidHTML {
     "</" name space* ">"
 
   VoidElement =
-    #("<" voidElementName) AttrList ">"
-
-  SelfClosingElement =
-    #("<" tagName) AttrList "/>"
+    #("<" voidElementName) AttrList "/"? ">"
 
   TagOpen =
     #("<" tagName) AttrList ">"

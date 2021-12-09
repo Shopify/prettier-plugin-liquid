@@ -38,7 +38,6 @@ class ParsingError extends Error {
 
 export enum ConcreteNodeTypes {
   RawTag = 'RawTag',
-  SelfClosingElement = 'SelfClosingElement',
   VoidElement = 'VoidElement',
   TagOpen = 'TagOpen',
   TagClose = 'TagClose',
@@ -74,8 +73,6 @@ export interface ConcreteRawTag
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.RawTag> {
   body: string;
 }
-export interface ConcreteSelfClosingElement
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.SelfClosingElement> {}
 export interface ConcreteVoidElement
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.VoidElement> {}
 export interface ConcreteTagOpen
@@ -151,7 +148,6 @@ export interface ConcreteLiquidDrop
 export type ConcreteHtmlNode =
   | ConcreteRawTag
   | ConcreteVoidElement
-  | ConcreteSelfClosingElement
   | ConcreteTagOpen
   | ConcreteTagClose;
 
@@ -191,13 +187,6 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       name: 1,
       attrList: 2,
       body: 4,
-      locStart,
-      locEnd,
-    },
-
-    SelfClosingElement: {
-      name: 1,
-      attrList: 2,
       locStart,
       locEnd,
     },
