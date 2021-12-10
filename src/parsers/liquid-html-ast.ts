@@ -48,7 +48,15 @@ export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop;
 
 export interface LiquidRawTag
   extends ASTNode<NodeTypes.LiquidRawTag> {
+
+  /**
+   * e.g. raw, style, javascript
+   */
   name: string;
+
+  /**
+   * String body of the tag. So we don't try to parse it.
+   */
   body: string;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
@@ -57,7 +65,14 @@ export interface LiquidRawTag
 }
 
 export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
+  /**
+   * e.g. if, ifchanged, for, etc.
+   */
   name: string;
+
+  /**
+   * The body of the tag. May contain arguments. Excludes the name of the tag. Left trimmed.
+   */
   markup: string;
   children?: LiquidHtmlAST;
   whitespaceStart: '-' | '';
@@ -67,6 +82,9 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
 }
 
 export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
+  /**
+   * The body of the drop. May contain filters. Not trimmed.
+   */
   markup: string;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
@@ -84,10 +102,16 @@ export interface HtmlSelfClosingElement
   extends HtmlNodeBase<NodeTypes.HtmlSelfClosingElement> {}
 export interface HtmlRawNode
   extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
+  /**
+   * The innerHTML of the tag as a string. Not trimmed. Not parsed.
+   */
   body: string;
 }
 
 export interface HtmlNodeBase<T> extends ASTNode<T> {
+  /**
+   * e.g. div, span, h1, h2, h3...
+   */
   name: string;
   attributes: AttributeNode[];
 }
