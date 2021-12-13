@@ -61,14 +61,56 @@ Then, we can take that AST and print it into something _prettier_.
 
 ## Potential problems with the approach
 
-- [Ohm is slow](https://news.ycombinator.com/item?id=15492546). I don't have benchmarks, but there's a lot we could do if we didn't choose development speed.
+- It's a _subset_ of Liquid. Need to inform folks that you need to write your liquid in a certain way or else we can't make your code pretty.
 
-  Will users care? Is it noticeable? Don't know yet. Might just need to ship it to real users and wait for people to report it being slow.
+  The most common use case that isn't supported is opening HTML tags inside a liquid if without closing it (and vice-versa):
 
-- It's a _subset_ of Liquid. Need to inform folks that you need to write your liquid this way or else we can't make your code pretty.
+  ```liquid
+  // not supported
+  {% if is_3d %}
+    <product-media ...>
+  {% else %}
+    <div>
+  {% endif %}
+
+  {% if is_3d %}
+    </product-media ...>
+  {% else %}
+    </div>
+  {% endif %}
+  ```
+
+- Apparently, [ohm is slow](https://news.ycombinator.com/item?id=15492546). At time of writing, running this plugin on the entire Dawn theme takes 5 seconds on a MacBook Pro (16-inch, 2019). Seems good enough. It's <250ms per file.
+
+## Things that would make this production ready
+
+- Go deep in the rabbit hole of edge cases
+
+  * Run prettier on Dawn
+  * Look at results
+  * Write unit test for things that are not as you'd expect
+
+- Handle whitespace trimming correctly when breaking a tag that was next to a drop.
+
+  ```liquid
+  {% if A %}{{ product.name }}{% endif %}
+
+  {% # should turn into %}
+  {% if A %}
+    {{- product.name -}}
+  {% endif %}
+  ```
+
+  - For `{% else %}` too
+  - For `{% elsif ... %}` too
+
+- Handle `{% case %}` properly
 
 ## Things that would be nice
 
-- Formatting of the _insides_ of Liquid nodes (e.g. spaces around operators, breaking of pipelines, etc.)
+- Elaborate LiquidTag syntax support
+  * Potentially break on long list of arguments
+- Elaborate LiquidDrop syntax support
+  * Fix pipelines
 - Liquid + JavaScript (very hard)
 - Liquid + CSS (hard)
