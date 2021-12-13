@@ -19,10 +19,7 @@ const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'header',
   'footer',
 ];
-const LIQUID_TAGS_THAT_ALWAYS_BREAK = [
-  'for',
-  'case',
-];
+const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 const trim = (x: string) => x.trim();
 const trimEnd = (x: string) => x.trimEnd();
@@ -195,7 +192,9 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             group(['</', node.name, '>']),
           ],
           {
-            shouldBreak: HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
+            shouldBreak:
+              HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
+              node.children.length > 1,
           },
         );
       }
@@ -294,22 +293,27 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
 
       case NodeTypes.LiquidTag: {
         if (node.children) {
-          return group([
-            blockStart(node),
-            group([
-              indent([
-                softline,
-                join(
+          return group(
+            [
+              blockStart(node),
+              group([
+                indent([
                   softline,
-                  mapWithNewLine(path, options, print, 'children'),
-                ),
+                  join(
+                    softline,
+                    mapWithNewLine(path, options, print, 'children'),
+                  ),
+                ]),
+                softline,
               ]),
-              softline,
-            ]),
-            blockEnd(node),
-          ], {
-            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
-          });
+              blockEnd(node),
+            ],
+            {
+              shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
+                node.name,
+              ),
+            },
+          );
         } else {
           return blockStart(node);
         }
@@ -326,7 +330,13 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.TextNode: {
-        return join(hardline, node.value.trim().split('\n'));
+        return join(
+          hardline,
+          node.value
+            .split('\n')
+            .map((s) => s.replace(/^\s*/, ''))
+            .filter(Boolean),
+        );
       }
 
       default: {
