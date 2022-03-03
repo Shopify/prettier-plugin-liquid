@@ -13,7 +13,7 @@ LiquidHTML {
     HtmlRawTagImpl<htmlRawTagName>
 
   HtmlRawTagImpl<name> =
-    #("<" name) AttrList #(">" anyExceptStar<endTag<name>> endTag<name>)
+    #("<" name) AttrList ">" #(anyExceptStar<endTag<name>> endTag<name>)
 
   endTag<name> =
     "</" name space* ">"
@@ -47,7 +47,7 @@ LiquidHTML {
   AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
   AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
 
-  attrName = letter (letter | digit | "-" )*
+  attrName = letter (letter | digit | "-" | ":")*
   attrUnquotedValue = (attrUnquotedTextNode)*
   attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
   attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
