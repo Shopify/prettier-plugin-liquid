@@ -18,6 +18,8 @@ const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'main',
   'header',
   'footer',
+  'ul',
+  'ol',
 ];
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
@@ -296,16 +298,14 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           return group(
             [
               blockStart(node),
-              group([
-                indent([
-                  softline,
-                  join(
-                    softline,
-                    mapWithNewLine(path, options, print, 'children'),
-                  ),
-                ]),
+              indent([
                 softline,
+                join(
+                  softline,
+                  mapWithNewLine(path, options, print, 'children'),
+                ),
               ]),
+              softline,
               blockEnd(node),
             ],
             {
@@ -330,13 +330,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.TextNode: {
-        return join(
-          hardline,
-          node.value
-            .split('\n')
-            .map((s) => s.replace(/^\s*/, ''))
-            .filter(Boolean),
-        );
+        return join(hardline, reindent(bodyLines(node.value)));
       }
 
       default: {
