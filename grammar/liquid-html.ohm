@@ -44,8 +44,8 @@ LiquidHTML {
   attrEmpty = attrName
 
   AttrUnquoted = attrName "=" attrUnquotedValue
-  AttrSingleQuoted = attrName "=" #("'" attrSingleQuotedValue "'")
-  AttrDoubleQuoted = attrName "=" #("\"" attrDoubleQuotedValue "\"")
+  AttrSingleQuoted = attrName "=" "'" #(attrSingleQuotedValue "'")
+  AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
 
   attrName = letter (letter | digit | "-" | ":")*
   attrUnquotedValue = (attrUnquotedTextNode)*
