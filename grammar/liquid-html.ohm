@@ -9,8 +9,11 @@ LiquidHTML {
     | HtmlTagClose
     | HtmlTagOpen
 
+  // These are black holes, we'll ignore what's in them
   HtmlRawTag =
-    HtmlRawTagImpl<htmlRawTagName>
+    | HtmlRawTagImpl<"script">
+    | HtmlRawTagImpl<"style">
+    | HtmlRawTagImpl<"svg">
 
   HtmlRawTagImpl<name> =
     #("<" name) AttrList ">" #(anyExceptStar<endTag<name>> endTag<name>)
@@ -115,12 +118,6 @@ LiquidHTML {
     | "unless"
     | "raw"
     | "tablerow"
-
-  // These we'll just gloss over.
-  htmlRawTagName =
-    | "script"
-    | "style"
-    | "svg"
 
   tagMarkup = anyExceptStar<("-%}"| "%}")>
 
