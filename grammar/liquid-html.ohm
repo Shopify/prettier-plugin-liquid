@@ -69,18 +69,18 @@ LiquidHTML {
   liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
   liquidDrop = "{{" "-"? anyExceptStar<("-}}" | "}}")> "-"? "}}"
 
-  liquidRawTag = liquidRawTagImpl<liquidRawTagName>
+  liquidRawTag =
+    | liquidRawTagImpl<"raw">
+    | liquidRawTagImpl<"comment">
+    | liquidRawTagImpl<"javascript">
+    | liquidRawTagImpl<"schema">
+    | liquidRawTagImpl<"style">
   liquidRawTagImpl<name> =
     "{%" "-"? space* name space* "-"? "%}"
     anyExceptStar<liquidRawTagClose<name>>
     "{%" "-"? space* "end" name space* "-"? "%}"
   liquidRawTagClose<name> =
     "{%" "-"? space* "end" name space* "-"? "%}"
-  liquidRawTagName =
-    | "javascript"
-    | "schema"
-    | "style"
-    | "raw"
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype
