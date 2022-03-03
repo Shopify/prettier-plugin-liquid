@@ -1,0 +1,23 @@
+<div>
+  {% for a in b %}
+    <span>{{ a }}</span>
+  {% else %}
+    <span>Hello world!</span>
+  {% endfor %}
+</div>
+
+<div>
+  {% if condition %}
+    <span>{{ condition }}</span>
+  {% else %}
+    <span>Hello world!</span>
+  {% endif %}
+</div>
+
+<div>
+  {% unless condition %}
+    <span>Hello world!</span>
+  {% elsif other %}
+    <span>{{ condition }}</span>
+  {% endunless %}
+</div>
