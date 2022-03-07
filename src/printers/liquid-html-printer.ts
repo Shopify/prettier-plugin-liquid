@@ -1,5 +1,6 @@
 import { Printer, AstPath, Doc, ParserOptions, doc } from 'prettier';
 import {
+  LiquidHtmlAST,
   LiquidHtmlNode,
   NodeTypes,
   DocumentNode,
@@ -7,6 +8,10 @@ import {
   LiquidDrop,
 } from '../parsers';
 import { assertNever } from '../utils';
+
+type LiquidAstPath = AstPath<LiquidHtmlNode>;
+type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
+type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 
 const { builders } = doc;
 const { group, line, softline, hardline, join, indent } = builders;
@@ -125,9 +130,9 @@ function attributes(path: any, _options: any, print: any): Doc {
  * lines in between nodes. And it will shrink multiple new lines into one.
  */
 function mapWithNewLine(
-  path: AstPath<LiquidHtmlNode>,
-  options: ParserOptions<LiquidHtmlNode>,
-  print: (path: AstPath<LiquidHtmlNode>) => Doc,
+  path: LiquidAstPath,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
   property: string,
 ): Doc[] {
   const doc: Doc[] = [];
