@@ -70,9 +70,60 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPosition(ast, 'children.0')
   })
 
-  it('should parse liquid ifs', () => {
+  it('should parse liquid ifs as branches', () => {
     const ast = toLiquidHtmlAST(`{% if A %}A{% elsif B %}B{% else %}C{% endif %}`);
     expectPath(ast, 'children.0').to.exist;
+    expectPath(ast, 'children.0.type').to.eql('LiquidTag');
+    expectPath(ast, 'children.0.name').to.eql('if');
+    expectPath(ast, 'children.0.children.0').to.exist;
+    expectPath(ast, 'children.0.children.0.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.0.name').to.eql(null);
+    expectPath(ast, 'children.0.children.0.markup').to.eql(null);
+    expectPath(ast, 'children.0.children.0.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.0.children.0.value').to.eql('A');
+
+    expectPath(ast, 'children.0.children.1.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.1.name').to.eql('elsif');
+    expectPath(ast, 'children.0.children.1.markup').to.eql('B ');
+    expectPath(ast, 'children.0.children.1.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.1.children.0.value').to.eql('B');
+
+    expectPath(ast, 'children.0.children.2.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.2.name').to.eql('else');
+    expectPath(ast, 'children.0.children.2.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.2.children.0.value').to.eql('C');
+  });
+
+  it('should parse liquid case as branches', () => {
+    const ast = toLiquidHtmlAST(`{% case A %}{% when A %}A{% when B %}B{% else %}C{% endcase %}`);
+    expectPath(ast, 'children.0').to.exist;
+    expectPath(ast, 'children.0.type').to.eql('LiquidTag');
+    expectPath(ast, 'children.0.name').to.eql('case');
+
+    // There's an empty child node between the case and first when. That's OK (?)
+    // What if there's whitespace? I think that's a printer problem. If
+    // there's freeform text we should somehow catch it.
+    expectPath(ast, 'children.0.children.0').to.exist;
+    expectPath(ast, 'children.0.children.0.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.0.name').to.eql(null);
+
+    expectPath(ast, 'children.0.children.1').to.exist;
+    expectPath(ast, 'children.0.children.1.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.1.name').to.eql('when');
+    expectPath(ast, 'children.0.children.1.markup').to.eql('A ');
+    expectPath(ast, 'children.0.children.1.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.1.children.0.value').to.eql('A');
+
+    expectPath(ast, 'children.0.children.2.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.2.name').to.eql('when');
+    expectPath(ast, 'children.0.children.2.markup').to.eql('B ');
+    expectPath(ast, 'children.0.children.2.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.2.children.0.value').to.eql('B');
+
+    expectPath(ast, 'children.0.children.3.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.children.3.name').to.eql('else');
+    expectPath(ast, 'children.0.children.3.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.3.children.0.value').to.eql('C');
   });
 
   function expectPath(ast: LiquidHtmlNode, path: string) {

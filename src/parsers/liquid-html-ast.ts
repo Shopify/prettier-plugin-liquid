@@ -17,6 +17,7 @@ export enum NodeTypes {
   Document = 'Document',
   LiquidRawTag = 'LiquidRawTag',
   LiquidTag = 'LiquidTag',
+  LiquidBranch = 'LiquidBranch',
   LiquidDrop = 'LiquidDrop',
   HtmlSelfClosingElement = 'HtmlSelfClosingElement',
   HtmlVoidElement = 'HtmlVoidElement',
@@ -43,7 +44,11 @@ export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   children: LiquidHtmlAST;
 }
 
-export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop;
+export type LiquidNode =
+  | LiquidRawTag
+  | LiquidTag
+  | LiquidDrop
+  | LiquidBranch;
 
 export interface LiquidRawTag
   extends ASTNode<NodeTypes.LiquidRawTag> {
@@ -77,6 +82,22 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   whitespaceEnd: '-' | '';
   delimiterWhitespaceStart?: '-' | '';
   delimiterWhitespaceEnd?: '-' | '';
+}
+
+export interface LiquidBranch
+  extends ASTNode<NodeTypes.LiquidBranch> {
+  /**
+   * e.g. else, elsif, when | null when in the main branch
+   */
+  name: string | null;
+
+  /**
+   * The body of the branch tag. May contain arguments. Excludes the name of the tag. Left trimmed.
+   */
+  markup: string;
+  children: LiquidHtmlAST;
+  whitespaceStart: '-' | '';
+  whitespaceEnd: '-' | '';
 }
 
 export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
@@ -152,6 +173,20 @@ export interface ASTNode<T> {
   };
 }
 
+export function isBranchedTag(node: LiquidHtmlNode) {
+  return (
+    node.type === NodeTypes.LiquidTag &&
+    ['if', 'for', 'unless', 'case'].includes(node.name)
+  );
+}
+
+function isBranchTag(node: LiquidHtmlNode) {
+  return (
+    node.type === NodeTypes.LiquidTag &&
+    ['else', 'elsif', 'when'].includes(node.name)
+  );
+}
+
 export function toLiquidHtmlAST(text: string): DocumentNode {
   const cst = toLiquidHtmlCST(text);
   return {
@@ -187,7 +222,7 @@ class ASTBuilder {
     return R.length(this.current || []) - 1;
   }
 
-  get parent(): LiquidTag | HtmlElement | undefined {
+  get parent(): LiquidTag | LiquidBranch | HtmlElement | undefined {
     if (this.cursor.length == 0) return undefined;
     return R.path<LiquidTag | HtmlElement>(
       R.dropLast(1, this.cursor),
@@ -199,16 +234,47 @@ class ASTBuilder {
     this.current.push(node);
     this.cursor.push(this.currentPosition);
     this.cursor.push('children');
+
+    if (isBranchedTag(node)) {
+      this.open({
+        type: NodeTypes.LiquidBranch,
+        name: null,
+        markup: '',
+        position: { start: -1, end: -1 },
+        children: [],
+        whitespaceStart: '',
+        whitespaceEnd: '',
+      });
+    }
   }
 
   push(node: LiquidHtmlNode) {
-    this.current.push(node);
+    if (node.type === NodeTypes.LiquidTag && isBranchTag(node)) {
+      this.cursor.pop();
+      this.cursor.pop();
+      this.open({
+        name: node.name,
+        type: NodeTypes.LiquidBranch,
+        markup: node.markup,
+        position: node.position,
+        children: [],
+        whitespaceStart: node.whitespaceStart,
+        whitespaceEnd: node.whitespaceEnd,
+      });
+    } else {
+      this.current.push(node);
+    }
   }
 
   close(
     node: ConcreteLiquidTagClose | ConcreteHtmlTagClose,
     nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
+    if (this.parent?.type === NodeTypes.LiquidBranch) {
+      this.cursor.pop();
+      this.cursor.pop();
+    }
+
     if (
       this.parent?.name !== node.name ||
       this.parent?.type !== nodeType
