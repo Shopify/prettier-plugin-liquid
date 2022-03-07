@@ -1,3 +1,4 @@
+import * as R from 'ramda';
 import {
   ConcreteNodeTypes,
   toLiquidHtmlCST,
@@ -10,9 +11,7 @@ import {
   LiquidHtmlCST,
 } from './liquid-html-cst';
 import { assertNever } from '../utils';
-import * as R from 'ramda';
-
-class ParsingError extends Error {}
+import { LiquidHTMLASTParsingError } from './utils';
 
 export enum NodeTypes {
   Document = 'Document',
@@ -48,7 +47,6 @@ export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop;
 
 export interface LiquidRawTag
   extends ASTNode<NodeTypes.LiquidRawTag> {
-
   /**
    * e.g. raw, style, javascript
    */
@@ -90,7 +88,11 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   whitespaceEnd: '-' | '';
 }
 
-export type HtmlNode = HtmlElement | HtmlVoidElement | HtmlSelfClosingElement | HtmlRawNode;
+export type HtmlNode =
+  | HtmlElement
+  | HtmlVoidElement
+  | HtmlSelfClosingElement
+  | HtmlRawNode;
 
 export interface HtmlElement
   extends HtmlNodeBase<NodeTypes.HtmlElement> {
@@ -155,7 +157,7 @@ export function toLiquidHtmlAST(text: string): DocumentNode {
   return {
     type: NodeTypes.Document,
     source: text,
-    children: cstToAst(cst),
+    children: cstToAst(cst, text),
     position: {
       start: 0,
       end: text.length,
@@ -166,10 +168,12 @@ export function toLiquidHtmlAST(text: string): DocumentNode {
 class ASTBuilder {
   ast: LiquidHtmlAST;
   cursor: (string | number)[];
+  source: string;
 
-  constructor() {
+  constructor(source: string) {
     this.ast = [];
     this.cursor = [];
+    this.source = source;
   }
 
   get current() {
@@ -209,8 +213,11 @@ class ASTBuilder {
       this.parent?.name !== node.name ||
       this.parent?.type !== nodeType
     ) {
-      throw new ParsingError(
+      throw new LiquidHTMLASTParsingError(
         `Attempting to close ${nodeType} '${node.name}' before ${this.parent?.type} '${this.parent?.name}' was closed`,
+        this.source,
+        this.parent?.position?.start || 0,
+        node.locEnd,
       );
     }
     // The parent end is the end of the outer tag.
@@ -230,8 +237,9 @@ class ASTBuilder {
 
 export function cstToAst(
   cst: LiquidHtmlCST | ConcreteAttributeNode[],
+  source: string,
 ): LiquidHtmlAST {
-  const builder = new ASTBuilder();
+  const builder = new ASTBuilder(source);
 
   for (const node of cst) {
     switch (node.type) {
@@ -304,7 +312,7 @@ export function cstToAst(
         builder.open({
           type: NodeTypes.HtmlElement,
           name: node.name,
-          attributes: toAttributes(node.attrList || []),
+          attributes: toAttributes(node.attrList || [], source),
           position: position(node),
           children: [],
         } as HtmlNode);
@@ -320,7 +328,7 @@ export function cstToAst(
         builder.push({
           type: NodeTypes.HtmlVoidElement,
           name: node.name,
-          attributes: toAttributes(node.attrList || []),
+          attributes: toAttributes(node.attrList || [], source),
           position: position(node),
         } as HtmlNode);
         break;
@@ -330,7 +338,7 @@ export function cstToAst(
         builder.push({
           type: NodeTypes.HtmlSelfClosingElement,
           name: node.name,
-          attributes: toAttributes(node.attrList || []),
+          attributes: toAttributes(node.attrList || [], source),
           position: position(node),
         } as HtmlNode);
         break;
@@ -341,7 +349,7 @@ export function cstToAst(
           type: NodeTypes.HtmlRawNode,
           name: node.name,
           body: node.body,
-          attributes: toAttributes(node.attrList || []),
+          attributes: toAttributes(node.attrList || [], source),
           position: position(node),
         });
         break;
@@ -365,7 +373,7 @@ export function cstToAst(
             | NodeTypes.AttrDoubleQuoted
             | NodeTypes.AttrUnquoted,
           name: node.name,
-          value: toAttributeValue(node.value),
+          value: toAttributeValue(node.value, source),
           position: position(node),
         });
         break;
@@ -382,14 +390,16 @@ export function cstToAst(
 
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
+  source: string,
 ): (LiquidNode | TextNode)[] {
-  return cstToAst(value) as (LiquidNode | TextNode)[];
+  return cstToAst(value, source) as (LiquidNode | TextNode)[];
 }
 
 function toAttributes(
   attrList: ConcreteAttributeNode[],
-): (AttributeNode)[] {
-  return cstToAst(attrList) as AttributeNode[]
+  source: string,
+): AttributeNode[] {
+  return cstToAst(attrList, source) as AttributeNode[];
 }
 
 function position(

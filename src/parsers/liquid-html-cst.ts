@@ -1,42 +1,7 @@
 import { Parser } from 'prettier';
-import { MatchResult } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from './grammar';
-import lineColumn from 'line-column';
-
-interface LineColPosition {
-  line: number;
-  column: number;
-}
-
-class LiquidHTMLParsingError extends SyntaxError {
-  loc?: { start: LineColPosition; end: LineColPosition };
-
-  constructor(ohm: MatchResult) {
-    super(ohm.shortMessage);
-    this.name = 'LiquidHTMLParsingError';
-
-    const lineCol = lineColumn((ohm as any).input).fromIndex(
-      (ohm as any)._rightmostFailurePosition,
-    );
-
-    // Plugging ourselves into @babel/code-frame since this is how
-    // the babel parser can print where the parsing error occured.
-    // https://github.com/prettier/prettier/blob/cd4a57b113177c105a7ceb94e71f3a5a53535b81/src/main/parser.js
-    if (lineCol) {
-      this.loc = {
-        start: {
-          line: lineCol.line,
-          column: lineCol.col,
-        },
-        end: {
-          line: lineCol.line,
-          column: lineCol.col,
-        },
-      };
-    }
-  }
-}
+import { LiquidHTMLCSTParsingError } from './utils'
 
 export enum ConcreteNodeTypes {
   HtmlRawTag = 'HtmlRawTag',
@@ -185,7 +150,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   const res = liquidHtmlGrammar.match(text);
 
   if (res.failed()) {
-    throw new LiquidHTMLParsingError(res);
+    throw new LiquidHTMLCSTParsingError(res);
   }
 
   const ohmAST = toAST(res, {
