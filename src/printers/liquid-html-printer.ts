@@ -1,12 +1,14 @@
 import { Printer, AstPath, Doc, ParserOptions, doc } from 'prettier';
 import {
-  LiquidHtmlAST,
   LiquidHtmlNode,
   NodeTypes,
   DocumentNode,
   LiquidTag,
+  LiquidBranch,
   LiquidDrop,
+  isBranchedTag,
 } from '../parsers';
+import { identity } from 'ramda';
 import { assertNever } from '../utils';
 
 type LiquidAstPath = AstPath<LiquidHtmlNode>;
@@ -37,7 +39,9 @@ function bodyLines(str: string): string[] {
     .split('\n');
 }
 
-function markupLines(node: LiquidTag | LiquidDrop): string[] {
+function markupLines(
+  node: LiquidTag | LiquidDrop | LiquidBranch,
+): string[] {
   return node.markup.trim().split('\n');
 }
 
@@ -58,8 +62,9 @@ function reindent(lines: string[], skipFirst = false): string[] {
     .map(trimEnd);
 }
 
-function blockStart(node: LiquidTag): Doc {
+function blockStart(node: LiquidTag | LiquidBranch): Doc {
   const lines = markupLines(node);
+  if (!node.name) return '';
   if (node.name === 'liquid') {
     return group([
       '{%',
@@ -299,7 +304,22 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.LiquidTag: {
-        if (node.children) {
+        if (isBranchedTag(node)) {
+          const wrapper = node.name === 'case' ? indent : identity;
+          return group(
+            [
+              blockStart(node),
+              wrapper(path.map(print, 'children')),
+              softline,
+              blockEnd(node),
+            ],
+            {
+              shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
+                node.name,
+              ),
+            },
+          );
+        } else if (node.children) {
           return group(
             [
               blockStart(node),
@@ -321,6 +341,32 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           );
         } else {
           return blockStart(node);
+        }
+      }
+
+      case NodeTypes.LiquidBranch: {
+        if (node.name) {
+          return [
+            softline,
+            blockStart(node),
+            indent([
+              softline,
+              join(
+                softline,
+                mapWithNewLine(path, options, print, 'children'),
+              ),
+            ]),
+          ];
+        } else if (node.children.length > 0) {
+          return indent([
+            softline,
+            join(
+              softline,
+              mapWithNewLine(path, options, print, 'children'),
+            ),
+          ]);
+        } else {
+          return '';
         }
       }
 

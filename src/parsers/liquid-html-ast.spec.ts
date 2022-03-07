@@ -78,7 +78,7 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.children.0').to.exist;
     expectPath(ast, 'children.0.children.0.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.0.name').to.eql(null);
-    expectPath(ast, 'children.0.children.0.markup').to.eql(null);
+    expectPath(ast, 'children.0.children.0.markup').to.eql('');
     expectPath(ast, 'children.0.children.0.children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.children.0.children.0.value').to.eql('A');
 

@@ -21,3 +21,18 @@
     <span>{{ condition }}</span>
   {% endunless %}
 </div>
+
+<div>
+  {% case pastry %}
+    {% when 'oopsie' %}
+
+    {% when 'croissant' %}
+      Mmmm
+    {% when 'muffin' %}
+      Yea. Alright.
+    {% when 'veggie' %}
+      That's not a pastry!
+    {% else %}
+      What do you want?
+  {% endcase %}
+</div>

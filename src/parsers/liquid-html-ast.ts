@@ -240,7 +240,10 @@ class ASTBuilder {
         type: NodeTypes.LiquidBranch,
         name: null,
         markup: '',
-        position: { start: -1, end: -1 },
+        position: {
+          start: node.position.end,
+          end: node.position.end,
+        },
         children: [],
         whitespaceStart: '',
         whitespaceEnd: '',
