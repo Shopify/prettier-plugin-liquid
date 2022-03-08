@@ -16,116 +16,130 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, [1]);
       });
     });
-  });
 
-  it('should parse script and style tags as a dump', () => {
-    const cst = toLiquidHtmlCST(
-      '<script>\nconst a = {{ product | json }}\n</script><style>\n#id {}\n</style>',
-    );
-    expectPath(cst, '0.type').to.eql('HtmlRawTag');
-    expectPath(cst, '0.name').to.eql('script');
-    expectPath(cst, '0.body').to.eql(
-      '\nconst a = {{ product | json }}\n',
-    );
-    expectPath(cst, '1.type').to.eql('HtmlRawTag');
-    expectPath(cst, '1.name').to.eql('style');
-    expectPath(cst, '1.body').to.eql('\n#id {}\n');
-    expectLocation(cst, [0]);
-  });
+    it('should parse liquid drop tag names', () => {
+      const cst = toLiquidHtmlCST('<{{ node_type }}></{{ node_type }}>')
+      expectPath(cst, '0.type').to.equal('HtmlTagOpen');
+      expectPath(cst, '0.name.type').to.equal('LiquidDrop');
+      expectPath(cst, '0.name.markup').to.equal(' node_type ');
+      expectPath(cst, '1.type').to.equal('HtmlTagClose');
+      expectPath(cst, '1.name.type').to.equal('LiquidDrop');
+      expectPath(cst, '1.name.markup').to.equal(' node_type ');
+      expectLocation(cst, [0]);
+      expectLocation(cst, [0, 'name']);
+      expectLocation(cst, [1]);
+      expectLocation(cst, [1, 'name']);
+    });
 
-  it('should parse void elements', () => {
-    VOID_ELEMENTS.forEach((voidElementName) => {
-      const cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
-      expectPath(cst, '0.type').to.equal('HtmlVoidElement');
-      expectPath(cst, '0.name').to.equal(voidElementName);
+    it('should parse script and style tags as a dump', () => {
+      const cst = toLiquidHtmlCST(
+        '<script>\nconst a = {{ product | json }}\n</script><style>\n#id {}\n</style>',
+      );
+      expectPath(cst, '0.type').to.eql('HtmlRawTag');
+      expectPath(cst, '0.name').to.eql('script');
+      expectPath(cst, '0.body').to.eql(
+        '\nconst a = {{ product | json }}\n',
+      );
+      expectPath(cst, '1.type').to.eql('HtmlRawTag');
+      expectPath(cst, '1.name').to.eql('style');
+      expectPath(cst, '1.body').to.eql('\n#id {}\n');
       expectLocation(cst, [0]);
     });
-  });
 
-  it('should parse empty attributes', () => {
-    ['<div empty>', '<div empty >', '<div\nempty\n>'].forEach(
-      (text) => {
-        const cst = toLiquidHtmlCST(text);
-        expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
-        expectPath(cst, '0.attrList.0.name').to.equal('empty');
-        expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
+    it('should parse void elements', () => {
+      VOID_ELEMENTS.forEach((voidElementName) => {
+        const cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
+        expectPath(cst, '0.type').to.equal('HtmlVoidElement');
+        expectPath(cst, '0.name').to.equal(voidElementName);
         expectLocation(cst, [0]);
-        expectLocation(cst, [0, 'attrList', 0]);
-      },
-    );
-  });
-
-  [
-    { type: 'AttrSingleQuoted', name: 'single', quote: "'" },
-    { type: 'AttrDoubleQuoted', name: 'double', quote: '"' },
-    { type: 'AttrUnquoted', name: 'unquoted', quote: '' },
-  ].forEach((testConfig) => {
-    it(`should parse ${testConfig.type} attributes`, () => {
-      [
-        `<div ${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote}>`,
-        `<div ${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote} >`,
-        `<div\n${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote}\n>`,
-      ].forEach((text) => {
-        const cst = toLiquidHtmlCST(text);
-        expectPath(cst, '0.attrList.0.type').to.equal(
-          testConfig.type,
-        );
-        expectPath(cst, '0.attrList.0.name').to.equal(
-          testConfig.name,
-        );
-        expectPath(cst, '0.attrList.0.value.0.type').to.eql(
-          'TextNode',
-        );
-        expectPath(cst, '0.attrList.0.value.0.value').to.eql(
-          testConfig.name,
-        );
-        expectLocation(cst, [0]);
-        expectLocation(cst, [0, 'attrList', 0]);
       });
     });
 
-    if (testConfig.name != 'unquoted') {
-      it(`should accept liquid nodes inside ${testConfig.type}`, () => {
+    it('should parse empty attributes', () => {
+      ['<div empty>', '<div empty >', '<div\nempty\n>'].forEach(
+        (text) => {
+          const cst = toLiquidHtmlCST(text);
+          expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
+          expectPath(cst, '0.attrList.0.name').to.equal('empty');
+          expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
+          expectLocation(cst, [0]);
+          expectLocation(cst, [0, 'attrList', 0]);
+        },
+      );
+    });
+
+    [
+      { type: 'AttrSingleQuoted', name: 'single', quote: "'" },
+      { type: 'AttrDoubleQuoted', name: 'double', quote: '"' },
+      { type: 'AttrUnquoted', name: 'unquoted', quote: '' },
+    ].forEach((testConfig) => {
+      it(`should parse ${testConfig.type} attributes`, () => {
         [
-          `<div ${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote}>`,
-          `<div ${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote} >`,
-          `<div\n${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote}\n>`,
+          `<div ${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote}>`,
+          `<div ${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote} >`,
+          `<div\n${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote}\n>`,
         ].forEach((text) => {
           const cst = toLiquidHtmlCST(text);
-          expectPath(cst, '0.attrList.0.value.1.type').to.eql(
-            'LiquidDrop',
-            text,
+          expectPath(cst, '0.attrList.0.type').to.equal(
+            testConfig.type,
+          );
+          expectPath(cst, '0.attrList.0.name').to.equal(
+            testConfig.name,
+          );
+          expectPath(cst, '0.attrList.0.value.0.type').to.eql(
+            'TextNode',
+          );
+          expectPath(cst, '0.attrList.0.value.0.value').to.eql(
+            testConfig.name,
           );
           expectLocation(cst, [0]);
           expectLocation(cst, [0, 'attrList', 0]);
         });
       });
-    }
 
-    it(`should accept top level liquid nodes that contain ${testConfig.type}`, () => {
-      [
-        `<div {% if A %}${testConfig.name}=${testConfig.quote}https://name${testConfig.quote}{% endif %}>`,
-        `<div {% if A %} ${testConfig.name}=${testConfig.quote}https://name${testConfig.quote} {% endif %}>`,
-        `<div\n{% if A %}\n${testConfig.name}=${testConfig.quote}https://name${testConfig.quote}\n{% endif %}>`,
-      ].forEach((text) => {
-        const cst = toLiquidHtmlCST(text);
-        expectPath(cst, '0.attrList.0.type').to.eql(
-          'LiquidTagOpen',
-          text,
-        );
-        expectPath(cst, '0.attrList.1.type').to.eql(
-          testConfig.type,
-          text,
-        );
-        expectPath(cst, '0.attrList.1.value.0.value').to.eql(
-          'https://name',
-        );
-        expectPath(cst, '0.attrList.2.type').to.eql(
-          'LiquidTagClose',
-          text,
-        );
-        expectLocation(cst, [0]);
-        expectLocation(cst, [0, 'attrList', 0]);
+      if (testConfig.name != 'unquoted') {
+        it(`should accept liquid nodes inside ${testConfig.type}`, () => {
+          [
+            `<div ${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote}>`,
+            `<div ${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote} >`,
+            `<div\n${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote}\n>`,
+          ].forEach((text) => {
+            const cst = toLiquidHtmlCST(text);
+            expectPath(cst, '0.attrList.0.value.1.type').to.eql(
+              'LiquidDrop',
+              text,
+            );
+            expectLocation(cst, [0]);
+            expectLocation(cst, [0, 'attrList', 0]);
+          });
+        });
+      }
+
+      it(`should accept top level liquid nodes that contain ${testConfig.type}`, () => {
+        [
+          `<div {% if A %}${testConfig.name}=${testConfig.quote}https://name${testConfig.quote}{% endif %}>`,
+          `<div {% if A %} ${testConfig.name}=${testConfig.quote}https://name${testConfig.quote} {% endif %}>`,
+          `<div\n{% if A %}\n${testConfig.name}=${testConfig.quote}https://name${testConfig.quote}\n{% endif %}>`,
+        ].forEach((text) => {
+          const cst = toLiquidHtmlCST(text);
+          expectPath(cst, '0.attrList.0.type').to.eql(
+            'LiquidTagOpen',
+            text,
+          );
+          expectPath(cst, '0.attrList.1.type').to.eql(
+            testConfig.type,
+            text,
+          );
+          expectPath(cst, '0.attrList.1.value.0.value').to.eql(
+            'https://name',
+          );
+          expectPath(cst, '0.attrList.2.type').to.eql(
+            'LiquidTagClose',
+            text,
+          );
+          expectLocation(cst, [0]);
+          expectLocation(cst, [0, 'attrList', 0]);
+        });
       });
     });
   });
@@ -137,6 +151,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '0.markup').to.equal(' name ');
       expectPath(cst, '0.whitespaceStart').to.equal(null);
       expectPath(cst, '0.whitespaceEnd').to.equal(null);
+      expectPath(cst, '1.type').to.equal('LiquidDrop');
+      expectPath(cst, '1.markup').to.equal(' names ');
       expectPath(cst, '1.whitespaceStart').to.equal('-');
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
       expectLocation(cst, [0]);

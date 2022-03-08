@@ -1,7 +1,7 @@
 import { Parser } from 'prettier';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from './grammar';
-import { LiquidHTMLCSTParsingError } from './utils'
+import { LiquidHTMLCSTParsingError } from './utils';
 
 export enum ConcreteNodeTypes {
   HtmlRawTag = 'HtmlRawTag',
@@ -33,16 +33,19 @@ export interface ConcreteBasicNode<T> {
 
 export interface ConcreteHtmlNodeBase<T>
   extends ConcreteBasicNode<T> {
-  name: string;
+  name: string | ConcreteLiquidDrop;
   attrList?: ConcreteAttributeNode[];
 }
 
 export interface ConcreteHtmlRawTag
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlRawTag> {
+  name: string;
   body: string;
 }
 export interface ConcreteHtmlVoidElement
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlVoidElement> {}
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlVoidElement> {
+  name: string;
+}
 export interface ConcreteHtmlSelfClosingElement
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlSelfClosingElement> {}
 export interface ConcreteHtmlTagOpen
@@ -189,6 +192,8 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
+    tagNameOrLiquidDrop: 0,
 
     AttrUnquoted: {
       name: 0,

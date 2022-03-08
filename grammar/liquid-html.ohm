@@ -25,13 +25,17 @@ LiquidHTML {
     #("<" voidElementName) AttrList "/"? ">"
 
   HtmlSelfClosingElement =
-    #("<" tagName) AttrList "/>"
+    #("<" tagNameOrLiquidDrop) AttrList "/>"
 
   HtmlTagOpen =
-    #("<" tagName) AttrList ">"
+    #("<" tagNameOrLiquidDrop) AttrList ">"
 
   HtmlTagClose =
-    #("</" tagName) ">"
+    #("</" tagNameOrLiquidDrop) ">"
+
+  tagNameOrLiquidDrop =
+    | tagName
+    | liquidDrop
 
   tagName =
     letter (alnum | "-" | ":")*

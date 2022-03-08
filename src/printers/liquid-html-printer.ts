@@ -130,6 +130,15 @@ function attributes(path: any, _options: any, print: any): Doc {
   );
 }
 
+function printName(
+  name: string | LiquidDrop,
+  path: LiquidAstPath,
+  print: LiquidPrinter,
+): Doc {
+  if (typeof name === 'string') return name;
+  return path.call(print, 'name');
+}
+
 /**
  * This one is a bit like path.map except that it tries to maintain new
  * lines in between nodes. And it will shrink multiple new lines into one.
@@ -187,7 +196,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
           [
             group([
               '<',
-              node.name,
+              printName(node.name, path, print),
               attributes(path, options, print),
               '>',
             ]),
@@ -201,11 +210,12 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
                 ])
               : '',
             softline,
-            group(['</', node.name, '>']),
+            group(['</', printName(node.name, path, print), '>']),
           ],
           {
             shouldBreak:
-              HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
+              (typeof node.name === 'string' &&
+                HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
               node.children.length > 1,
           },
         );
@@ -223,7 +233,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       case NodeTypes.HtmlSelfClosingElement: {
         return group([
           '<',
-          node.name,
+          printName(node.name, path, print),
           attributes(path, options, print),
           '/>',
         ]);

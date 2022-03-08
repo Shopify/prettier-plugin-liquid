@@ -1,14 +1,18 @@
 import * as R from 'ramda';
 import {
-  ConcreteNodeTypes,
-  toLiquidHtmlCST,
-  LiquidHtmlConcreteNode,
   ConcreteAttributeNode,
-  ConcreteLiquidNode,
-  ConcreteTextNode,
   ConcreteHtmlTagClose,
+  ConcreteHtmlTagOpen,
+  ConcreteHtmlVoidElement,
+  ConcreteLiquidDrop,
+  ConcreteLiquidNode,
   ConcreteLiquidTagClose,
+  ConcreteNodeTypes,
+  ConcreteTextNode,
   LiquidHtmlCST,
+  LiquidHtmlConcreteNode,
+  toLiquidHtmlCST,
+  ConcreteHtmlSelfClosingElement,
 } from './liquid-html-cst';
 import { assertNever } from '../utils';
 import { LiquidHTMLASTParsingError } from './utils';
@@ -120,7 +124,9 @@ export interface HtmlElement
   children: LiquidHtmlAST;
 }
 export interface HtmlVoidElement
-  extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {}
+  extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {
+  name: string;
+}
 export interface HtmlSelfClosingElement
   extends HtmlNodeBase<NodeTypes.HtmlSelfClosingElement> {}
 export interface HtmlRawNode
@@ -129,13 +135,14 @@ export interface HtmlRawNode
    * The innerHTML of the tag as a string. Not trimmed. Not parsed.
    */
   body: string;
+  name: string;
 }
 
 export interface HtmlNodeBase<T> extends ASTNode<T> {
   /**
    * e.g. div, span, h1, h2, h3...
    */
-  name: string;
+  name: string | LiquidDrop;
   attributes: AttributeNode[];
 }
 
@@ -279,7 +286,7 @@ class ASTBuilder {
     }
 
     if (
-      this.parent?.name !== node.name ||
+      getName(this.parent) !== getName(node) ||
       this.parent?.type !== nodeType
     ) {
       throw new LiquidHTMLASTParsingError(
@@ -304,6 +311,26 @@ class ASTBuilder {
   }
 }
 
+function getName(
+  node:
+    | ConcreteLiquidTagClose
+    | ConcreteHtmlTagClose
+    | LiquidTag
+    | LiquidBranch
+    | HtmlElement
+    | undefined,
+): string | null {
+  if (!node) return null;
+  switch (node.type) {
+    case NodeTypes.HtmlElement:
+    case ConcreteNodeTypes.HtmlTagClose:
+      if (typeof node.name === 'string') return node.name;
+      return `{{${node.name.markup.trim()}}}`;
+    default:
+      return node.name;
+  }
+}
+
 export function cstToAst(
   cst: LiquidHtmlCST | ConcreteAttributeNode[],
   source: string,
@@ -322,13 +349,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.LiquidDrop: {
-        builder.push({
-          type: NodeTypes.LiquidDrop,
-          markup: node.markup,
-          whitespaceStart: node.whitespaceStart ?? '',
-          whitespaceEnd: node.whitespaceEnd ?? '',
-          position: position(node),
-        });
+        builder.push(toLiquidDrop(node));
         break;
       }
 
@@ -378,13 +399,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlTagOpen: {
-        builder.open({
-          type: NodeTypes.HtmlElement,
-          name: node.name,
-          attributes: toAttributes(node.attrList || [], source),
-          position: position(node),
-          children: [],
-        } as HtmlNode);
+        builder.open(toHtmlElement(node, source));
         break;
       }
 
@@ -394,22 +409,12 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlVoidElement: {
-        builder.push({
-          type: NodeTypes.HtmlVoidElement,
-          name: node.name,
-          attributes: toAttributes(node.attrList || [], source),
-          position: position(node),
-        } as HtmlNode);
+        builder.push(toHtmlVoidElement(node, source));
         break;
       }
 
       case ConcreteNodeTypes.HtmlSelfClosingElement: {
-        builder.push({
-          type: NodeTypes.HtmlSelfClosingElement,
-          name: node.name,
-          attributes: toAttributes(node.attrList || [], source),
-          position: position(node),
-        } as HtmlNode);
+        builder.push(toHtmlSelfClosingElement(node, source));
         break;
       }
 
@@ -469,6 +474,58 @@ function toAttributes(
   source: string,
 ): AttributeNode[] {
   return cstToAst(attrList, source) as AttributeNode[];
+}
+
+function toName(name: string | ConcreteLiquidDrop) {
+  if (typeof name === 'string') return name;
+  return toLiquidDrop(name);
+}
+
+function toLiquidDrop(node: ConcreteLiquidDrop): LiquidDrop {
+  return {
+    type: NodeTypes.LiquidDrop,
+    markup: node.markup,
+    whitespaceStart: node.whitespaceStart ?? '',
+    whitespaceEnd: node.whitespaceEnd ?? '',
+    position: position(node),
+  };
+}
+
+function toHtmlElement(
+  node: ConcreteHtmlTagOpen,
+  source: string,
+): HtmlElement {
+  return {
+    type: NodeTypes.HtmlElement,
+    name: toName(node.name),
+    attributes: toAttributes(node.attrList || [], source),
+    position: position(node),
+    children: [],
+  };
+}
+
+function toHtmlVoidElement(
+  node: ConcreteHtmlVoidElement,
+  source: string,
+): HtmlVoidElement {
+  return {
+    type: NodeTypes.HtmlVoidElement,
+    name: node.name,
+    attributes: toAttributes(node.attrList || [], source),
+    position: position(node),
+  };
+}
+
+function toHtmlSelfClosingElement(
+  node: ConcreteHtmlSelfClosingElement,
+  source: string,
+): HtmlSelfClosingElement {
+  return {
+    type: NodeTypes.HtmlSelfClosingElement,
+    name: toName(node.name),
+    attributes: toAttributes(node.attrList || [], source),
+    position: position(node),
+  };
 }
 
 function position(
