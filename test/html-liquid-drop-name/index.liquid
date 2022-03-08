@@ -1,4 +1,12 @@
-{% assign wrapper = 'product-media' %}
+{% liquid
+  if has_3d
+    assign wrapper = 'product-media'
+  else
+    assign wrapper = 'div'
+  endif
+%}
 <div>
-  <{{ wrapper }} loading="lazy">Content that goes in the middle </{{ wrapper }}>
+<{{ wrapper }} loading="lazy">
+Content that goes in the middle
+</{{ wrapper }}>
 </div>
