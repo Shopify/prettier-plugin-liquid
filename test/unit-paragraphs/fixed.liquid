@@ -1,0 +1,33 @@
+|print-width--------------------------------------------------------------------|
+
+// Should maintain whitespace (or lack of thereof) in flow text.
+<div>
+  hello {{ name }}!
+</div>
+
+// Should break child html elements on new lines
+<span>
+  Some&nbsp;<b>freeform</b>&nbsp;text
+  <em>
+    hello world that might span multiple lines. That's fine. It's a paragraph
+    after all...
+  </em>
+  We can definitely deal with that.
+</span>
+
+// Should flow liquid inline when it fits
+<div>
+  More freeform text {%- if liquid -%}But with liquid instead.{%- endif -%} I
+  wonder what this will look like {{ punctuation }}.
+</div>
+
+// Should break child liquid tags on new lines
+<div>
+  If a child breaks, it breaks on a new line.
+  {%- if liquid -%}
+    <span>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>
+  {%- endif -%}
+  But the paragraph that <i>follows</i> keeps on going as before. If an
+  <em>fits on the line line</em>, it flows inline. But it will
+  <em>never open in the middle of a line and end on another</em>
+</div>

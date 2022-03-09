@@ -7,6 +7,7 @@ import {
   LiquidBranch,
   LiquidDrop,
   isBranchedTag,
+  TextNode,
 } from '../parsers';
 import { identity } from 'ramda';
 import { assertNever } from '../utils';
@@ -16,7 +17,8 @@ type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
 type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 
 const { builders } = doc;
-const { group, line, softline, hardline, join, indent } = builders;
+const { group, fill, line, softline, hardline, join, indent } =
+  builders;
 
 const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'html',
@@ -139,31 +141,38 @@ function printName(
   return path.call(print, 'name');
 }
 
+function originallyHadLineBreaks(
+  path: LiquidAstPath,
+  { locStart, locEnd }: LiquidParserOptions,
+): boolean {
+  const source = getSource(path);
+  const node = path.getValue();
+  const indexOfNewLine = source.indexOf('\n', locStart(node));
+  return 0 <= indexOfNewLine && indexOfNewLine < locEnd(node);
+}
+
+function getSource(path: LiquidAstPath) {
+  return (path.stack[0] as DocumentNode).source;
+}
+
 /**
  * This one is a bit like path.map except that it tries to maintain new
  * lines in between nodes. And it will shrink multiple new lines into one.
  */
 function mapWithNewLine(
   path: LiquidAstPath,
-  options: LiquidParserOptions,
+  { locStart, locEnd }: LiquidParserOptions,
   print: LiquidPrinter,
   property: string,
 ): Doc[] {
   const doc: Doc[] = [];
-  const source = (path.stack[0] as DocumentNode).source;
+  const source = getSource(path);
   let curr: LiquidHtmlNode | null = null;
   let prev: LiquidHtmlNode | null = null;
   path.each((path) => {
     curr = path.getValue();
-    if (
-      curr &&
-      prev &&
-      options.locEnd(prev) < options.locStart(curr)
-    ) {
-      const gap = source.slice(
-        options.locEnd(prev),
-        options.locStart(curr),
-      );
+    if (curr && prev && locEnd(prev) < locStart(curr)) {
+      const gap = source.slice(locEnd(prev), locStart(curr));
       // if we have more than one new line between nodes, insert an empty
       // node in between the result of the `map`. This way we can join with
       // hardline or softline and maintain 'em.
@@ -175,6 +184,70 @@ function mapWithNewLine(
     prev = curr;
   }, property);
   return doc;
+}
+
+/**
+ * This function takes a node (assuming it has at least one TextNode
+ * children) and reindents the text as a paragraph while maintaining
+ * whitespace (if there is some) between adjacent nodes
+ *
+ * Example:
+ *
+ * <div>Hello {{ name }}! How are you doing today?</div> -->
+ *   fill([
+ *     "Hello", line,
+ *     LiquidDrop<"name">, softline,
+ *     "!", line,
+ *     "How", line,
+ *     "are", line,
+ *     "you", line,
+ *     "doing", line,
+ *     "today?"
+ *   ])
+ *
+ * Note how we have
+ * - a `line` between `Hello` and `{{ name }}`,
+ * - a `softline` between `{{ name }}` and `!`.
+ */
+function paragraph(
+  path: LiquidAstPath,
+  { locStart, locEnd }: LiquidParserOptions,
+  print: LiquidPrinter,
+): Doc {
+  // So I have a bunch of text nodes. What do I want out of 'em?
+  const doc: Doc[] = [];
+  let curr: LiquidHtmlNode | null = null;
+  let prev: LiquidHtmlNode | null = null;
+
+  path.each((path) => {
+    curr = path.getValue();
+    if (curr && prev) {
+      if (locEnd(prev) === locStart(curr)) {
+        doc.push(softline);
+      } else {
+        doc.push(line);
+      }
+    }
+
+    // Boi this is ugly.
+    if (curr.type === NodeTypes.TextNode) {
+      const words = curr.value.split(/\s+/g);
+      let isFirst = true;
+      for (const word of words) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          doc.push(line);
+        }
+        doc.push(word);
+      }
+    } else {
+      doc.push(print(path));
+    }
+    prev = curr;
+  }, 'children');
+
+  return fill(doc);
 }
 
 export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
@@ -192,6 +265,11 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
       }
 
       case NodeTypes.HtmlElement: {
+        const hasNonEmptyTextNode = !!node.children.find(
+          (child) =>
+            child.type === NodeTypes.TextNode &&
+            !child.value.match(/^\s*$/),
+        );
         return group(
           [
             group([
@@ -203,9 +281,25 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             node.children.length > 0
               ? indent([
                   softline,
-                  join(
-                    softline,
-                    mapWithNewLine(path, options, print, 'children'),
+                  group(
+                    [
+                      hasNonEmptyTextNode
+                        ? paragraph(path, options, print)
+                        : join(
+                            softline,
+                            mapWithNewLine(
+                              path,
+                              options,
+                              print,
+                              'children',
+                            ),
+                          ),
+                    ],
+                    {
+                      shouldBreak:
+                        !hasNonEmptyTextNode &&
+                        node.children.length > 1,
+                    },
                   ),
                 ])
               : '',
@@ -216,7 +310,7 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
             shouldBreak:
               (typeof node.name === 'string' &&
                 HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
-              node.children.length > 1,
+              originallyHadLineBreaks(path, options),
           },
         );
       }
