@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc -p .",
     "example": "prettier --plugin . example.liquid",
+    "format": "prettier -w '{src,test}/**/*.ts'",
     "test": "yarn test:spec '{src,test}/**/*.spec.ts'",
     "test:spec": "./node_modules/.bin/_mocha"
   },
@@ -24,10 +25,8 @@
   "dependencies": {
     "@types/line-column": "^1.0.0",
     "@types/prettier": "^2.4.2",
-    "@types/ramda": "^0.27.58",
     "line-column": "^1.0.2",
     "ohm-js": "^16.0.0",
-    "prettier": "^2.5.0",
-    "ramda": "^0.27.1"
+    "prettier": "^2.5.0"
   }
 }

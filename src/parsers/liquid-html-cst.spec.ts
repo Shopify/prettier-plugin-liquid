@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import * as R from 'ramda';
 import { LiquidHtmlCST, toLiquidHtmlCST } from './liquid-html-cst';
 import { BLOCKS, VOID_ELEMENTS } from './grammar';
+import {deepGet} from './utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
   describe('Case: HtmlNode', () => {
@@ -230,11 +230,11 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     cst: LiquidHtmlCST,
     path: (string | number)[],
   ) {
-    expect(R.path(path.concat('locStart'), cst)).to.be.a('number');
-    expect(R.path(path.concat('locEnd'), cst)).to.be.a('number');
+    expect(deepGet(path.concat('locStart'), cst)).to.be.a('number');
+    expect(deepGet(path.concat('locEnd'), cst)).to.be.a('number');
   }
 
   function expectPath(cst: LiquidHtmlCST, path: string) {
-    return expect(R.path(path.split('.'), cst));
+    return expect(deepGet(path.split('.'), cst));
   }
 });

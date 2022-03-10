@@ -1,4 +1,3 @@
-import * as R from 'ramda';
 import {
   ConcreteAttributeNode,
   ConcreteHtmlTagClose,
@@ -15,7 +14,7 @@ import {
   ConcreteHtmlSelfClosingElement,
 } from './liquid-html-cst';
 import { assertNever } from '../utils';
-import { LiquidHTMLASTParsingError } from './utils';
+import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
 
 export enum NodeTypes {
   Document = 'Document',
@@ -219,20 +218,20 @@ class ASTBuilder {
   }
 
   get current() {
-    return R.path<LiquidHtmlAST>(
+    return deepGet<LiquidHtmlAST>(
       this.cursor,
       this.ast,
     ) as LiquidHtmlAST;
   }
 
   get currentPosition(): number {
-    return R.length(this.current || []) - 1;
+    return length(this.current || []) - 1;
   }
 
   get parent(): LiquidTag | LiquidBranch | HtmlElement | undefined {
     if (this.cursor.length == 0) return undefined;
-    return R.path<LiquidTag | HtmlElement>(
-      R.dropLast(1, this.cursor),
+    return deepGet<LiquidTag | HtmlElement>(
+      dropLast(1, this.cursor),
       this.ast,
     );
   }

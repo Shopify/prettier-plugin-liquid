@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { toLiquidHtmlAST, LiquidHtmlNode } from './liquid-html-ast';
-import { LiquidHTMLASTParsingError } from './utils';
-import * as R from 'ramda';
+import { LiquidHTMLASTParsingError, deepGet } from './utils';
 
 describe('Unit: toLiquidHtmlAST', () => {
   it('should transform a basic Liquid Drop into a LiquidDrop', () => {
@@ -245,7 +244,7 @@ describe('Unit: toLiquidHtmlAST', () => {
   });
 
   function expectPath(ast: LiquidHtmlNode, path: string) {
-    return expect(R.path(path.split('.'), ast));
+    return expect(deepGet(path.split('.'), ast));
   }
 
   function expectPosition(ast: LiquidHtmlNode, path: string) {

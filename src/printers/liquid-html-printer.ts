@@ -7,14 +7,15 @@ import {
   LiquidBranch,
   LiquidDrop,
   isBranchedTag,
-  TextNode,
+  LiquidNode,
 } from '../parsers';
-import { identity } from 'ramda';
 import { assertNever } from '../utils';
 
 type LiquidAstPath = AstPath<LiquidHtmlNode>;
 type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
 type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
+
+const identity = <T>(x: T): T => x;
 
 const { builders } = doc;
 const { group, fill, line, softline, hardline, join, indent } =
