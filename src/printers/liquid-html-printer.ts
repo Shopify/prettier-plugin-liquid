@@ -18,14 +18,23 @@ type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 const identity = <T>(x: T): T => x;
 
 const { builders } = doc;
-const { group, fill, line, softline, hardline, join, indent } =
-  builders;
+const {
+  fill,
+  group,
+  hardline,
+  ifBreak,
+  indent,
+  join,
+  line,
+  softline,
+} = builders;
 
 const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'html',
   'body',
   'head',
   'main',
+  'section',
   'header',
   'footer',
   'ul',
@@ -162,12 +171,14 @@ function getSource(path: LiquidAstPath) {
  */
 function mapWithNewLine(
   path: LiquidAstPath,
-  { locStart, locEnd }: LiquidParserOptions,
+  options: LiquidParserOptions,
   print: LiquidPrinter,
   property: string,
+  parentGroupId?: symbol,
 ): Doc[] {
   const doc: Doc[] = [];
   const source = getSource(path);
+  const { locStart, locEnd } = options;
   let curr: LiquidHtmlNode | null = null;
   let prev: LiquidHtmlNode | null = null;
   path.each((path) => {
@@ -181,7 +192,7 @@ function mapWithNewLine(
         doc.push('');
       }
     }
-    doc.push(print(path));
+    doc.push(genericPrint(path, options, print, parentGroupId));
     prev = curr;
   }, property);
   return doc;
@@ -212,11 +223,13 @@ function mapWithNewLine(
  */
 function paragraph(
   path: LiquidAstPath,
-  { locStart, locEnd }: LiquidParserOptions,
+  options: LiquidParserOptions,
   print: LiquidPrinter,
+  parentGroupId?: symbol,
 ): Doc {
   // So I have a bunch of text nodes. What do I want out of 'em?
   const doc: Doc[] = [];
+  const { locStart, locEnd } = options;
   let curr: LiquidHtmlNode | null = null;
   let prev: LiquidHtmlNode | null = null;
 
@@ -243,7 +256,7 @@ function paragraph(
         doc.push(word);
       }
     } else {
-      doc.push(print(path));
+      doc.push(genericPrint(path, options, print, parentGroupId));
     }
     prev = curr;
   }, 'children');
@@ -251,208 +264,211 @@ function paragraph(
   return fill(doc);
 }
 
-export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
-  print(path, options, print) {
-    const node = path.getValue();
-    switch (node.type) {
-      case NodeTypes.Document: {
-        return [
-          join(
-            hardline,
-            mapWithNewLine(path, options, print, 'children'),
-          ),
+function bounded(a: number, x: number, c: number): number {
+  return Math.max(a, Math.min(x, c));
+}
+
+function isWhitespace(source: string, loc: number): boolean {
+  return !!source[bounded(0, loc, source.length - 1)].match(/\s/);
+}
+
+function printLiquidDrop(
+  path: LiquidAstPath,
+  { locStart, locEnd }: LiquidParserOptions,
+  parentGroupId?: symbol,
+) {
+  const node: LiquidDrop = path.getValue() as LiquidDrop;
+  const source = getSource(path);
+  const whitespaceStart = ifBreak(
+    !isWhitespace(source, locStart(node) - 1)
+      ? '-'
+      : node.whitespaceStart,
+    node.whitespaceStart,
+    { groupId: parentGroupId },
+  );
+  const whitespaceEnd = ifBreak(
+    !isWhitespace(source, locEnd(node)) ? '-' : node.whitespaceEnd,
+    node.whitespaceEnd,
+    { groupId: parentGroupId },
+  );
+
+  // This should probably be better than this but it'll do for now.
+  const lines = markupLines(node);
+  if (lines.length > 1) {
+    return group([
+      '{{',
+      whitespaceStart,
+      indent([hardline, join(hardline, lines.map(trim))]),
+      hardline,
+      whitespaceEnd,
+      '}}',
+    ]);
+  }
+
+  return group([
+    '{{',
+    whitespaceStart,
+    ' ',
+    node.markup.trim(),
+    ' ',
+    whitespaceEnd,
+    '}}',
+  ]);
+}
+
+function genericPrint(
+  path: LiquidAstPath,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
+) {
+  const node = path.getValue();
+  switch (node.type) {
+    case NodeTypes.Document: {
+      return [
+        join(
           hardline,
-        ];
-      }
+          mapWithNewLine(path, options, print, 'children'),
+        ),
+        hardline,
+      ];
+    }
 
-      case NodeTypes.HtmlElement: {
-        const hasNonEmptyTextNode = !!node.children.find(
-          (child) =>
-            child.type === NodeTypes.TextNode &&
-            !child.value.match(/^\s*$/),
-        );
-        return group(
-          [
-            group([
-              '<',
-              printName(node.name, path, print),
-              attributes(path, options, print),
-              '>',
-            ]),
-            node.children.length > 0
-              ? indent([
-                  softline,
-                  group(
-                    [
-                      hasNonEmptyTextNode
-                        ? paragraph(path, options, print)
-                        : join(
-                            softline,
-                            mapWithNewLine(
-                              path,
-                              options,
-                              print,
-                              'children',
-                            ),
-                          ),
-                    ],
-                    {
-                      shouldBreak:
-                        !hasNonEmptyTextNode &&
-                        node.children.length > 1,
-                    },
-                  ),
-                ])
-              : '',
-            softline,
-            group(['</', printName(node.name, path, print), '>']),
-          ],
-          {
-            shouldBreak:
-              (typeof node.name === 'string' &&
-                HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
-              originallyHadLineBreaks(path, options),
-          },
-        );
-      }
+    case NodeTypes.HtmlElement: {
+      const hasNonEmptyTextNode = !!node.children.find(
+        (child) => child.type === NodeTypes.TextNode,
+      );
+      const htmlElementGroupId = Symbol('html-element-id');
+      return group(
+        [
+          group([
+            '<',
+            printName(node.name, path, print),
+            attributes(path, options, print),
+            '>',
+          ]),
+          node.children.length > 0
+            ? indent([
+                softline,
+                hasNonEmptyTextNode
+                  ? paragraph(path, options, print)
+                  : join(
+                      hardline,
+                      mapWithNewLine(
+                        path,
+                        options,
+                        print,
+                        'children',
+                        htmlElementGroupId,
+                      ),
+                    ),
+              ])
+            : '',
+          softline,
+          group(['</', printName(node.name, path, print), '>']),
+        ],
+        {
+          shouldBreak:
+            (typeof node.name === 'string' &&
+              HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
+            originallyHadLineBreaks(path, options),
+          id: htmlElementGroupId,
+        },
+      );
+    }
 
-      case NodeTypes.HtmlVoidElement: {
-        return group([
+    case NodeTypes.HtmlVoidElement: {
+      return group([
+        '<',
+        node.name,
+        attributes(path, options, print),
+        '>',
+      ]);
+    }
+
+    case NodeTypes.HtmlSelfClosingElement: {
+      return group([
+        '<',
+        printName(node.name, path, print),
+        attributes(path, options, print),
+        '/>',
+      ]);
+    }
+
+    case NodeTypes.HtmlRawNode: {
+      const lines = bodyLines(node.body);
+      const body =
+        lines.length > 0 && lines[0] !== ''
+          ? [
+              indent([hardline, join(hardline, reindent(lines))]),
+              hardline,
+            ]
+          : [softline];
+
+      return group([
+        group([
           '<',
           node.name,
           attributes(path, options, print),
           '>',
-        ]);
-      }
+        ]),
+        body,
+        ['</', node.name, '>'],
+      ]);
+    }
 
-      case NodeTypes.HtmlSelfClosingElement: {
-        return group([
-          '<',
-          printName(node.name, path, print),
-          attributes(path, options, print),
-          '/>',
-        ]);
-      }
+    case NodeTypes.LiquidDrop: {
+      return printLiquidDrop(path, options, parentGroupId);
+    }
 
-      case NodeTypes.HtmlRawNode: {
-        const lines = bodyLines(node.body);
-        const body =
-          lines.length > 0 && lines[0] !== ''
-            ? [
-                indent([hardline, join(hardline, reindent(lines))]),
-                hardline,
-              ]
-            : [softline];
+    case NodeTypes.LiquidRawTag: {
+      const lines = bodyLines(node.body);
+      const body = reindent(lines);
 
-        return group([
-          group([
-            '<',
-            node.name,
-            attributes(path, options, print),
-            '>',
-          ]),
-          body,
-          ['</', node.name, '>'],
-        ]);
-      }
-
-      case NodeTypes.LiquidDrop: {
-        const lines = markupLines(node);
-        if (lines.length > 1) {
-          return group([
-            '{{',
-            node.whitespaceStart,
-            indent([hardline, join(hardline, lines.map(trim))]),
-            hardline,
-            node.whitespaceEnd,
-            '}}',
-          ]);
-        }
-        return group([
-          '{{',
+      return [
+        group([
+          '{%',
           node.whitespaceStart,
           ' ',
-          node.markup.trim(),
+          node.name,
           ' ',
           node.whitespaceEnd,
-          '}}',
-        ]);
-      }
+          '%}',
+        ]),
+        indent([hardline, join(hardline, body)]),
+        hardline,
+        [
+          '{%',
+          node.whitespaceStart,
+          ' ',
+          'end',
+          node.name,
+          ' ',
+          node.whitespaceEnd,
+          '%}',
+        ],
+      ];
+    }
 
-      case NodeTypes.LiquidRawTag: {
-        const lines = bodyLines(node.body);
-        const body = reindent(lines);
-
-        return [
-          group([
-            '{%',
-            node.whitespaceStart,
-            ' ',
-            node.name,
-            ' ',
-            node.whitespaceEnd,
-            '%}',
-          ]),
-          indent([hardline, join(hardline, body)]),
-          hardline,
+    case NodeTypes.LiquidTag: {
+      if (isBranchedTag(node)) {
+        const wrapper = node.name === 'case' ? indent : identity;
+        return group(
           [
-            '{%',
-            node.whitespaceStart,
-            ' ',
-            'end',
-            node.name,
-            ' ',
-            node.whitespaceEnd,
-            '%}',
-          ],
-        ];
-      }
-
-      case NodeTypes.LiquidTag: {
-        if (isBranchedTag(node)) {
-          const wrapper = node.name === 'case' ? indent : identity;
-          return group(
-            [
-              blockStart(node),
-              wrapper(path.map(print, 'children')),
-              softline,
-              blockEnd(node),
-            ],
-            {
-              shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
-                node.name,
-              ),
-            },
-          );
-        } else if (node.children) {
-          return group(
-            [
-              blockStart(node),
-              indent([
-                softline,
-                join(
-                  softline,
-                  mapWithNewLine(path, options, print, 'children'),
-                ),
-              ]),
-              softline,
-              blockEnd(node),
-            ],
-            {
-              shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
-                node.name,
-              ),
-            },
-          );
-        } else {
-          return blockStart(node);
-        }
-      }
-
-      case NodeTypes.LiquidBranch: {
-        if (node.name) {
-          return [
+            blockStart(node),
+            wrapper(path.map(print, 'children')),
             softline,
+            blockEnd(node),
+          ],
+          {
+            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
+              node.name,
+            ),
+          },
+        );
+      } else if (node.children) {
+        return group(
+          [
             blockStart(node),
             indent([
               softline,
@@ -461,37 +477,66 @@ export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
                 mapWithNewLine(path, options, print, 'children'),
               ),
             ]),
-          ];
-        } else if (node.children.length > 0) {
-          return indent([
+            softline,
+            blockEnd(node),
+          ],
+          {
+            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
+              node.name,
+            ),
+          },
+        );
+      } else {
+        return blockStart(node);
+      }
+    }
+
+    case NodeTypes.LiquidBranch: {
+      if (node.name) {
+        return [
+          softline,
+          blockStart(node),
+          indent([
             softline,
             join(
               softline,
               mapWithNewLine(path, options, print, 'children'),
             ),
-          ]);
-        } else {
-          return '';
-        }
-      }
-
-      case NodeTypes.AttrEmpty: {
-        return node.name;
-      }
-
-      case NodeTypes.AttrUnquoted:
-      case NodeTypes.AttrSingleQuoted:
-      case NodeTypes.AttrDoubleQuoted: {
-        return [node.name, '=', '"', path.map(print, 'value'), '"'];
-      }
-
-      case NodeTypes.TextNode: {
-        return join(hardline, reindent(bodyLines(node.value)));
-      }
-
-      default: {
-        return assertNever(node);
+          ]),
+        ];
+      } else if (node.children.length > 0) {
+        return indent([
+          softline,
+          join(
+            softline,
+            mapWithNewLine(path, options, print, 'children'),
+          ),
+        ]);
+      } else {
+        return '';
       }
     }
-  },
+
+    case NodeTypes.AttrEmpty: {
+      return node.name;
+    }
+
+    case NodeTypes.AttrUnquoted:
+    case NodeTypes.AttrSingleQuoted:
+    case NodeTypes.AttrDoubleQuoted: {
+      return [node.name, '=', '"', path.map(print, 'value'), '"'];
+    }
+
+    case NodeTypes.TextNode: {
+      return join(hardline, reindent(bodyLines(node.value)));
+    }
+
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
+export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
+  print: genericPrint,
 };

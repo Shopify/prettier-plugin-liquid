@@ -1,0 +1,35 @@
+|print-width--------------------------------------------------------------------|
+
+In children array,
+
+it should not add Whitespace Trim Characters (WTC) if the liquid drop does not
+break on a new line
+<div>{{ 'hello' }}</div>
+
+it should add wtc if the liquid drop breaks on a new line and the previous/next
+characters were not spaces.
+<div>
+  {{- 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' -}}
+</div>
+<div>
+  {{- 'aaa' -}}
+  {{- 'bbb' }}
+  {{ 'ccc' }}
+</div>
+
+it should not add wtc if the liquid drop breaks on a new line and the
+previous/next characters were spaces
+<div>
+  {{ 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
+</div>
+
+--------------------------------------------------------------------------------
+
+In paragraphs,
+
+it should add wtc if the liquid drop breaks next to a character (but not if not)
+<div>
+  Hey
+  {{ 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' -}}
+  , how are you doing?
+</div>
