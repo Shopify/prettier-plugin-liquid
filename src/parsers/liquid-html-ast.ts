@@ -14,7 +14,12 @@ import {
   ConcreteHtmlSelfClosingElement,
 } from './liquid-html-cst';
 import { assertNever } from '../utils';
-import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
+import {
+  LiquidHTMLASTParsingError,
+  deepGet,
+  length,
+  dropLast,
+} from './utils';
 
 export enum NodeTypes {
   Document = 'Document',

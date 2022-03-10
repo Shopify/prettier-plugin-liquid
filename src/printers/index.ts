@@ -3,4 +3,4 @@ import { liquidHtmlAstFormat } from '../parsers';
 
 export const printers = {
   [liquidHtmlAstFormat]: liquidHtmlPrinter,
-}
+};

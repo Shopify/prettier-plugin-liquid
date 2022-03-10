@@ -4,7 +4,11 @@ import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
 
-export function expectFormatted(dirname: string, filename: string, options = {}) {
+export function expectFormatted(
+  dirname: string,
+  filename: string,
+  options = {},
+) {
   const source = readFile(dirname, filename);
   const formatted = format(source, options);
   return expect(formatted);
@@ -17,7 +21,7 @@ export function readFile(dirname: string, filename: string) {
 export function format(content: string, options: any) {
   return prettier.format(content, {
     ...options,
-    parser: "liquid-html",
+    parser: 'liquid-html',
     plugins: [plugin],
   });
 }

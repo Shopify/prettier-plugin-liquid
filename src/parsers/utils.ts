@@ -71,12 +71,12 @@ export class LiquidHTMLASTParsingError extends SyntaxError {
 
     const lc = lineColumn(source);
     const start = lc.fromIndex(startIndex);
-    const end = lc.fromIndex(endIndex)
+    const end = lc.fromIndex(endIndex);
 
     // Plugging ourselves into @babel/code-frame since this is how
     // the babel parser can print where the parsing error occured.
     // https://github.com/prettier/prettier/blob/cd4a57b113177c105a7ceb94e71f3a5a53535b81/src/main/parser.js
-    if (!start || !end) return
+    if (!start || !end) return;
     this.loc = {
       start: {
         line: start!.line,

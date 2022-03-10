@@ -17,4 +17,6 @@ export const BLOCKS = (
 // see ../../grammar/liquid-html.ohm for full list
 export const VOID_ELEMENTS = (
   liquidHtmlGrammar.rules as any
-).voidElementName.body.terms.map((x: any) => x.args[0].obj) as string[];
+).voidElementName.body.terms.map(
+  (x: any) => x.args[0].obj,
+) as string[];

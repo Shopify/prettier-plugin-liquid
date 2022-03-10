@@ -36,9 +36,7 @@ describe('Unit: liquidHtmlGrammar', () => {
     expectMatchSucceeded(
       '<img {% if aboveFold %} loading="lazy"{% endif %} />',
     ).to.be.true;
-    expectMatchSucceeded(
-      '<svg><use></svg>',
-    ).to.be.true;
+    expectMatchSucceeded('<svg><use></svg>').to.be.true;
   });
 
   it('should fail at parsing invalid HTML+Liquid', () => {

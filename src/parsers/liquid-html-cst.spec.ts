@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { LiquidHtmlCST, toLiquidHtmlCST } from './liquid-html-cst';
 import { BLOCKS, VOID_ELEMENTS } from './grammar';
-import {deepGet} from './utils';
+import { deepGet } from './utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
   describe('Case: HtmlNode', () => {
@@ -18,7 +18,9 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
 
     it('should parse liquid drop tag names', () => {
-      const cst = toLiquidHtmlCST('<{{ node_type }}></{{ node_type }}>')
+      const cst = toLiquidHtmlCST(
+        '<{{ node_type }}></{{ node_type }}>',
+      );
       expectPath(cst, '0.type').to.equal('HtmlTagOpen');
       expectPath(cst, '0.name.type').to.equal('LiquidDrop');
       expectPath(cst, '0.name.markup').to.equal(' node_type ');
