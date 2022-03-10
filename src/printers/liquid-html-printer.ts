@@ -74,24 +74,43 @@ function reindent(lines: string[], skipFirst = false): string[] {
     .map(trimEnd);
 }
 
-function blockStart(node: LiquidTag | LiquidBranch): Doc {
+function printLiquidBlockStart(
+  path: LiquidAstPath,
+  { locStart, locEnd }: LiquidParserOptions,
+  parentGroupId?: symbol,
+): Doc {
+  const node = path.getValue() as (LiquidTag | LiquidBranch);
+  const source = getSource(path);
   const lines = markupLines(node);
+  const whitespaceStart = ifBreak(
+    !isWhitespace(source, locStart(node) - 1)
+      ? '-'
+      : node.whitespaceStart,
+    node.whitespaceStart,
+    { groupId: parentGroupId },
+  );
+  const whitespaceEnd = ifBreak(
+    !isWhitespace(source, locEnd(node)) ? '-' : node.whitespaceEnd,
+    node.whitespaceEnd,
+    { groupId: parentGroupId },
+  );
+
   if (!node.name) return '';
   if (node.name === 'liquid') {
     return group([
       '{%',
-      node.whitespaceStart,
+      whitespaceStart,
       ' ',
       node.name,
       indent([hardline, join(hardline, reindent(lines, true))]),
       hardline,
-      node.whitespaceEnd,
+      whitespaceEnd,
       '%}',
     ]);
   } else if (lines.length > 1) {
     return group([
       '{%',
-      node.whitespaceStart,
+      whitespaceStart,
       indent([
         hardline,
         node.name,
@@ -99,7 +118,7 @@ function blockStart(node: LiquidTag | LiquidBranch): Doc {
         join(hardline, lines.map(trim)),
       ]),
       hardline,
-      node.whitespaceEnd,
+      whitespaceEnd,
       '%}',
     ]);
   }
@@ -107,12 +126,12 @@ function blockStart(node: LiquidTag | LiquidBranch): Doc {
   const markup = node.markup.trim();
   return group([
     '{%',
-    node.whitespaceStart,
+    whitespaceStart,
     ' ',
     node.name,
     markup ? ` ${markup}` : '',
     ' ',
-    node.whitespaceEnd,
+    whitespaceEnd,
     '%}',
   ]);
 }
@@ -264,12 +283,9 @@ function paragraph(
   return fill(doc);
 }
 
-function bounded(a: number, x: number, c: number): number {
-  return Math.max(a, Math.min(x, c));
-}
-
 function isWhitespace(source: string, loc: number): boolean {
-  return !!source[bounded(0, loc, source.length - 1)].match(/\s/);
+  if (loc < 0 || loc >= source.length) return true;
+  return !!source[loc].match(/\s/);
 }
 
 function printLiquidDrop(
@@ -455,7 +471,7 @@ function genericPrint(
         const wrapper = node.name === 'case' ? indent : identity;
         return group(
           [
-            blockStart(node),
+            printLiquidBlockStart(path, options, parentGroupId),
             wrapper(path.map(print, 'children')),
             softline,
             blockEnd(node),
@@ -469,7 +485,7 @@ function genericPrint(
       } else if (node.children) {
         return group(
           [
-            blockStart(node),
+            printLiquidBlockStart(path, options, parentGroupId),
             indent([
               softline,
               join(
@@ -487,7 +503,7 @@ function genericPrint(
           },
         );
       } else {
-        return blockStart(node);
+        return printLiquidBlockStart(path, options, parentGroupId);
       }
     }
 
@@ -495,7 +511,7 @@ function genericPrint(
       if (node.name) {
         return [
           softline,
-          blockStart(node),
+          printLiquidBlockStart(path, options, parentGroupId),
           indent([
             softline,
             join(
