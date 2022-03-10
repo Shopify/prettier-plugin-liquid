@@ -74,28 +74,123 @@ function reindent(lines: string[], skipFirst = false): string[] {
     .map(trimEnd);
 }
 
-function printLiquidBlockStart(
+function isWhitespace(source: string, loc: number): boolean {
+  if (loc < 0 || loc >= source.length) return true;
+  return !!source[loc].match(/\s/);
+}
+
+// Optionally converts a '' into '-' if the parent group breaks and
+// the source[loc] is non space.
+function getWhitespaceTrim(
+  currWhitespaceTrim: string,
+  source: string,
+  loc: number,
+  parentGroupId?: symbol,
+): Doc {
+  return ifBreak(
+    !isWhitespace(source, loc) ? '-' : currWhitespaceTrim,
+    currWhitespaceTrim,
+    { groupId: parentGroupId },
+  );
+}
+
+// Much like the function above but may break from the left or the right.
+// e.g. flow breaks or element breaks. I'm not 100% sure of why it works
+// but it looks like it does... (?) :D.
+function getWhitespaceTrimLR(
+  currWhitespaceTrim: string,
+  source: string,
+  loc: number,
+  leftParentGroupId?: symbol,
+  rightParentGroupId?: symbol,
+) {
+  const breaksContent = !isWhitespace(source, loc)
+    ? '-'
+    : currWhitespaceTrim;
+  const flatContent = currWhitespaceTrim;
+  return ifBreak(
+    breaksContent,
+    ifBreak(breaksContent, flatContent, {
+      groupId: rightParentGroupId,
+    }),
+    { groupId: leftParentGroupId },
+  );
+}
+
+function printLiquidDrop(
   path: LiquidAstPath,
   { locStart, locEnd }: LiquidParserOptions,
   parentGroupId?: symbol,
-): Doc {
-  const node = path.getValue() as (LiquidTag | LiquidBranch);
+) {
+  const node: LiquidDrop = path.getValue() as LiquidDrop;
   const source = getSource(path);
-  const lines = markupLines(node);
-  const whitespaceStart = ifBreak(
-    !isWhitespace(source, locStart(node) - 1)
-      ? '-'
-      : node.whitespaceStart,
+  const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    { groupId: parentGroupId },
+    source,
+    locStart(node) - 1,
+    parentGroupId,
   );
-  const whitespaceEnd = ifBreak(
-    !isWhitespace(source, locEnd(node)) ? '-' : node.whitespaceEnd,
+  const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    { groupId: parentGroupId },
+    source,
+    locEnd(node),
+    parentGroupId,
   );
 
+  // This should probably be better than this but it'll do for now.
+  const lines = markupLines(node);
+  if (lines.length > 1) {
+    return group([
+      '{{',
+      whitespaceStart,
+      indent([hardline, join(hardline, lines.map(trim))]),
+      hardline,
+      whitespaceEnd,
+      '}}',
+    ]);
+  }
+
+  return group([
+    '{{',
+    whitespaceStart,
+    ' ',
+    node.markup.trim(),
+    ' ',
+    whitespaceEnd,
+    '}}',
+  ]);
+}
+
+function printLiquidBlockStart(
+  path: LiquidAstPath,
+  leftParentGroupId: symbol | undefined,
+  rightParentGroupId: symbol | undefined,
+): Doc {
+  const node = path.getValue() as LiquidTag | LiquidBranch;
   if (!node.name) return '';
+
+  const source = getSource(path);
+  const lines = markupLines(node);
+  const positionStart =
+    (node as LiquidTag).blockStartPosition?.start ??
+    node.position.start;
+  const positionEnd =
+    (node as LiquidTag).blockStartPosition?.end ?? node.position.end;
+
+  const whitespaceStart = getWhitespaceTrimLR(
+    node.whitespaceStart,
+    source,
+    positionStart - 1,
+    leftParentGroupId,
+    rightParentGroupId,
+  );
+  const whitespaceEnd = getWhitespaceTrim(
+    node.whitespaceEnd,
+    source,
+    positionEnd,
+    rightParentGroupId,
+  );
+
   if (node.name === 'liquid') {
     return group([
       '{%',
@@ -136,13 +231,32 @@ function printLiquidBlockStart(
   ]);
 }
 
-function blockEnd(node: LiquidTag): Doc {
+function printLiquidBlockEnd(
+  path: LiquidAstPath,
+  leftParentGroupId: symbol | undefined,
+  rightParentGroupId: symbol | undefined,
+): Doc {
+  const node = path.getValue() as LiquidTag;
   if (!node.children) return '';
+  const source = getSource(path);
+  const whitespaceStart = getWhitespaceTrim(
+    node.delimiterWhitespaceStart ?? '',
+    source,
+    node.blockEndPosition!.start - 1,
+    leftParentGroupId,
+  );
+  const whitespaceEnd = getWhitespaceTrimLR(
+    node.delimiterWhitespaceEnd ?? '',
+    source,
+    node.blockEndPosition!.end,
+    leftParentGroupId,
+    rightParentGroupId,
+  );
   return group([
     '{%',
-    node.delimiterWhitespaceStart ?? '',
+    whitespaceStart,
     ` end${node.name} `,
-    node.delimiterWhitespaceEnd ?? '',
+    whitespaceEnd,
     '%}',
   ]);
 }
@@ -244,7 +358,6 @@ function paragraph(
   path: LiquidAstPath,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  parentGroupId?: symbol,
 ): Doc {
   // So I have a bunch of text nodes. What do I want out of 'em?
   const doc: Doc[] = [];
@@ -275,61 +388,12 @@ function paragraph(
         doc.push(word);
       }
     } else {
-      doc.push(genericPrint(path, options, print, parentGroupId));
+      doc.push(genericPrint(path, options, print));
     }
     prev = curr;
   }, 'children');
 
   return fill(doc);
-}
-
-function isWhitespace(source: string, loc: number): boolean {
-  if (loc < 0 || loc >= source.length) return true;
-  return !!source[loc].match(/\s/);
-}
-
-function printLiquidDrop(
-  path: LiquidAstPath,
-  { locStart, locEnd }: LiquidParserOptions,
-  parentGroupId?: symbol,
-) {
-  const node: LiquidDrop = path.getValue() as LiquidDrop;
-  const source = getSource(path);
-  const whitespaceStart = ifBreak(
-    !isWhitespace(source, locStart(node) - 1)
-      ? '-'
-      : node.whitespaceStart,
-    node.whitespaceStart,
-    { groupId: parentGroupId },
-  );
-  const whitespaceEnd = ifBreak(
-    !isWhitespace(source, locEnd(node)) ? '-' : node.whitespaceEnd,
-    node.whitespaceEnd,
-    { groupId: parentGroupId },
-  );
-
-  // This should probably be better than this but it'll do for now.
-  const lines = markupLines(node);
-  if (lines.length > 1) {
-    return group([
-      '{{',
-      whitespaceStart,
-      indent([hardline, join(hardline, lines.map(trim))]),
-      hardline,
-      whitespaceEnd,
-      '}}',
-    ]);
-  }
-
-  return group([
-    '{{',
-    whitespaceStart,
-    ' ',
-    node.markup.trim(),
-    ' ',
-    whitespaceEnd,
-    '}}',
-  ]);
 }
 
 function genericPrint(
@@ -469,23 +533,26 @@ function genericPrint(
     case NodeTypes.LiquidTag: {
       if (isBranchedTag(node)) {
         const wrapper = node.name === 'case' ? indent : identity;
+        const tagGroupId = Symbol('tag-group');
         return group(
           [
-            printLiquidBlockStart(path, options, parentGroupId),
+            printLiquidBlockStart(path, parentGroupId, tagGroupId),
             wrapper(path.map(print, 'children')),
             softline,
-            blockEnd(node),
+            printLiquidBlockEnd(path, tagGroupId, parentGroupId),
           ],
           {
+            id: tagGroupId,
             shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
               node.name,
             ),
           },
         );
       } else if (node.children) {
+        const tagGroupId = Symbol('tag-group');
         return group(
           [
-            printLiquidBlockStart(path, options, parentGroupId),
+            printLiquidBlockStart(path, parentGroupId, tagGroupId),
             indent([
               softline,
               join(
@@ -494,16 +561,21 @@ function genericPrint(
               ),
             ]),
             softline,
-            blockEnd(node),
+            printLiquidBlockEnd(path, tagGroupId, parentGroupId),
           ],
           {
+            id: tagGroupId,
             shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
               node.name,
             ),
           },
         );
       } else {
-        return printLiquidBlockStart(path, options, parentGroupId);
+        return printLiquidBlockStart(
+          path,
+          parentGroupId,
+          parentGroupId,
+        );
       }
     }
 
@@ -511,7 +583,7 @@ function genericPrint(
       if (node.name) {
         return [
           softline,
-          printLiquidBlockStart(path, options, parentGroupId),
+          printLiquidBlockStart(path, parentGroupId, parentGroupId),
           indent([
             softline,
             join(

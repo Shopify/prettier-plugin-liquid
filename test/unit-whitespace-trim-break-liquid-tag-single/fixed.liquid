@@ -2,11 +2,11 @@
 
 In children array,
 
-it should not add Whitespace Trim Characters (WTC) if the liquid drop does not
+it should not add Whitespace Trim Characters (WTC) if the liquid tag does not
 break on a new line
 <div>{% echo 'hello' %}</div>
 
-it should add wtc if the liquid drop breaks on a new line and the previous/next
+it should add wtc if the liquid tag breaks on a new line and the previous/next
 characters were not spaces.
 <div>
   {%- echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' -%}
@@ -17,7 +17,7 @@ characters were not spaces.
   {% echo 'ccc' %}
 </div>
 
-it should not add wtc if the liquid drop breaks on a new line and the
+it should not add wtc if the liquid tag breaks on a new line and the
 previous/next characters were spaces
 <div>
   {% echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' %}
@@ -27,7 +27,7 @@ previous/next characters were spaces
 
 In paragraphs,
 
-it should add wtc if the liquid drop breaks next to a character (but not if not)
+it should add wtc if the liquid tag breaks next to a character (but not if not)
 <div>
   Hey
   {% echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' -%}

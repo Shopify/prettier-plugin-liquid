@@ -88,6 +88,8 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   children?: LiquidHtmlAST;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
+  blockStartPosition: Position;
+  blockEndPosition?: Position;
   delimiterWhitespaceStart?: '-' | '';
   delimiterWhitespaceEnd?: '-' | '';
 }
@@ -126,6 +128,8 @@ export type HtmlNode =
 export interface HtmlElement
   extends HtmlNodeBase<NodeTypes.HtmlElement> {
   children: LiquidHtmlAST;
+  blockStartPosition: Position;
+  blockEndPosition?: Position;
 }
 export interface HtmlVoidElement
   extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {
@@ -176,12 +180,14 @@ export interface TextNode extends ASTNode<NodeTypes.TextNode> {
   value: string;
 }
 
+export interface Position {
+  start: number;
+  end: number;
+}
+
 export interface ASTNode<T> {
   type: T;
-  position: {
-    start: number;
-    end: number;
-  };
+  position: Position;
 }
 
 export function isBranchedTag(node: LiquidHtmlNode) {
@@ -302,6 +308,7 @@ class ASTBuilder {
     }
     // The parent end is the end of the outer tag.
     this.parent.position.end = node.locEnd;
+    this.parent.blockEndPosition = position(node);
     if (
       this.parent.type == NodeTypes.LiquidTag &&
       node.type == ConcreteNodeTypes.LiquidTagClose
@@ -366,6 +373,7 @@ export function cstToAst(
           name: node.name,
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
+          blockStartPosition: position(node),
         });
         break;
       }
@@ -383,6 +391,7 @@ export function cstToAst(
           name: node.name,
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
+          blockStartPosition: position(node),
         });
         break;
       }
@@ -504,6 +513,7 @@ function toHtmlElement(
     name: toName(node.name),
     attributes: toAttributes(node.attrList || [], source),
     position: position(node),
+    blockStartPosition: position(node),
     children: [],
   };
 }
@@ -534,7 +544,7 @@ function toHtmlSelfClosingElement(
 
 function position(
   node: LiquidHtmlConcreteNode | ConcreteAttributeNode,
-): { start: number; end: number } {
+): Position {
   return {
     start: node.locStart,
     end: node.locEnd,
