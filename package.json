@@ -7,8 +7,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc -p .",
-    "example": "prettier --plugin . example.liquid",
-    "format": "prettier -w '{src,test}/**/*.ts'",
+    "format": "prettier --write --ignore-unknown \"{src,test}/**/*.ts\"",
+    "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
     "test": "yarn test:spec '{src,test}/**/*.spec.ts'",
     "test:spec": "./node_modules/.bin/_mocha"
   },

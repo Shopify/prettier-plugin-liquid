@@ -20,9 +20,7 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.children').to.be.undefined;
     expectPath(ast, 'children.1.whitespaceStart').to.eql('');
     expectPath(ast, 'children.1.whitespaceEnd').to.eql('-');
-    expectPath(ast, 'children.1.delimiterWhitespaceStart').to.eql(
-      '-',
-    );
+    expectPath(ast, 'children.1.delimiterWhitespaceStart').to.eql('-');
     expectPath(ast, 'children.1.delimiterWhitespaceEnd').to.eql('');
     expectPosition(ast, 'children.0');
   });
@@ -43,22 +41,14 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.type').to.eql('HtmlVoidElement');
     expectPath(ast, 'children.0.name').to.eql('img');
     expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
-    expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql(
-      'TextNode',
-    );
+    expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql(
       'https://1234',
     );
     expectPath(ast, 'children.0.attributes.1.name').to.eql('loading');
-    expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql(
-      'lazy',
-    );
-    expectPath(ast, 'children.0.attributes.2.name').to.eql(
-      'disabled',
-    );
+    expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
+    expectPath(ast, 'children.0.attributes.2.name').to.eql('disabled');
 
     expectPosition(ast, 'children.0');
     expectPosition(ast, 'children.0.attributes.0');
@@ -90,18 +80,12 @@ describe('Unit: toLiquidHtmlAST', () => {
       expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql(
         'https://1234',
       );
-      expectPath(ast, 'children.0.attributes.1.name').to.eql(
-        'loading',
-      );
+      expectPath(ast, 'children.0.attributes.1.name').to.eql('loading');
       expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql(
         'TextNode',
       );
-      expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql(
-        'lazy',
-      );
-      expectPath(ast, 'children.0.attributes.2.name').to.eql(
-        'disabled',
-      );
+      expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
+      expectPath(ast, 'children.0.attributes.2.name').to.eql('disabled');
     });
   });
 
@@ -153,40 +137,22 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.type').to.eql('LiquidTag');
     expectPath(ast, 'children.0.name').to.eql('if');
     expectPath(ast, 'children.0.children.0').to.exist;
-    expectPath(ast, 'children.0.children.0.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.0.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.0.name').to.eql(null);
     expectPath(ast, 'children.0.children.0.markup').to.eql('');
-    expectPath(ast, 'children.0.children.0.children.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.children.0.children.0.value').to.eql(
-      'A',
-    );
+    expectPath(ast, 'children.0.children.0.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.0.children.0.value').to.eql('A');
 
-    expectPath(ast, 'children.0.children.1.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.1.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.1.name').to.eql('elsif');
     expectPath(ast, 'children.0.children.1.markup').to.eql('B ');
-    expectPath(ast, 'children.0.children.1.children.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.children.1.children.0.value').to.eql(
-      'B',
-    );
+    expectPath(ast, 'children.0.children.1.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.1.children.0.value').to.eql('B');
 
-    expectPath(ast, 'children.0.children.2.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.2.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.2.name').to.eql('else');
-    expectPath(ast, 'children.0.children.2.children.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.children.2.children.0.value').to.eql(
-      'C',
-    );
+    expectPath(ast, 'children.0.children.2.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.2.children.0.value').to.eql('C');
   });
 
   it('should parse liquid case as branches', () => {
@@ -201,46 +167,26 @@ describe('Unit: toLiquidHtmlAST', () => {
     // What if there's whitespace? I think that's a printer problem. If
     // there's freeform text we should somehow catch it.
     expectPath(ast, 'children.0.children.0').to.exist;
-    expectPath(ast, 'children.0.children.0.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.0.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.0.name').to.eql(null);
 
     expectPath(ast, 'children.0.children.1').to.exist;
-    expectPath(ast, 'children.0.children.1.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.1.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.1.name').to.eql('when');
     expectPath(ast, 'children.0.children.1.markup').to.eql('A ');
-    expectPath(ast, 'children.0.children.1.children.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.children.1.children.0.value').to.eql(
-      'A',
-    );
+    expectPath(ast, 'children.0.children.1.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.1.children.0.value').to.eql('A');
 
-    expectPath(ast, 'children.0.children.2.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.2.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.2.name').to.eql('when');
     expectPath(ast, 'children.0.children.2.markup').to.eql('B ');
-    expectPath(ast, 'children.0.children.2.children.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.children.2.children.0.value').to.eql(
-      'B',
-    );
+    expectPath(ast, 'children.0.children.2.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.2.children.0.value').to.eql('B');
 
-    expectPath(ast, 'children.0.children.3.type').to.eql(
-      'LiquidBranch',
-    );
+    expectPath(ast, 'children.0.children.3.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.3.name').to.eql('else');
-    expectPath(ast, 'children.0.children.3.children.0.type').to.eql(
-      'TextNode',
-    );
-    expectPath(ast, 'children.0.children.3.children.0.value').to.eql(
-      'C',
-    );
+    expectPath(ast, 'children.0.children.3.children.0.type').to.eql('TextNode');
+    expectPath(ast, 'children.0.children.3.children.0.value').to.eql('C');
   });
 
   function expectPath(ast: LiquidHtmlNode, path: string) {

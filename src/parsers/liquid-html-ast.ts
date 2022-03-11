@@ -14,12 +14,7 @@ import {
   ConcreteHtmlSelfClosingElement,
 } from './liquid-html-cst';
 import { assertNever } from '../utils';
-import {
-  LiquidHTMLASTParsingError,
-  deepGet,
-  length,
-  dropLast,
-} from './utils';
+import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
 
 export enum NodeTypes {
   Document = 'Document',
@@ -52,14 +47,9 @@ export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   children: LiquidHtmlAST;
 }
 
-export type LiquidNode =
-  | LiquidRawTag
-  | LiquidTag
-  | LiquidDrop
-  | LiquidBranch;
+export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop | LiquidBranch;
 
-export interface LiquidRawTag
-  extends ASTNode<NodeTypes.LiquidRawTag> {
+export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
   /**
    * e.g. raw, style, javascript
    */
@@ -94,8 +84,7 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   delimiterWhitespaceEnd?: '-' | '';
 }
 
-export interface LiquidBranch
-  extends ASTNode<NodeTypes.LiquidBranch> {
+export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {
   /**
    * e.g. else, elsif, when | null when in the main branch
    */
@@ -125,8 +114,7 @@ export type HtmlNode =
   | HtmlSelfClosingElement
   | HtmlRawNode;
 
-export interface HtmlElement
-  extends HtmlNodeBase<NodeTypes.HtmlElement> {
+export interface HtmlElement extends HtmlNodeBase<NodeTypes.HtmlElement> {
   children: LiquidHtmlAST;
   blockStartPosition: Position;
   blockEndPosition?: Position;
@@ -137,8 +125,7 @@ export interface HtmlVoidElement
 }
 export interface HtmlSelfClosingElement
   extends HtmlNodeBase<NodeTypes.HtmlSelfClosingElement> {}
-export interface HtmlRawNode
-  extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
+export interface HtmlRawNode extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
   /**
    * The innerHTML of the tag as a string. Not trimmed. Not parsed.
    */
@@ -229,10 +216,7 @@ class ASTBuilder {
   }
 
   get current() {
-    return deepGet<LiquidHtmlAST>(
-      this.cursor,
-      this.ast,
-    ) as LiquidHtmlAST;
+    return deepGet<LiquidHtmlAST>(this.cursor, this.ast) as LiquidHtmlAST;
   }
 
   get currentPosition(): number {
@@ -241,10 +225,7 @@ class ASTBuilder {
 
   get parent(): LiquidTag | LiquidBranch | HtmlElement | undefined {
     if (this.cursor.length == 0) return undefined;
-    return deepGet<LiquidTag | HtmlElement>(
-      dropLast(1, this.cursor),
-      this.ast,
-    );
+    return deepGet<LiquidTag | HtmlElement>(dropLast(1, this.cursor), this.ast);
   }
 
   open(node: LiquidHtmlNode) {
@@ -313,8 +294,7 @@ class ASTBuilder {
       this.parent.type == NodeTypes.LiquidTag &&
       node.type == ConcreteNodeTypes.LiquidTagClose
     ) {
-      this.parent.delimiterWhitespaceStart =
-        node.whitespaceStart ?? '';
+      this.parent.delimiterWhitespaceStart = node.whitespaceStart ?? '';
       this.parent.delimiterWhitespaceEnd = node.whitespaceEnd ?? '';
     }
     this.cursor.pop();
@@ -403,8 +383,7 @@ export function cstToAst(
           body: node.body,
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
-          delimiterWhitespaceStart:
-            node.delimiterWhitespaceStart ?? '',
+          delimiterWhitespaceStart: node.delimiterWhitespaceStart ?? '',
           delimiterWhitespaceEnd: node.delimiterWhitespaceEnd ?? '',
           position: position(node),
         });
@@ -504,10 +483,7 @@ function toLiquidDrop(node: ConcreteLiquidDrop): LiquidDrop {
   };
 }
 
-function toHtmlElement(
-  node: ConcreteHtmlTagOpen,
-  source: string,
-): HtmlElement {
+function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
   return {
     type: NodeTypes.HtmlElement,
     name: toName(node.name),

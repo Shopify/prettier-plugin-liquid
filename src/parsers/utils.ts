@@ -1,10 +1,7 @@
 import { MatchResult } from 'ohm-js';
 import lineColumn from 'line-column';
 
-export function deepGet<T = any>(
-  path: (string | number)[],
-  obj: any,
-): T {
+export function deepGet<T = any>(path: (string | number)[], obj: any): T {
   return path.reduce((curr: any, k: string | number) => {
     if (curr && curr[k] !== undefined) return curr[k];
     return undefined;

@@ -31,8 +31,7 @@ export interface ConcreteBasicNode<T> {
   locEnd: number;
 }
 
-export interface ConcreteHtmlNodeBase<T>
-  extends ConcreteBasicNode<T> {
+export interface ConcreteHtmlNodeBase<T> extends ConcreteBasicNode<T> {
   name: string | ConcreteLiquidDrop;
   attrList?: ConcreteAttributeNode[];
 }
@@ -53,8 +52,7 @@ export interface ConcreteHtmlTagOpen
 export interface ConcreteHtmlTagClose
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagClose> {}
 
-export interface ConcreteAttributeNodeBase<T>
-  extends ConcreteBasicNode<T> {
+export interface ConcreteAttributeNodeBase<T> extends ConcreteBasicNode<T> {
   name: string;
   value: (ConcreteLiquidNode | ConcreteTextNode)[];
 }
@@ -140,8 +138,7 @@ export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
 
 export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   const locStart = (tokens: any) => tokens[0].source.startIdx;
-  const locEnd = (tokens: any) =>
-    tokens[tokens.length - 1].source.endIdx;
+  const locEnd = (tokens: any) => tokens[tokens.length - 1].source.endIdx;
   const textNode = {
     type: ConcreteNodeTypes.TextNode,
     value: function () {

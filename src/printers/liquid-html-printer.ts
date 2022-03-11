@@ -18,16 +18,8 @@ type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 const identity = <T>(x: T): T => x;
 
 const { builders } = doc;
-const {
-  fill,
-  group,
-  hardline,
-  ifBreak,
-  indent,
-  join,
-  line,
-  softline,
-} = builders;
+const { fill, group, hardline, ifBreak, indent, join, line, softline } =
+  builders;
 
 const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'html',
@@ -51,9 +43,7 @@ function bodyLines(str: string): string[] {
     .split('\n');
 }
 
-function markupLines(
-  node: LiquidTag | LiquidDrop | LiquidBranch,
-): string[] {
+function markupLines(node: LiquidTag | LiquidDrop | LiquidBranch): string[] {
   return node.markup.trim().split('\n');
 }
 
@@ -69,9 +59,7 @@ function reindent(lines: string[], skipFirst = false): string[] {
   }
 
   const indentStrip = ' '.repeat(minIndentLevel);
-  return lines
-    .map((line) => line.replace(indentStrip, ''))
-    .map(trimEnd);
+  return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
 }
 
 function isWhitespace(source: string, loc: number): boolean {
@@ -104,9 +92,7 @@ function getWhitespaceTrimLR(
   leftParentGroupId?: symbol,
   rightParentGroupId?: symbol,
 ) {
-  const breaksContent = !isWhitespace(source, loc)
-    ? '-'
-    : currWhitespaceTrim;
+  const breaksContent = !isWhitespace(source, loc) ? '-' : currWhitespaceTrim;
   const flatContent = currWhitespaceTrim;
   return ifBreak(
     breaksContent,
@@ -172,8 +158,7 @@ function printLiquidBlockStart(
   const source = getSource(path);
   const lines = markupLines(node);
   const positionStart =
-    (node as LiquidTag).blockStartPosition?.start ??
-    node.position.start;
+    (node as LiquidTag).blockStartPosition?.start ?? node.position.start;
   const positionEnd =
     (node as LiquidTag).blockStartPosition?.end ?? node.position.end;
 
@@ -206,12 +191,7 @@ function printLiquidBlockStart(
     return group([
       '{%',
       whitespaceStart,
-      indent([
-        hardline,
-        node.name,
-        ' ',
-        join(hardline, lines.map(trim)),
-      ]),
+      indent([hardline, node.name, ' ', join(hardline, lines.map(trim))]),
       hardline,
       whitespaceEnd,
       '%}',
@@ -265,10 +245,7 @@ function attributes(path: any, _options: any, print: any): Doc {
   const node = path.getValue();
   if (node.attributes.length == 0) return '';
   return group(
-    [
-      indent([line, join(line, path.map(print, 'attributes'))]),
-      softline,
-    ],
+    [indent([line, join(line, path.map(print, 'attributes'))]), softline],
     {
       shouldBreak: node.attributes.length > 2,
     },
@@ -406,10 +383,7 @@ function genericPrint(
   switch (node.type) {
     case NodeTypes.Document: {
       return [
-        join(
-          hardline,
-          mapWithNewLine(path, options, print, 'children'),
-        ),
+        join(hardline, mapWithNewLine(path, options, print, 'children')),
         hardline,
       ];
     }
@@ -458,12 +432,7 @@ function genericPrint(
     }
 
     case NodeTypes.HtmlVoidElement: {
-      return group([
-        '<',
-        node.name,
-        attributes(path, options, print),
-        '>',
-      ]);
+      return group(['<', node.name, attributes(path, options, print), '>']);
     }
 
     case NodeTypes.HtmlSelfClosingElement: {
@@ -479,19 +448,11 @@ function genericPrint(
       const lines = bodyLines(node.body);
       const body =
         lines.length > 0 && lines[0] !== ''
-          ? [
-              indent([hardline, join(hardline, reindent(lines))]),
-              hardline,
-            ]
+          ? [indent([hardline, join(hardline, reindent(lines))]), hardline]
           : [softline];
 
       return group([
-        group([
-          '<',
-          node.name,
-          attributes(path, options, print),
-          '>',
-        ]),
+        group(['<', node.name, attributes(path, options, print), '>']),
         body,
         ['</', node.name, '>'],
       ]);
@@ -543,9 +504,7 @@ function genericPrint(
           ],
           {
             id: tagGroupId,
-            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
-              node.name,
-            ),
+            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
           },
         );
       } else if (node.children) {
@@ -555,27 +514,19 @@ function genericPrint(
             printLiquidBlockStart(path, parentGroupId, tagGroupId),
             indent([
               softline,
-              join(
-                softline,
-                mapWithNewLine(path, options, print, 'children'),
-              ),
+              // NEED TO REVIEW THIS SHIT. FUCKKKKK.
+              join(softline, mapWithNewLine(path, options, print, 'children')),
             ]),
             softline,
             printLiquidBlockEnd(path, tagGroupId, parentGroupId),
           ],
           {
             id: tagGroupId,
-            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(
-              node.name,
-            ),
+            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
           },
         );
       } else {
-        return printLiquidBlockStart(
-          path,
-          parentGroupId,
-          parentGroupId,
-        );
+        return printLiquidBlockStart(path, parentGroupId, parentGroupId);
       }
     }
 
@@ -586,19 +537,13 @@ function genericPrint(
           printLiquidBlockStart(path, parentGroupId, parentGroupId),
           indent([
             softline,
-            join(
-              softline,
-              mapWithNewLine(path, options, print, 'children'),
-            ),
+            join(softline, mapWithNewLine(path, options, print, 'children')),
           ]),
         ];
       } else if (node.children.length > 0) {
         return indent([
           softline,
-          join(
-            softline,
-            mapWithNewLine(path, options, print, 'children'),
-          ),
+          join(softline, mapWithNewLine(path, options, print, 'children')),
         ]);
       } else {
         return '';
