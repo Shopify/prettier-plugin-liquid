@@ -23,59 +23,101 @@
 
 Prettier is an opinionated code formatter. It enforces a consistent style by parsing your code and re-printing it with its own rules that take the maximum line length into account, wrapping code when necessary.
 
-This plugin adds support for the Liquid/HTML language to Prettier.
-
-## Can this be used in production?
-
-Not yet. We have a list of issues we're going through before it is considered stable.
-
-As such, **this is a developer preview of @shopify/prettier-plugin-liquid.**
-
-## Intro
-
-Wanted to know how hard it is [to do like the Handlebars folks](https://prettier.io/blog/2021/05/09/2.3.0.html#:~:text=The%20feature%20is,under%20the%20hood.) and make a prettier plugin for Liquid.
-
-Our problem: Liquid is a _templating_ language. As such, its Abstract Syntax Tree (AST) has no notion of what its text nodes contain.
-
-And since [prettier](https://prettier.io/) is really a `function(ast) -> string`, you can't make pretty Liquid + HTML if the AST you have has no notion of HTML.
-
-It's possible though:
+**This is the developer preview** of the Liquid/HTML prettier plugin.
 
 https://user-images.githubusercontent.com/4990691/145229362-568ab7d4-4345-42b7-8794-59f7683a88a3.mp4
 
-(That's what this prototype does)
+## Can this be used in production?
 
-## How we can handle it
+_Not yet_. We have a [list of issues](todo.md) we're going through before it is considered stable.
 
-First, we need to make a Liquid + HTML parser that supports a stricter form of Liquid.
+## Installation
 
-That is, your Liquid + HTML should form a tree. This works:
+yarn:
 
-```liquid
-{% for product in all_products %}
-  <img
-    src="{{ product.featured_image | image_url }}"
-    loading="lazy"
-  >
-{% endfor %}
+```
+yarn add --dev prettier @shopify/prettier-plugin-liquid
+# or globally
+yarn global add prettier @shopify/prettier-plugin-liquid
 ```
 
-Since it can be represented as this tree:
+npm:
 
-![docs/liquid-html-tree.png](docs/liquid-html-tree.png)
+```
+npm install --save-dev prettier @shopify/prettier-plugin-liquid
+# or globally
+npm install --global prettier @shopify/prettier-plugin-liquid
+```
 
-And, when it does, we can we can turn it into something _prettier_.
+## Usage
 
-## How it works
+### With Node.js
 
-1. We make a [harc/ohm](https://github.com/harc/ohm) grammar that parses the tokens of the source code. [(Link to LiquidHTML grammar.)](grammar/liquid-html.ohm)
-2. From Ohm's output, we build a Concrete Syntax Tree (CST). [(Link to Grammar->CST code.)](src/parsers/liquid-html-cst.ts)
-3. From the nodes in the CST, we build an AST. [(Link to CST->AST code.)](src/parsers/liquid-html-ast.ts)
-4. We pass that AST to the prettier printer and output something pretty. [(Link to LiquidHTML printer)](src/printers/liquid-html-printer.ts)
+If you installed prettier as a local dependency, you can add prettier as a script in your `package.json`,
+
+```json
+{
+  "scripts": {
+    "prettier": "prettier"
+  }
+}
+```
+
+and then run it via
+
+```bash
+yarn run prettier path/to/file.liquid --write
+# or
+npm run prettier -- path/to/file.liquid --write
+```
+
+If you installed globally, run
+
+```bash
+prettier path/to/file.liquid --write
+```
+
+### In the Browser
+
+This package exposes a `standalone.js` that can be used alongside Prettier's own `standalone.js` to make the Liquid plugin work in browsers without a compile step.
+
+First, grab both standalone scripts from an npm CDN like [unpkg](https://unpkg.com/):
+
+```html
+<script src="https://unpkg.com/prettier/standalone.js"></script>
+<script src="https://unpkg.com/@shopify/prettier-plugin-liquid/standalone.js"></script>
+```
+
+Then use Prettier with Liquid, just like this:
+
+```js
+prettier.format(YOUR_CODE, {
+  plugins: prettierPlugins,
+  parser: "liquid-html"
+});
+```
+
+<!--
+TODO: See this code in action [in this basic demo](https://jsbin.com/butoruw/edit?html,output).
+-->
+
+### With Bundlers
+
+Bundlers like webpack, Rollup or browserify automatically recognize how to handle the PHP plugin. Remember that even when using a bundler, you still have to use the standalone builds:
+
+```js
+import prettier from "prettier/standalone";
+import liquidPlugin from "@shopify/prettier-plugin-liquid/standalone";
+
+prettier.format(YOUR_CODE, {
+  plugins: [liquidPlugin],
+  parser: "liquid-html"
+});
+```
 
 ## Liquid that can't be prettier
 
-Like the Ember/Handlebars plugin, this prettier plugin only supports a _subset_ of Liquid. One that can be turned into a tree.
+Like the [Ember/Handlebars plugin](https://prettier.io/blog/2021/05/09/2.3.0.html#:~:text=The%20feature%20is,under%20the%20hood.), this prettier plugin only supports a _subset_ of Liquid. One that can be turned into a tree.
 
 The most common use case that isn't supported is opening HTML tags inside a liquid if without closing it (and vice-versa):
 
@@ -124,81 +166,6 @@ However... We _do_ support Liquid variables as HTML tag names.
 </{{ wrapper }}>
 ```
 
-## Things that would make this production ready
+## Contributing
 
-- [ ] The conditional addition of whitespace trimming modes to Liquid variables and tags when an element breaks:
-
-  ```liquid
-  Input:
-    <div>{% if A %} {{ thing }} {% endif %}</div>
-
-  Output:
-    <div>
-      {%- if A %}
-        {{ thing }}
-      {% endif -%}
-    </div>
-  ```
-
-  Since there wasn't whitespace before prettier pretty-printed the code. Prettier should _never_ break existing code, so if the code splits on a new line.
-
-  - [X] Inside `HTMLElement`s
-  - [X] Inside `HTMLElement`s which contain `TextNode`s (paragraphs)
-  - [ ] Inside `LiquidTag`s
-  - [ ] Inside `LiquidTag`s which contain `TextNode`s (paragraphs)
-  - [ ] Inside `HtmlAttributes`s
-  - [ ] Inside `HtmlAttributes`s which contain `TextNode`s (paragraphs)
-
-- [ ] Identify issues by running prettier on our themes
-  - [ ] Dawn
-
-- [ ] Elaborate `LiquidTag` syntax support
-  - [ ] Potentially break on long list of arguments
-- [ ] Elaborate `LiquidDrop` syntax support
-  - [ ] Conditions
-  - [ ] Operators
-  - [ ] Pipelines
-  - [ ] Arguments
-- [ ] Elaborate `{% liquid %}` syntax support
-  - [ ] indenting `if` tags
-  - [ ] indenting `case` tags
-
-## Things that we won't do
-
-- Liquid + JavaScript (very hard)
-- Liquid + CSS (hard)
-
-### Reasoning
-
-It should be a non-goal to make a great experience for JavaScript + Liquid or CSS + Liquid. Use cases like these are better served by leveraging the existing tooling from the community. If you need data provided by Liquid, all you need to do is dump it and then reference it as though it was a global object or CSS var.
-
-```liquid
-<!-- layout/theme.liquid -->
-<script src="{{ 'bundle.js' | asset_url }}" defer></script>
-<script>
-  window.myThemeData = {
-     dataINeed: {{ dataINeed | json }},
-  }
-</script>
-
-{{ 'theme.css' | asset_url | stylesheet_tag: preload: true }}
-<style>
-  :root {
-    --theme-background-color: {{ settingBackgroundColor }};
-  }
-</style>
-```
-
-```javascript
-// assets/bundle.js
-console.log(window.myThemeData.dataINeed);
-```
-
-```css
-// assets/theme.css
-body {
-  background-color: var(--theme-background-color);
-}
-```
-
-The benefit of going this way is that you can then use all the tooling you want for CSS or JavaScript independently of Liquid. e.g. prettier plugin for both languages, write your JavaScript in TypeScript, etc.
+[Read our contributing guide](CONTRIBUTING.md)
