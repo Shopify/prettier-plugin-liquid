@@ -46,6 +46,7 @@ But this doesn't because the div is closed before the if tag was closed:
 Here's a flowchart that roughly illustrates the process.
 
 ```mermaid
+%%{init: { 'theme': 'dark', 'themeVariables': { 'fontFamily': 'monospace'} } }%%
 flowchart TB
     subgraph INPUT
       s1["#lt;ul#gt;{% for el in col %}<br>#lt;li class=#quot;{% cycle 'odd', 'even' %}#quot;#gt;<br>  {{ el }}<br>#lt;/li#gt;<br>{%endfor%}<br>#lt;/ul#gt;"]
@@ -102,8 +103,8 @@ flowchart TB
     CST -- "toAST(cst)" --> AST
     AST -- "prettier.print(ast, options)" --> OUTPUT
     style TOKENS text-align: left;
-    style s1 text-align:left,font:monospace
-    style o1 text-align:left,font:monospace
+    style s1 text-align:left
+    style o1 text-align:left
 ```
 
 
