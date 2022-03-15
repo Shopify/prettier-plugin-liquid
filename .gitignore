@@ -7,3 +7,4 @@ TODO
 build/shims/liquid-html-ohm.js
 standalone.js
 standalone.js.LICENSE.txt
+**/actual.liquid
