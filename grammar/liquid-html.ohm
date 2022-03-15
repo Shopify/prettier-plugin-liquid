@@ -66,7 +66,7 @@ LiquidHTML {
   quotes =  "'" | "\""
 
   LiquidNode = liquidNode
-  liquidNode = liquidRawTag | liquidDrop | liquidTagOpen | liquidTagClose | liquidTag
+  liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag
 
   liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
