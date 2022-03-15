@@ -47,6 +47,18 @@ To run the integration tests (where we make sure an input file gets transformed 
 yarn test:integration
 ```
 
+To run from source on another repo or file:
+
+```bash
+# build the code so you can run it (only need to do it once)
+yarn build
+
+# run prettier on a file or folder
+prettier --plugin . --write path/to/files.liquid
+```
+
+## Running from source on another code base
+
 ### Adding new integration tests
 
 - Copy any of the folder in the `test/` directory and rename it to something appropriate.
