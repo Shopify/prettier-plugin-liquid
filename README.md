@@ -35,7 +35,7 @@ _Not yet_. We have a [list of issues](todo.md) we're going through before it is 
 
 yarn:
 
-```
+```bash
 yarn add --dev prettier @shopify/prettier-plugin-liquid
 # or globally
 yarn global add prettier @shopify/prettier-plugin-liquid
@@ -43,7 +43,7 @@ yarn global add prettier @shopify/prettier-plugin-liquid
 
 npm:
 
-```
+```bash
 npm install --save-dev prettier @shopify/prettier-plugin-liquid
 # or globally
 npm install --global prettier @shopify/prettier-plugin-liquid
