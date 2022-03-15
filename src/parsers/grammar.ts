@@ -1,12 +1,7 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import ohm from 'ohm-js';
 
 export const liquidHtmlGrammar = ohm.grammar(
-  fs.readFileSync(
-    path.join(__dirname, '../../grammar/liquid-html.ohm'),
-    'utf8',
-  ),
+  require('../../grammar/liquid-html.ohm.js'),
 );
 
 // see ../../grammar/liquid-html.ohm for full list

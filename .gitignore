@@ -4,3 +4,6 @@ yarn-error.log
 .DS_Store
 dawn
 TODO
+build/shims/liquid-html-ohm.js
+standalone.js
+standalone.js.LICENSE.txt

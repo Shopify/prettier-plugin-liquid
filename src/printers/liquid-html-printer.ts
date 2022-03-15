@@ -217,18 +217,18 @@ function printLiquidBlockEnd(
   rightParentGroupId: symbol | undefined,
 ): Doc {
   const node = path.getValue() as LiquidTag;
-  if (!node.children) return '';
+  if (!node.children || !node.blockEndPosition) return '';
   const source = getSource(path);
   const whitespaceStart = getWhitespaceTrim(
     node.delimiterWhitespaceStart ?? '',
     source,
-    node.blockEndPosition!.start - 1,
+    node.blockEndPosition.start - 1,
     leftParentGroupId,
   );
   const whitespaceEnd = getWhitespaceTrimLR(
     node.delimiterWhitespaceEnd ?? '',
     source,
-    node.blockEndPosition!.end,
+    node.blockEndPosition.end,
     leftParentGroupId,
     rightParentGroupId,
   );

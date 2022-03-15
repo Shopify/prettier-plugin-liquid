@@ -28,6 +28,8 @@ jobs:
 
       - name: Build the code
         run: yarn build
+        env:
+          NODE_ENV: production
 
       - name: Check formatting
         run: yarn format:check

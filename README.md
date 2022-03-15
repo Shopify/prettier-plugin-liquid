@@ -92,7 +92,7 @@ Then use Prettier with Liquid, just like this:
 
 ```js
 prettier.format(YOUR_CODE, {
-  plugins: prettierPlugins,
+  plugins: [prettierPluginLiquid],
   parser: "liquid-html"
 });
 ```
