@@ -43,12 +43,12 @@ But this doesn't because the div is closed before the if tag was closed:
    3. From the nodes in the CST, we build an AST. [(Link to CST->AST code.)](src/parsers/liquid-html-ast.ts)
 2. From the AST, we build a [`Doc`](https://github.com/prettier/prettier/blob/main/commands.md#prettiers-intermediate-representation-doc) that prettier then prints for us.[(Link to LiquidHTML printer)](src/printers/liquid-html-printer.ts)
 
-Here's a flowchart that roughly illustrates the parsing process.
+Here's a flowchart that roughly illustrates the process.
 
 ```mermaid
 flowchart TB
     subgraph INPUT
-      s1["<code>#lt;ul#gt;<br>  {% for el in col %}<br>    #lt;li class=#quot;{% cycle 'odd', 'even' %}#quot;#gt;<br>      {{ el }}<br>    #lt;/li#gt;<br>  {% endfor %}<br>#lt;/ul#gt;</code>"]
+      s1["#lt;ul#gt;{% for el in col %}<br>#lt;li class=#quot;{% cycle 'odd', 'even' %}#quot;#gt;<br>  {{ el }}<br>#lt;/li#gt;<br>{%endfor%}<br>#lt;/ul#gt;"]
     end
     subgraph TOKENS ["OHM TOKENS"]
       direction TB
@@ -63,7 +63,7 @@ flowchart TB
       t3 -->
       t4["{{ el }}"] -->
       t5["#lt;/li#gt;"] -->
-      t6["{% endfor %}"]
+      t6["{%endfor%}"]
     end
     subgraph CST
       direction TB
@@ -74,10 +74,10 @@ flowchart TB
       c4["LiquidDrop#el"] -->
       c5["HtmlTagClose#li"] -->
       c6["LiquidTagClose#for"]
-      c3 -- attributes -->
+      c3 .- attributes .-
       c3a["HtmlAttribute"]
-      c3a -- name --> c3an["class"]
-      c3a -- value --> c3av
+      c3a .- name .- c3an["class"]
+      c3a .- value .- c3av
       c3av["LiquidTag#cycle 'odd', 'even'"]
 
     end
@@ -94,11 +94,16 @@ flowchart TB
       a3a -- value --> a3av
       a3av["LiquidTag#cycle 'odd', 'even'"]
     end
-    INPUT --> TOKENS
-    TOKENS --> CST
-    CST --> AST
+    subgraph OUTPUT
+      o1["#lt;ul#gt;<br>  {% for el in col %}<br>    #lt;li class=#quot;{% cycle 'odd', 'even' %}#quot;#gt;<br>      {{ el }}<br>    #lt;/li#gt;<br>  {% endfor %}<br>#lt;/ul#gt;"]
+    end
+    INPUT -- "ohmGrammar.match(input)" --> TOKENS
+    TOKENS -- "toCST(tokens)" --> CST
+    CST -- "toAST(cst)" --> AST
+    AST -- "prettier.print(ast, options)" --> OUTPUT
     style TOKENS text-align: left;
-    style s1 text-align:left
+    style s1 text-align:left,font:monospace
+    style o1 text-align:left,font:monospace
 ```
 
 
