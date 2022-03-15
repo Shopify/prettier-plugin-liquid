@@ -29,7 +29,7 @@ https://user-images.githubusercontent.com/4990691/145229362-568ab7d4-4345-42b7-8
 
 ## Can this be used in production?
 
-_Not yet_. We have a [list of issues](todo.md) we're going through before it is considered stable.
+_Not yet_. We have a [list of issues](TODO.md) we're going through before it is considered stable.
 
 ## Installation
 
@@ -53,7 +53,9 @@ npm install --global prettier @shopify/prettier-plugin-liquid
 
 ### With Node.js
 
-If you installed prettier as a local dependency, you can add prettier as a script in your `package.json`,
+#### As a local dependency
+
+You can add prettier as a script in your `package.json`,
 
 ```json
 {
@@ -71,7 +73,9 @@ yarn run prettier path/to/file.liquid --write
 npm run prettier -- path/to/file.liquid --write
 ```
 
-If you installed globally, run
+#### As a global dependency
+
+If you installed the plugin globally, run
 
 ```bash
 prettier path/to/file.liquid --write
@@ -103,7 +107,7 @@ TODO: See this code in action [in this basic demo](https://jsbin.com/butoruw/edi
 
 ### With Bundlers
 
-Bundlers like webpack, Rollup or browserify automatically recognize how to handle the PHP plugin. Remember that even when using a bundler, you still have to use the standalone builds:
+Bundlers like webpack, Rollup or browserify automatically recognize how to handle the plugin. Remember that even when using a bundler, you still have to use the standalone builds:
 
 ```js
 import prettier from "prettier/standalone";
@@ -117,9 +121,9 @@ prettier.format(YOUR_CODE, {
 
 ## Liquid that can't be prettier
 
-Like the [Ember/Handlebars plugin](https://prettier.io/blog/2021/05/09/2.3.0.html#:~:text=The%20feature%20is,under%20the%20hood.), this prettier plugin only supports a _subset_ of Liquid. One that can be turned into a tree.
+Like the [Ember/Handlebars plugin](https://prettier.io/blog/2021/05/09/2.3.0.html#:~:text=The%20feature%20is,under%20the%20hood.), this prettier plugin only supports a _subset_ of Liquid: Liquid that can be turned into a tree.
 
-The most common use case that isn't supported is opening HTML tags inside a liquid if without closing it (and vice-versa):
+A common use case that isn't supported is opening HTML tags inside a Liquid block without closing it (and vice-versa):
 
 ```liquid
 // not supported
