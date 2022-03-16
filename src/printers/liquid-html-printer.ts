@@ -9,6 +9,7 @@ import {
   isBranchedTag,
 } from '../parsers';
 import { assertNever } from '../utils';
+import { getLeftSibling, isWhitespace } from './utils';
 
 type LiquidAstPath = AstPath<LiquidHtmlNode>;
 type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
@@ -59,11 +60,6 @@ function reindent(lines: string[], skipFirst = false): string[] {
 
   const indentStrip = ' '.repeat(minIndentLevel);
   return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
-}
-
-function isWhitespace(source: string, loc: number): boolean {
-  if (loc < 0 || loc >= source.length) return true;
-  return !!source[loc].match(/\s/);
 }
 
 // Optionally converts a '' into '-' if the parent group breaks and
@@ -392,6 +388,7 @@ function printLiquidTag(
   parentGroupId?: symbol,
 ): Doc {
   const node = path.getValue();
+  const parentNode = path.getParentNode();
   if (!node.children) {
     return printLiquidBlockStart(path, parentGroupId, parentGroupId);
   }
@@ -416,7 +413,12 @@ function printLiquidTag(
   } else {
     meat.push(
       indent([
-        innerLeadingWhitespace(node, source, parentGroupId),
+        innerLeadingWhitespace(
+          node,
+          getLeftSibling(node, parentNode),
+          source,
+          parentGroupId,
+        ),
         join(softline, mapWithNewLine(path, options, print, 'children')),
       ]),
     );
@@ -428,8 +430,37 @@ function printLiquidTag(
   });
 }
 
+function isTrimmingOuterRight(node: LiquidHtmlNode | undefined): boolean {
+  if (!node) return false;
+  switch (node.type) {
+    case NodeTypes.LiquidRawTag:
+    case NodeTypes.LiquidTag:
+      return (node.delimiterWhitespaceEnd ?? node.whitespaceEnd) === '-';
+    case NodeTypes.LiquidBranch:
+      return false;
+    case NodeTypes.LiquidDrop:
+      return node.whitespaceEnd === '-';
+    default:
+      return false;
+  }
+}
+
+function isTrimmingOuterLeft(node: LiquidHtmlNode | undefined): boolean {
+  if (!node) return false;
+  switch (node.type) {
+    case NodeTypes.LiquidRawTag:
+    case NodeTypes.LiquidTag:
+    case NodeTypes.LiquidBranch:
+    case NodeTypes.LiquidDrop:
+      return node.whitespaceStart === '-';
+    default:
+      return false;
+  }
+}
+
 function innerLeadingWhitespace(
   node: LiquidTag | LiquidBranch,
+  sibling: LiquidHtmlNode | undefined,
   source: string,
   parentGroupId?: symbol,
 ) {
@@ -438,17 +469,18 @@ function innerLeadingWhitespace(
     node.blockStartPosition.end,
   );
   const notTrimmingToTheRight = node.whitespaceEnd !== '-';
-  const trimmingToTheLeft = node.whitespaceStart === '-'; // || (!breaking && !isWhitespace(beforeTag));
+  const isTrimmingToTheLeft =
+    isTrimmingOuterLeft(node) || isTrimmingOuterRight(sibling);
 
   return ifBreak(
     hasWhitespaceInInput && notTrimmingToTheRight ? line : softline,
     hasWhitespaceInInput &&
       notTrimmingToTheRight &&
-      (trimmingToTheLeft ||
+      (isTrimmingToTheLeft ||
         !isWhitespace(source, node.blockStartPosition.start - 1))
       ? line
       : softline,
-    { groupId: parentGroupId }, // if it
+    { groupId: parentGroupId },
   );
 }
 
@@ -460,6 +492,7 @@ function printLiquidBranch(
 ) {
   const node = path.getValue();
   const parentNode: LiquidTag = path.getParentNode() as any;
+  const grandParentNode = path.getParentNode(1);
   const source = getSource(path);
 
   const meat = join(softline, mapWithNewLine(path, options, print, 'children'));
@@ -469,15 +502,23 @@ function printLiquidBranch(
   }
 
   if (!node.name) {
-    return indent([innerLeadingWhitespace(parentNode, source), meat]);
+    return indent([
+      innerLeadingWhitespace(
+        parentNode,
+        getLeftSibling(parentNode, grandParentNode),
+        source,
+        parentGroupId,
+      ),
+      meat,
+    ]);
   }
 
-  const leadingWhitespace = isWhitespace(source, node.position.start)
+  const outerLeadingWhitespace = isWhitespace(source, node.position.start)
     ? line
     : softline;
 
   return [
-    leadingWhitespace,
+    outerLeadingWhitespace,
     printLiquidBlockStart(
       path as AstPath<LiquidBranch>,
       parentGroupId,

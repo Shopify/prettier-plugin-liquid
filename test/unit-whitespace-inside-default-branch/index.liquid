@@ -1,0 +1,19 @@
+When it doesn't break, it should conditionally keep a leading space
+
+It should not keep the leading space if there's space before the tag
+{% if A %} space{% endif %}
+
+It should not keep the leading space if it is stripped anyway
+{% if A -%} space{% endif %}
+
+It should keep the whitespace if the whitespace before the tag is stripped
+{%- if A %} space{% endif -%}
+{% if A %} space{% endif %}
+
+It should keep the whitespace in this weird exception case
+<p>
+{{ value }}{% if A %} aaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}
+</p>
+
+It should keep the whitespace if it is included inline in a paragraph
+<p>haha{% if A %} space{% endif %}</p>

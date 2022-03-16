@@ -52,14 +52,6 @@ when it does break and there wasn't whitespace, it should add WTCs
 
 In LiquidBranch children array,
 
-when it doesn't break, it should conditionally keep a leading space
-{% if A %}space{% endif %}
-{% if A -%}space{% endif %}
-{%- if A %} space{% endif %}
-
-when it doesn't break, in a paragraph, is should keep a leading space
-<p>haha{% if A %} space{% endif %}</p>
-
 when it does break and there was a whitespace, it should not change anything
 {% if true %}
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
