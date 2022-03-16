@@ -21,7 +21,7 @@
     "build:ts": "tsc -p .",
     "build:shims": "node build/shims.js",
     "build:standalone": "webpack -c webpack.config.js",
-    "debug": "node --inspect-brk node_modules/.bin/_mocha",
+    "debug": "node --inspect-brk node_modules/.bin/_mocha \"{src,test}/**/*.ts\"",
     "format": "prettier --write --ignore-unknown \"{src,test}/**/*.ts\"",
     "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
     "prettier": "prettier --plugin . --parser=liquid-html",

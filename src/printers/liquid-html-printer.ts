@@ -7,7 +7,6 @@ import {
   LiquidBranch,
   LiquidDrop,
   isBranchedTag,
-  LiquidNode,
 } from '../parsers';
 import { assertNever } from '../utils';
 
@@ -148,11 +147,11 @@ function printLiquidDrop(
 }
 
 function printLiquidBlockStart(
-  path: LiquidAstPath,
+  path: AstPath<LiquidTag | LiquidBranch>,
   leftParentGroupId: symbol | undefined,
   rightParentGroupId: symbol | undefined,
 ): Doc {
-  const node = path.getValue() as LiquidTag | LiquidBranch;
+  const node = path.getValue();
   if (!node.name) return '';
 
   const source = getSource(path);
@@ -212,11 +211,11 @@ function printLiquidBlockStart(
 }
 
 function printLiquidBlockEnd(
-  path: LiquidAstPath,
+  path: AstPath<LiquidTag>,
   leftParentGroupId: symbol | undefined,
   rightParentGroupId: symbol | undefined,
 ): Doc {
-  const node = path.getValue() as LiquidTag;
+  const node = path.getValue();
   if (!node.children || !node.blockEndPosition) return '';
   const source = getSource(path);
   const whitespaceStart = getWhitespaceTrim(
@@ -273,6 +272,19 @@ function originallyHadLineBreaks(
 
 function getSource(path: LiquidAstPath) {
   return (path.stack[0] as DocumentNode).source;
+}
+
+function mapGenericPrint(
+  path: AstPath,
+  property: string,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
+) {
+  return path.map(
+    (p) => genericPrint(p, options, print, parentGroupId),
+    property,
+  );
 }
 
 /**
@@ -371,6 +383,111 @@ function paragraph(
   }, 'children');
 
   return fill(doc);
+}
+
+function printLiquidTag(
+  path: AstPath<LiquidTag>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
+): Doc {
+  const node = path.getValue();
+  if (!node.children) {
+    return printLiquidBlockStart(path, parentGroupId, parentGroupId);
+  }
+  const tagGroupId = Symbol('tag-group');
+  const blockStart = printLiquidBlockStart(path, parentGroupId, tagGroupId); // {% if ... %}
+  const blockEnd = printLiquidBlockEnd(path, tagGroupId, parentGroupId); // {% endif %}
+  const source = getSource(path);
+
+  let meat: Doc[] = [];
+  let trailingWhitespace: Doc[] = [];
+  if (node.blockEndPosition) {
+    trailingWhitespace.push(
+      isWhitespace(source, node.blockEndPosition.start - 1) ? line : softline,
+    );
+  }
+
+  if (isBranchedTag(node)) {
+    const wrapper = node.name === 'case' ? indent : identity;
+    meat.push([
+      wrapper(mapGenericPrint(path, 'children', options, print, parentGroupId)),
+    ]);
+  } else {
+    meat.push(
+      indent([
+        innerLeadingWhitespace(node, source, parentGroupId),
+        join(softline, mapWithNewLine(path, options, print, 'children')),
+      ]),
+    );
+  }
+
+  return group([blockStart, ...meat, ...trailingWhitespace, blockEnd], {
+    id: tagGroupId,
+    shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
+  });
+}
+
+function innerLeadingWhitespace(
+  node: LiquidTag | LiquidBranch,
+  source: string,
+  parentGroupId?: symbol,
+) {
+  const hasWhitespaceInInput = isWhitespace(
+    source,
+    node.blockStartPosition.end,
+  );
+  const notTrimmingToTheRight = node.whitespaceEnd !== '-';
+  const trimmingToTheLeft = node.whitespaceStart === '-'; // || (!breaking && !isWhitespace(beforeTag));
+
+  return ifBreak(
+    hasWhitespaceInInput && notTrimmingToTheRight ? line : softline,
+    hasWhitespaceInInput &&
+      notTrimmingToTheRight &&
+      (trimmingToTheLeft ||
+        !isWhitespace(source, node.blockStartPosition.start - 1))
+      ? line
+      : softline,
+    { groupId: parentGroupId }, // if it
+  );
+}
+
+function printLiquidBranch(
+  path: AstPath<LiquidBranch>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
+) {
+  const node = path.getValue();
+  const parentNode: LiquidTag = path.getParentNode() as any;
+  const source = getSource(path);
+
+  const meat = join(softline, mapWithNewLine(path, options, print, 'children'));
+
+  if (!node.name && node.children.length === 0) {
+    return '';
+  }
+
+  if (!node.name) {
+    return indent([innerLeadingWhitespace(parentNode, source), meat]);
+  }
+
+  const leadingWhitespace = isWhitespace(source, node.position.start)
+    ? line
+    : softline;
+
+  return [
+    leadingWhitespace,
+    printLiquidBlockStart(
+      path as AstPath<LiquidBranch>,
+      parentGroupId,
+      parentGroupId,
+    ),
+    indent([
+      softline,
+      join(softline, mapWithNewLine(path, options, print, 'children')),
+    ]),
+  ];
 }
 
 function genericPrint(
@@ -492,62 +609,21 @@ function genericPrint(
     }
 
     case NodeTypes.LiquidTag: {
-      if (isBranchedTag(node)) {
-        const wrapper = node.name === 'case' ? indent : identity;
-        const tagGroupId = Symbol('tag-group');
-        return group(
-          [
-            printLiquidBlockStart(path, parentGroupId, tagGroupId),
-            wrapper(path.map(print, 'children')),
-            softline,
-            printLiquidBlockEnd(path, tagGroupId, parentGroupId),
-          ],
-          {
-            id: tagGroupId,
-            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
-          },
-        );
-      } else if (node.children) {
-        const tagGroupId = Symbol('tag-group');
-        return group(
-          [
-            printLiquidBlockStart(path, parentGroupId, tagGroupId),
-            indent([
-              softline,
-              // NEED TO REVIEW THIS SHIT. FUCKKKKK.
-              join(softline, mapWithNewLine(path, options, print, 'children')),
-            ]),
-            softline,
-            printLiquidBlockEnd(path, tagGroupId, parentGroupId),
-          ],
-          {
-            id: tagGroupId,
-            shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
-          },
-        );
-      } else {
-        return printLiquidBlockStart(path, parentGroupId, parentGroupId);
-      }
+      return printLiquidTag(
+        path as AstPath<LiquidTag>,
+        options,
+        print,
+        parentGroupId,
+      );
     }
 
     case NodeTypes.LiquidBranch: {
-      if (node.name) {
-        return [
-          softline,
-          printLiquidBlockStart(path, parentGroupId, parentGroupId),
-          indent([
-            softline,
-            join(softline, mapWithNewLine(path, options, print, 'children')),
-          ]),
-        ];
-      } else if (node.children.length > 0) {
-        return indent([
-          softline,
-          join(softline, mapWithNewLine(path, options, print, 'children')),
-        ]);
-      } else {
-        return '';
-      }
+      return printLiquidBranch(
+        path as AstPath<LiquidBranch>,
+        options,
+        print,
+        parentGroupId,
+      );
     }
 
     case NodeTypes.AttrEmpty: {

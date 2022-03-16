@@ -97,6 +97,7 @@ export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {
   children: LiquidHtmlAST;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
+  blockStartPosition: Position;
 }
 
 export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
@@ -242,6 +243,10 @@ class ASTBuilder {
           start: node.position.end,
           end: node.position.end,
         },
+        blockStartPosition: {
+          start: node.position.end,
+          end: node.position.end,
+        },
         children: [],
         whitespaceStart: '',
         whitespaceEnd: '',
@@ -257,12 +262,16 @@ class ASTBuilder {
         name: node.name,
         type: NodeTypes.LiquidBranch,
         markup: node.markup,
-        position: node.position,
+        position: { ...node.position },
         children: [],
+        blockStartPosition: { ...node.position },
         whitespaceStart: node.whitespaceStart,
         whitespaceEnd: node.whitespaceEnd,
       });
     } else {
+      if (this.parent?.type === NodeTypes.LiquidBranch) {
+        this.parent.position.end = node.position.end;
+      }
       this.current.push(node);
     }
   }
