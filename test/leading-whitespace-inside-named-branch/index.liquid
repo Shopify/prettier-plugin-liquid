@@ -39,3 +39,35 @@ It should keep the whitespace in this weird exception case
 
 It should keep the whitespace if it is included inline in a paragraph
 <p>haha{% if A %}{% else %} space{% endif %}</p>
+
+---
+
+When it unbreaks, it should conditionally keep a leading space
+
+It should not keep a leading space when there's space before the tag
+{% if A %}
+  space{% endif %}
+
+It should not keep a leading space if it is stripped anyway
+<p>
+X{% if A -%}
+  space{% endif %}</p>
+
+It should not keep a leading space if there is otherwise
+<p>
+{% if A %}
+  space{% endif %}
+</p>
+
+It should keep a leading space if there wouldn't be otherwise
+<p>
+X{% if A %}
+  space{% endif %}
+</p>
+
+It should keep a leading space if the outer left whitespace is stripped
+{%- if A %}
+  space{% endif -%}
+{% if A %}
+  space{% endif %}
+
