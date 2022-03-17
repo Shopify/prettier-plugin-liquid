@@ -1,12 +1,18 @@
-import {LiquidHtmlNode, NodeTypes} from "../parsers";
-import {assertNever} from "../utils";
+import { LiquidHtmlNode, NodeTypes } from '../parsers';
+import { assertNever } from '../utils';
+import { Doc, doc } from 'prettier';
+const { builders } = doc;
+const { ifBreak } = builders;
 
 export function isWhitespace(source: string, loc: number): boolean {
   if (loc < 0 || loc >= source.length) return true;
   return !!source[loc].match(/\s/);
 }
 
-export function getChildrenArray(node: LiquidHtmlNode, parentNode: LiquidHtmlNode) {
+export function getChildrenArray(
+  node: LiquidHtmlNode,
+  parentNode: LiquidHtmlNode,
+) {
   switch (parentNode.type) {
     case NodeTypes.LiquidTag:
     case NodeTypes.Document:
@@ -68,3 +74,93 @@ export function getRightSibling(
   return children[index + 1];
 }
 
+export function isTrimmingOuterLeft(node: LiquidHtmlNode | undefined): boolean {
+  if (!node) return false;
+  switch (node.type) {
+    case NodeTypes.LiquidRawTag:
+    case NodeTypes.LiquidTag: // {%- if a %}{% endif %}, {%- assign x = 1 %}
+    case NodeTypes.LiquidBranch: // {%- else %}
+    case NodeTypes.LiquidDrop: // {{- 'val' }}
+      return node.whitespaceStart === '-';
+    default:
+      return false;
+  }
+}
+
+export function isTrimmingInnerLeft(node: LiquidHtmlNode | undefined): boolean {
+  if (!node) return false;
+  switch (node.type) {
+    case NodeTypes.LiquidRawTag:
+    case NodeTypes.LiquidTag: // {% if a -%}{% endif %}
+      if (node.delimiterWhitespaceEnd === undefined) return false;
+      return node.whitespaceEnd === '-';
+    case NodeTypes.LiquidBranch: // {% else -%}
+      if (node.name === null) return false;
+      return node.whitespaceEnd === '-';
+    case NodeTypes.LiquidDrop:
+    default:
+      return false;
+  }
+}
+
+export function isTrimmingInnerRight(
+  node: LiquidHtmlNode | undefined,
+): boolean {
+  if (!node) return false;
+  switch (node.type) {
+    case NodeTypes.LiquidRawTag:
+    case NodeTypes.LiquidTag: // {% if a %}{%- endif %}
+      if (node.delimiterWhitespaceStart === undefined) return false;
+      return node.delimiterWhitespaceStart === '-';
+    case NodeTypes.LiquidBranch:
+    case NodeTypes.LiquidDrop:
+    default:
+      return false;
+  }
+}
+
+export function isTrimmingOuterRight(
+  node: LiquidHtmlNode | undefined,
+): boolean {
+  if (!node) return false;
+  switch (node.type) {
+    case NodeTypes.LiquidRawTag:
+    case NodeTypes.LiquidTag: // {% if a %}{% endif -%}, {% assign x -%}
+      return (node.delimiterWhitespaceEnd ?? node.whitespaceEnd) === '-';
+    case NodeTypes.LiquidBranch:
+      return false;
+    case NodeTypes.LiquidDrop: // {{ foo -}}
+      return node.whitespaceEnd === '-';
+    default:
+      return false;
+  }
+}
+
+// Optionally converts a '' into '-' if any of the parent group breaks and source[loc] is non space.
+export function getWhitespaceTrim(
+  currWhitespaceTrim: string,
+  source: string,
+  loc: number,
+  parentGroupId: symbol | undefined,
+  ...groupIds: (symbol | undefined)[]
+): Doc {
+  return ifBreakChain(
+    !isWhitespace(source, loc) ? '-' : currWhitespaceTrim,
+    currWhitespaceTrim,
+    parentGroupId,
+    ...groupIds,
+  );
+}
+
+// Threads ifBreak into multiple sources of breakage (paragraph or self, etc.)
+export function ifBreakChain(
+  breaksContent: Doc,
+  flatContent: Doc,
+  ...groupIds: (symbol | undefined)[]
+) {
+  return groupIds.reduce(
+    (currFlatContent, groupId) =>
+      ifBreak(breaksContent, currFlatContent, { groupId }),
+    flatContent,
+  );
+}

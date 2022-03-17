@@ -9,7 +9,15 @@ import {
   isBranchedTag,
 } from '../parsers';
 import { assertNever } from '../utils';
-import { getLeftSibling, isWhitespace } from './utils';
+import {
+  getLeftSibling,
+  getWhitespaceTrim,
+  isTrimmingInnerLeft,
+  isTrimmingInnerRight,
+  isTrimmingOuterLeft,
+  isTrimmingOuterRight,
+  isWhitespace,
+} from './utils';
 
 type LiquidAstPath = AstPath<LiquidHtmlNode>;
 type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
@@ -60,42 +68,6 @@ function reindent(lines: string[], skipFirst = false): string[] {
 
   const indentStrip = ' '.repeat(minIndentLevel);
   return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
-}
-
-// Optionally converts a '' into '-' if the parent group breaks and
-// the source[loc] is non space.
-function getWhitespaceTrim(
-  currWhitespaceTrim: string,
-  source: string,
-  loc: number,
-  parentGroupId?: symbol,
-): Doc {
-  return ifBreak(
-    !isWhitespace(source, loc) ? '-' : currWhitespaceTrim,
-    currWhitespaceTrim,
-    { groupId: parentGroupId },
-  );
-}
-
-// Much like the function above but may break from the left or the right.
-// e.g. flow breaks or element breaks. I'm not 100% sure of why it works
-// but it looks like it does... (?) :D.
-function getWhitespaceTrimLR(
-  currWhitespaceTrim: string,
-  source: string,
-  loc: number,
-  leftParentGroupId?: symbol,
-  rightParentGroupId?: symbol,
-) {
-  const breaksContent = !isWhitespace(source, loc) ? '-' : currWhitespaceTrim;
-  const flatContent = currWhitespaceTrim;
-  return ifBreak(
-    breaksContent,
-    ifBreak(breaksContent, flatContent, {
-      groupId: rightParentGroupId,
-    }),
-    { groupId: leftParentGroupId },
-  );
 }
 
 function printLiquidDrop(
@@ -157,7 +129,7 @@ function printLiquidBlockStart(
   const positionEnd =
     (node as LiquidTag).blockStartPosition?.end ?? node.position.end;
 
-  const whitespaceStart = getWhitespaceTrimLR(
+  const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
     source,
     positionStart - 1,
@@ -220,7 +192,7 @@ function printLiquidBlockEnd(
     node.blockEndPosition.start - 1,
     leftParentGroupId,
   );
-  const whitespaceEnd = getWhitespaceTrimLR(
+  const whitespaceEnd = getWhitespaceTrim(
     node.delimiterWhitespaceEnd ?? '',
     source,
     node.blockEndPosition.end,
@@ -408,7 +380,7 @@ function printLiquidTag(
   if (isBranchedTag(node)) {
     const wrapper = node.name === 'case' ? indent : identity;
     meat.push([
-      wrapper(mapGenericPrint(path, 'children', options, print, parentGroupId)),
+      wrapper(mapGenericPrint(path, 'children', options, print, tagGroupId)),
     ]);
   } else {
     meat.push(
@@ -430,58 +402,74 @@ function printLiquidTag(
   });
 }
 
-function isTrimmingOuterRight(node: LiquidHtmlNode | undefined): boolean {
-  if (!node) return false;
-  switch (node.type) {
-    case NodeTypes.LiquidRawTag:
-    case NodeTypes.LiquidTag:
-      return (node.delimiterWhitespaceEnd ?? node.whitespaceEnd) === '-';
-    case NodeTypes.LiquidBranch:
-      return false;
-    case NodeTypes.LiquidDrop:
-      return node.whitespaceEnd === '-';
-    default:
-      return false;
-  }
-}
-
-function isTrimmingOuterLeft(node: LiquidHtmlNode | undefined): boolean {
-  if (!node) return false;
-  switch (node.type) {
-    case NodeTypes.LiquidRawTag:
-    case NodeTypes.LiquidTag:
-    case NodeTypes.LiquidBranch:
-    case NodeTypes.LiquidDrop:
-      return node.whitespaceStart === '-';
-    default:
-      return false;
-  }
-}
-
+// This is complicated... Stuff is slightly more obtuse because it
+// depends on the output, and whenever that happens we need to branch with
+// `ifBranch` instead of a normal condition.
+//
+// The idea is this. We don't care what happens when the line breaks. When
+// it breaks, it breaks. But when it _doesn't_ break, we need to make sure
+// that we should maintain whitespace in the output if there was in the
+// input.
+//
+// e.g. {% if A %} selected{% endif %} should become
+//      {% if A %}selected{% endif %} UNLESS
+// - The outer left whitespace is stripped.
+//    + That can be caused by _this node_ being whitespaceStriped to the left: {%- if A %}
+//    + OR the sibling to whitespace to the right: {% assign x = 1 -%} {% if A %}
+// - The inner left whitespace is stripped: {% if A -%}
+// - There is no whitespace to the left AND the parent doesn't break.
 function innerLeadingWhitespace(
   node: LiquidTag | LiquidBranch,
   sibling: LiquidHtmlNode | undefined,
   source: string,
   parentGroupId?: symbol,
 ) {
-  const hasWhitespaceInInput = isWhitespace(
-    source,
-    node.blockStartPosition.end,
-  );
-  const notTrimmingToTheRight = node.whitespaceEnd !== '-';
-  const isTrimmingToTheLeft =
+  if (
+    !isWhitespace(source, node.blockStartPosition.end) ||
+    isTrimmingInnerLeft(node)
+  ) {
+    return softline;
+  }
+
+  const isTrimmingOuterLeftWhitespace =
     isTrimmingOuterLeft(node) || isTrimmingOuterRight(sibling);
 
   return ifBreak(
-    hasWhitespaceInInput && notTrimmingToTheRight ? line : softline,
-    hasWhitespaceInInput &&
-      notTrimmingToTheRight &&
-      (isTrimmingToTheLeft ||
-        !isWhitespace(source, node.blockStartPosition.start - 1))
+    softline,
+    isTrimmingOuterLeftWhitespace ||
+      !isWhitespace(source, node.blockStartPosition.start - 1)
       ? line
       : softline,
-    { groupId: parentGroupId },
+    { groupId: parentGroupId }, // It's the PARENT that breaks, not this node necessarily.
   );
+}
+
+// Same same but different. This one has to check if the parent is
+// whitespace stripping to the outer left, and the node itself if it is
+// stripping the inner left.
+function branchInnerLeadingWhitespace(
+  branch: LiquidBranch,
+  parentNode: LiquidTag,
+  parentLeftSibling: LiquidHtmlNode | undefined,
+  source: string,
+): Doc {
+  if (!isWhitespace(source, branch.blockStartPosition.end)) {
+    return softline;
+  }
+
+  if (isTrimmingInnerLeft(branch)) {
+    return softline;
+  }
+
+  if (
+    isTrimmingOuterLeft(parentNode) ||
+    isTrimmingOuterRight(parentLeftSibling) ||
+    !isWhitespace(source, parentNode.blockStartPosition.start - 1)
+  ) {
+    return line;
+  }
+
+  return softline;
 }
 
 function printLiquidBranch(
@@ -525,7 +513,12 @@ function printLiquidBranch(
       parentGroupId,
     ),
     indent([
-      softline,
+      branchInnerLeadingWhitespace(
+        node,
+        parentNode,
+        getLeftSibling(parentNode, grandParentNode),
+        source,
+      ),
       join(softline, mapWithNewLine(path, options, print, 'children')),
     ]),
   ];

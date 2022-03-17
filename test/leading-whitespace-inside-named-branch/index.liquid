@@ -1,9 +1,10 @@
 When it doesn't break, it should conditionally keep a leading space
 
 It should not keep the leading space if there's space before the named branch (else)
-{% if A %}{% else %}space{% endif %}
-{% if A %}X{% else %}space{% endif %}
-{% if A %}X{% else %}space{% endif %}
+{% if A %}{% else %} space{% endif %}
+{% if A %}X{% else %} space{% endif %}
+{% if A %}X {% else %} space{% endif %}
+{% if A %} X {% else %} space{% endif %}
 
 Skipping this one, do we need to care about this?
 {% comment %}
@@ -11,8 +12,8 @@ Skipping this one, do we need to care about this?
 {% endcomment %}
 
 It should not keep the leading space if it is stripped anyway
-{% if A %}{% else -%}space{% endif %}
-{% if A %}X{% else -%}space{% endif %}
+{% if A %}{% else -%} space{% endif %}
+{% if A %}X{% else -%} space{% endif %}
 
 It should keep the whitespace if the whitespace before the tag is stripped
 {% comment %}
@@ -32,9 +33,9 @@ It should keep the whitespace if the whitespace before the tag is stripped
 
 It should keep the whitespace in this weird exception case
 <p>
-  {{ value -}}
-  {%- if A %} aaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}
+{{ value }}{% if A %}{% else %} aaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}
+{{ value }}{% case type %}{% when LiquidDrop %} drooooop{% when LiquidTag %} taaagg{% endcase %}
 </p>
 
 It should keep the whitespace if it is included inline in a paragraph
-<p>haha{% if A %} space{% endif %}</p>
+<p>haha{% if A %}{% else %} space{% endif %}</p>
