@@ -1,0 +1,40 @@
+When it doesn't break, it should conditionally keep a leading space
+
+It should not keep the leading space if there's space before the named branch (else)
+{% if A %}{% else %}space{% endif %}
+{% if A %}X{% else %}space{% endif %}
+{% if A %}X{% else %}space{% endif %}
+
+Skipping this one, do we need to care about this?
+{% comment %}
+  {% if A %} {% else %} space{% endif %}
+{% endcomment %}
+
+It should not keep the leading space if it is stripped anyway
+{% if A %}{% else -%}space{% endif %}
+{% if A %}X{% else -%}space{% endif %}
+
+It should keep the whitespace if the whitespace before the tag is stripped
+{% comment %}
+  So this one is a bit annoying because the whitespace stripping happens between
+  the nodes but our print function might have an impact on the _output_ by stripping
+  it _for them_. Since these two strings are not equivalent (output wise):
+
+  {%- if A %}{% else %} space{% endif %} is NOT equivalent to this:
+  {%- if A %}{% else %}space{% endif %}
+
+  So we have to make sure we keep the space.
+{% endcomment %}
+{%- if A %}{% else %} space{% endif -%}
+{% if A %}{% else %} space{% endif %}
+{%- if A %}X{% else %} space{% endif -%}
+{% if A %}X{% else %} space{% endif %}
+
+It should keep the whitespace in this weird exception case
+<p>
+  {{ value -}}
+  {%- if A %} aaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}
+</p>
+
+It should keep the whitespace if it is included inline in a paragraph
+<p>haha{% if A %} space{% endif %}</p>
