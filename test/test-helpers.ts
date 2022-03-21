@@ -9,7 +9,7 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   const formatted = format(source, options);
   const expected = readFile(dirname, 'fixed.liquid');
   if (expected !== formatted) {
-    writeFile(dirname, 'actual.liquid', expected);
+    writeFile(dirname, 'actual.liquid', formatted);
   } else {
     fs.rmSync(path.join(dirname, 'actual.liquid'), { force: true });
   }
