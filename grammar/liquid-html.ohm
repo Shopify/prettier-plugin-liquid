@@ -115,7 +115,6 @@ LiquidHTML {
     // Base blocks
     | "capture"
     | "case"
-    | "comment"
     | "for"
     | "ifchanged"
     | "if"

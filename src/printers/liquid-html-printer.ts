@@ -9,15 +9,7 @@ import {
   isBranchedTag,
 } from '../parsers';
 import { assertNever } from '../utils';
-import {
-  getLeftSibling,
-  getWhitespaceTrim,
-  isTrimmingInnerLeft,
-  isTrimmingInnerRight,
-  isTrimmingOuterLeft,
-  isTrimmingOuterRight,
-  isWhitespace,
-} from './utils';
+import { getWhitespaceTrim, isTrimmingInnerLeft, isWhitespace } from './utils';
 
 type LiquidAstPath = AstPath<LiquidHtmlNode>;
 type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
@@ -26,7 +18,8 @@ type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 const identity = <T>(x: T): T => x;
 
 const { builders } = doc;
-const { fill, group, hardline, indent, join, line, softline } = builders;
+const { ifBreak, fill, group, hardline, indent, join, line, softline } =
+  builders;
 
 const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'html',
@@ -276,7 +269,7 @@ function mapWithNewLine(
       // if we have more than one new line between nodes, insert an empty
       // node in between the result of the `map`. This way we can join with
       // hardline or softline and maintain 'em.
-      if (gap.replace(/ |\t/g, '').length > 1) {
+      if (gap.replace(/ |\t|\r/g, '').length > 1) {
         doc.push('');
       }
     }
@@ -359,7 +352,6 @@ function printLiquidTag(
   parentGroupId?: symbol,
 ): Doc {
   const node = path.getValue();
-  const parentNode = path.getParentNode();
   if (!node.children) {
     return printLiquidBlockStart(path, parentGroupId, parentGroupId);
   }
@@ -368,29 +360,25 @@ function printLiquidTag(
   const blockEnd = printLiquidBlockEnd(path, tagGroupId, parentGroupId); // {% endif %}
   const source = getSource(path);
 
-  let meat: Doc[] = [];
+  let meat: Doc = [];
   let trailingWhitespace: Doc[] = [];
   if (node.blockEndPosition) {
-    trailingWhitespace.push(
-      isWhitespace(source, node.blockEndPosition.start - 1) ? line : softline,
-    );
+    trailingWhitespace.push(softline);
   }
 
   if (isBranchedTag(node)) {
     const wrapper = node.name === 'case' ? indent : identity;
-    meat.push([
-      wrapper(mapGenericPrint(path, 'children', options, print, tagGroupId)),
-    ]);
-  } else {
-    meat.push(
-      indent([
-        innerLeadingWhitespace(node, getLeftSibling(node, parentNode), source),
-        join(softline, mapWithNewLine(path, options, print, 'children')),
-      ]),
+    meat = wrapper(
+      mapGenericPrint(path, 'children', options, print, tagGroupId),
     );
+  } else {
+    meat = indent([
+      innerLeadingWhitespace(node, source),
+      join(softline, mapWithNewLine(path, options, print, 'children')),
+    ]);
   }
 
-  return group([blockStart, ...meat, ...trailingWhitespace, blockEnd], {
+  return group([blockStart, meat, ...trailingWhitespace, blockEnd], {
     id: tagGroupId,
     shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
   });
@@ -414,7 +402,6 @@ function printLiquidTag(
 // - There is no whitespace to the left AND the parent doesn't break.
 function innerLeadingWhitespace(
   node: LiquidTag | LiquidBranch,
-  sibling: LiquidHtmlNode | undefined,
   source: string,
 ) {
   if (
@@ -424,26 +411,7 @@ function innerLeadingWhitespace(
     return softline;
   }
 
-  // guaranteed whitespace as first char from then on
-  // guaranteed not stripping inside
-  // Can we strip the whitespace? Don't think we safely can.
-  // And we can't borrow whitespace from outside either, eh?
-  const isTrimmingOuterLeftWhitespace =
-    isTrimmingOuterLeft(node) || isTrimmingOuterRight(sibling);
-
-  const isNodePrecededByWhitespace = isWhitespace(
-    source,
-    node.blockStartPosition.start - 1,
-  );
-
-  // The only time when it's acceptable to strip the whitespace is when
-  // the whitespace would otherwise be there from somewhere else. Is that
-  // even true? What if I considered form or capture or tablerow. Shouldn't
-  // the whitespace be inside the tablerow and not "outside of it?"
-  // fuuuuck.
-  return isNodePrecededByWhitespace && !isTrimmingOuterLeftWhitespace
-    ? softline
-    : line;
+  return line;
 }
 
 // Same same but different. This one has to check if the parent is
@@ -451,27 +419,16 @@ function innerLeadingWhitespace(
 // stripping the inner left.
 function branchInnerLeadingWhitespace(
   branch: LiquidBranch,
-  parentNode: LiquidTag,
-  parentLeftSibling: LiquidHtmlNode | undefined,
   source: string,
 ): Doc {
-  if (!isWhitespace(source, branch.blockStartPosition.end)) {
-    return softline;
-  }
-
-  if (isTrimmingInnerLeft(branch)) {
-    return softline;
-  }
-
   if (
-    isTrimmingOuterLeft(parentNode) ||
-    isTrimmingOuterRight(parentLeftSibling) ||
-    !isWhitespace(source, parentNode.blockStartPosition.start - 1)
+    !isWhitespace(source, branch.blockStartPosition.end) ||
+    isTrimmingInnerLeft(branch)
   ) {
-    return line;
+    return softline;
   }
 
-  return softline;
+  return line;
 }
 
 function printLiquidBranch(
@@ -480,29 +437,24 @@ function printLiquidBranch(
   print: LiquidPrinter,
   parentGroupId?: symbol,
 ) {
-  const node = path.getValue();
+  const branch = path.getValue();
   const parentNode: LiquidTag = path.getParentNode() as any;
-  const grandParentNode = path.getParentNode(1);
   const source = getSource(path);
 
   const meat = join(softline, mapWithNewLine(path, options, print, 'children'));
 
-  if (!node.name && node.children.length === 0) {
-    return '';
+  if (!branch.name && branch.children.length === 0) {
+    return ifBreak(
+      '',
+      isWhitespace(source, branch.blockStartPosition.end) ? ' ' : '',
+    );
   }
 
-  if (!node.name) {
-    return indent([
-      innerLeadingWhitespace(
-        parentNode,
-        getLeftSibling(parentNode, grandParentNode),
-        source,
-      ),
-      meat,
-    ]);
+  if (!branch.name) {
+    return indent([innerLeadingWhitespace(parentNode, source), meat]);
   }
 
-  const outerLeadingWhitespace = isWhitespace(source, node.position.start)
+  const outerLeadingWhitespace = isWhitespace(source, branch.position.start)
     ? line
     : softline;
 
@@ -514,12 +466,7 @@ function printLiquidBranch(
       parentGroupId,
     ),
     indent([
-      branchInnerLeadingWhitespace(
-        node,
-        parentNode,
-        getLeftSibling(parentNode, grandParentNode),
-        source,
-      ),
+      branchInnerLeadingWhitespace(branch, source),
       join(softline, mapWithNewLine(path, options, print, 'children')),
     ]),
   ];
