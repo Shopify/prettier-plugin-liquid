@@ -4,6 +4,17 @@ import { BLOCKS, VOID_ELEMENTS } from './grammar';
 import { deepGet } from './utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
+  describe('Case: HtmlComment', () => {
+    it('should basically parse html comments', () => {
+      ['<!-- hello world -->'].forEach((text) => {
+        const cst = toLiquidHtmlCST(text);
+        expectPath(cst, '0.type').to.equal('HtmlComment');
+        expectPath(cst, '0.body').to.equal(' hello world ');
+        expectLocation(cst, [0]);
+      });
+    });
+  });
+
   describe('Case: HtmlNode', () => {
     it('should basically parse open and close tags', () => {
       ['<div></div>', '<div ></div >'].forEach((text) => {

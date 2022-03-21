@@ -31,6 +31,7 @@ export function getChildrenArray(
     case NodeTypes.AttrDoubleQuoted:
     case NodeTypes.AttrSingleQuoted:
       return parentNode.value;
+    case NodeTypes.HtmlComment:
     case NodeTypes.HtmlRawNode:
     case NodeTypes.AttrEmpty:
     case NodeTypes.TextNode:

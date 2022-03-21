@@ -105,6 +105,13 @@ describe('Unit: toLiquidHtmlAST', () => {
     }
   });
 
+  it('should parse html comments as raw', () => {
+    const ast = toLiquidHtmlAST(`<!--\n  hello {{ product.name }}\n-->`);
+    expectPath(ast, 'children.0.type').to.eql('HtmlComment');
+    expectPath(ast, 'children.0.body').to.eql('\n  hello {{ product.name }}\n');
+    expectPosition(ast, 'children.0');
+  });
+
   it('should parse script tags as raw', () => {
     const ast = toLiquidHtmlAST(
       `<script>\n  const a = {{ product | json }};\n</script>`,

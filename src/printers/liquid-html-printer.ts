@@ -670,6 +670,20 @@ function genericPrint(
       ];
     }
 
+    case NodeTypes.HtmlComment: {
+      return [
+        '<!--',
+        group([
+          indent([
+            line,
+            join(hardline, reindent(bodyLines(node.body.trimStart()), true)),
+          ]),
+          line,
+        ]),
+        '-->',
+      ];
+    }
+
     case NodeTypes.TextNode: {
       return printTextNode(path as AstPath<TextNode>, options, print);
     }

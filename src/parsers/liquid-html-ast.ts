@@ -24,6 +24,7 @@ export enum NodeTypes {
   LiquidDrop = 'LiquidDrop',
   HtmlSelfClosingElement = 'HtmlSelfClosingElement',
   HtmlVoidElement = 'HtmlVoidElement',
+  HtmlComment = 'HtmlComment',
   HtmlElement = 'HtmlElement',
   HtmlRawNode = 'HtmlRawNode',
   AttrSingleQuoted = 'AttrSingleQuoted',
@@ -110,6 +111,7 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
 }
 
 export type HtmlNode =
+  | HtmlComment
   | HtmlElement
   | HtmlVoidElement
   | HtmlSelfClosingElement
@@ -132,6 +134,9 @@ export interface HtmlRawNode extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
    */
   body: string;
   name: string;
+}
+export interface HtmlComment extends ASTNode<NodeTypes.HtmlComment> {
+  body: string;
 }
 
 export interface HtmlNodeBase<T> extends ASTNode<T> {
@@ -416,6 +421,15 @@ export function cstToAst(
 
       case ConcreteNodeTypes.HtmlSelfClosingElement: {
         builder.push(toHtmlSelfClosingElement(node, source));
+        break;
+      }
+
+      case ConcreteNodeTypes.HtmlComment: {
+        builder.push({
+          type: NodeTypes.HtmlComment,
+          body: node.body,
+          position: position(node),
+        });
         break;
       }
 

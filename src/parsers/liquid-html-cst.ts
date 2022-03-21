@@ -4,6 +4,7 @@ import { liquidHtmlGrammar } from './grammar';
 import { LiquidHTMLCSTParsingError } from './utils';
 
 export enum ConcreteNodeTypes {
+  HtmlComment = 'HtmlComment',
   HtmlRawTag = 'HtmlRawTag',
   HtmlVoidElement = 'HtmlVoidElement',
   HtmlSelfClosingElement = 'HtmlSelfClosingElement',
@@ -34,6 +35,11 @@ export interface ConcreteBasicNode<T> {
 export interface ConcreteHtmlNodeBase<T> extends ConcreteBasicNode<T> {
   name: string | ConcreteLiquidDrop;
   attrList?: ConcreteAttributeNode[];
+}
+
+export interface ConcreteHtmlComment
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlComment> {
+  body: string;
 }
 
 export interface ConcreteHtmlRawTag
@@ -118,6 +124,7 @@ export interface ConcreteLiquidDrop
 }
 
 export type ConcreteHtmlNode =
+  | ConcreteHtmlComment
   | ConcreteHtmlRawTag
   | ConcreteHtmlVoidElement
   | ConcreteHtmlSelfClosingElement
@@ -154,6 +161,12 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   }
 
   const ohmAST = toAST(res, {
+    HtmlComment: {
+      body: 1,
+      locStart,
+      locEnd,
+    },
+
     HtmlRawTagImpl: {
       type: 'HtmlRawTag',
       name: 1,

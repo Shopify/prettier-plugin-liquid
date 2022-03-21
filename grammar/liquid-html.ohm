@@ -3,11 +3,14 @@ LiquidHTML {
     = (HtmlNode | liquidNode | textNode)*
 
   HtmlNode =
+    | HtmlComment
     | HtmlRawTag
     | HtmlVoidElement
     | HtmlSelfClosingElement
     | HtmlTagClose
     | HtmlTagOpen
+
+  HtmlComment = "<!--" #(anyExceptStar<"-->"> "-->")
 
   // These are black holes, we'll ignore what's in them
   HtmlRawTag =
