@@ -7,6 +7,7 @@ import {
   LiquidBranch,
   LiquidDrop,
   isBranchedTag,
+  TextNode,
 } from '../parsers';
 import { assertNever } from '../utils';
 import { getWhitespaceTrim, isTrimmingInnerLeft, isWhitespace } from './utils';
@@ -40,7 +41,7 @@ const trimEnd = (x: string) => x.trimEnd();
 function bodyLines(str: string): string[] {
   return str
     .replace(/^\n*|\s*$/g, '') // only want the meat
-    .split('\n');
+    .split(/\r?\n/);
 }
 
 function markupLines(node: LiquidTag | LiquidDrop | LiquidBranch): string[] {
@@ -472,6 +473,36 @@ function printLiquidBranch(
   ];
 }
 
+function printTextNode(
+  path: AstPath<TextNode>,
+  _options: LiquidParserOptions,
+  _print: LiquidPrinter,
+) {
+  const node = path.getValue();
+  if (node.value.match(/^\s*$/)) return '';
+  const text = node.value;
+
+  const paragraphs = text
+    .split(/(\r?\n){2,}/)
+    .filter(Boolean) // removes empty paragraphs (trailingWhitespace)
+    .map((curr) => {
+      let doc = [];
+      const words = curr.trim().split(/\s+/g);
+      let isFirst = true;
+      for (const word of words) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          doc.push(line);
+        }
+        doc.push(word);
+      }
+      return fill(doc);
+    });
+
+  return join(hardline, paragraphs);
+}
+
 function genericPrint(
   path: LiquidAstPath,
   options: LiquidParserOptions,
@@ -640,8 +671,7 @@ function genericPrint(
     }
 
     case NodeTypes.TextNode: {
-      if (node.value.match(/^\s*$/)) return '';
-      return join(hardline, reindent(bodyLines(node.value)));
+      return printTextNode(path as AstPath<TextNode>, options, print);
     }
 
     default: {

@@ -10,7 +10,8 @@ It should not omit the leading space if there's leading whitespace
 {%- if a %} space{% endif -%}
 {% if a %} space{% endif %}
 
-It should not omit the whitespace because of whitespace stripping outside the tag
+It should not omit the whitespace because of whitespace stripping outside the
+tag
 <p>
   {{ value -}}
   {%- if a %} aaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}

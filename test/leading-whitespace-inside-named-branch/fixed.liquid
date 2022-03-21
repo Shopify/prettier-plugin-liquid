@@ -4,7 +4,8 @@ It should omit the leading space if it is stripped anyway
 {% if A %}{% else -%}space{% endif %}
 {% if A %}X{% else -%}space{% endif %}
 
-It should not omit the leading space if there's space before the named branch (else)
+It should not omit the leading space if there's space before the named branch
+(else)
 {% if A %}{% else %} space{% endif %}
 {% if A %} {% else %} space{% endif %}
 {% if A %}X{% else %} space{% endif %}
