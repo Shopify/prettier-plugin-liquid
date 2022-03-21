@@ -26,8 +26,7 @@ type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 const identity = <T>(x: T): T => x;
 
 const { builders } = doc;
-const { fill, group, hardline, ifBreak, indent, join, line, softline } =
-  builders;
+const { fill, group, hardline, indent, join, line, softline } = builders;
 
 const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'html',
@@ -248,11 +247,10 @@ function mapGenericPrint(
   options: LiquidParserOptions,
   print: LiquidPrinter,
   parentGroupId?: symbol,
-) {
-  return path.map(
-    (p) => genericPrint(p, options, print, parentGroupId),
-    property,
-  );
+): Doc[] {
+  return path
+    .map((p) => genericPrint(p, options, print, parentGroupId), property)
+    .filter((x) => x !== '');
 }
 
 /**
@@ -315,6 +313,7 @@ function paragraph(
   path: LiquidAstPath,
   options: LiquidParserOptions,
   print: LiquidPrinter,
+  property: string,
 ): Doc {
   // So I have a bunch of text nodes. What do I want out of 'em?
   const doc: Doc[] = [];
@@ -348,7 +347,7 @@ function paragraph(
       doc.push(genericPrint(path, options, print));
     }
     prev = curr;
-  }, 'children');
+  }, property);
 
   return fill(doc);
 }
@@ -385,12 +384,7 @@ function printLiquidTag(
   } else {
     meat.push(
       indent([
-        innerLeadingWhitespace(
-          node,
-          getLeftSibling(node, parentNode),
-          source,
-          parentGroupId,
-        ),
+        innerLeadingWhitespace(node, getLeftSibling(node, parentNode), source),
         join(softline, mapWithNewLine(path, options, print, 'children')),
       ]),
     );
@@ -422,7 +416,6 @@ function innerLeadingWhitespace(
   node: LiquidTag | LiquidBranch,
   sibling: LiquidHtmlNode | undefined,
   source: string,
-  parentGroupId?: symbol,
 ) {
   if (
     !isWhitespace(source, node.blockStartPosition.end) ||
@@ -431,17 +424,26 @@ function innerLeadingWhitespace(
     return softline;
   }
 
+  // guaranteed whitespace as first char from then on
+  // guaranteed not stripping inside
+  // Can we strip the whitespace? Don't think we safely can.
+  // And we can't borrow whitespace from outside either, eh?
   const isTrimmingOuterLeftWhitespace =
     isTrimmingOuterLeft(node) || isTrimmingOuterRight(sibling);
 
-  return ifBreak(
-    softline,
-    isTrimmingOuterLeftWhitespace ||
-      !isWhitespace(source, node.blockStartPosition.start - 1)
-      ? line
-      : softline,
-    { groupId: parentGroupId }, // It's the PARENT that breaks, not this node necessarily.
+  const isNodePrecededByWhitespace = isWhitespace(
+    source,
+    node.blockStartPosition.start - 1,
   );
+
+  // The only time when it's acceptable to strip the whitespace is when
+  // the whitespace would otherwise be there from somewhere else. Is that
+  // even true? What if I considered form or capture or tablerow. Shouldn't
+  // the whitespace be inside the tablerow and not "outside of it?"
+  // fuuuuck.
+  return isNodePrecededByWhitespace && !isTrimmingOuterLeftWhitespace
+    ? softline
+    : line;
 }
 
 // Same same but different. This one has to check if the parent is
@@ -495,7 +497,6 @@ function printLiquidBranch(
         parentNode,
         getLeftSibling(parentNode, grandParentNode),
         source,
-        parentGroupId,
       ),
       meat,
     ]);
@@ -556,7 +557,7 @@ function genericPrint(
             ? indent([
                 softline,
                 hasNonEmptyTextNode
-                  ? paragraph(path, options, print)
+                  ? paragraph(path, options, print, 'children')
                   : join(
                       hardline,
                       mapWithNewLine(
@@ -667,10 +668,32 @@ function genericPrint(
     case NodeTypes.AttrUnquoted:
     case NodeTypes.AttrSingleQuoted:
     case NodeTypes.AttrDoubleQuoted: {
-      return [node.name, '=', '"', path.map(print, 'value'), '"'];
+      const attrGroupId = Symbol('attr-group-id');
+      return [
+        node.name,
+        '=',
+        '"',
+        node.value.length > 1
+          ? group(
+              [
+                indent([
+                  softline,
+                  join(
+                    softline,
+                    mapGenericPrint(path, 'value', options, print, attrGroupId),
+                  ),
+                ]),
+                softline,
+              ],
+              { id: attrGroupId },
+            )
+          : path.map(print, 'value'),
+        '"',
+      ];
     }
 
     case NodeTypes.TextNode: {
+      if (node.value.match(/^\s*$/)) return '';
       return join(hardline, reindent(bodyLines(node.value)));
     }
 
