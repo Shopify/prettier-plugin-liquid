@@ -1,9 +1,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width" />
-  <script src="file:///Users/charles/src/github.com/Shopify/prettier-plugin-liquid-prototype/node_modules/prettier/standalone.js"></script>
-  <script src="file:///Users/charles/src/github.com/Shopify/prettier-plugin-liquid-prototype/standalone.js"></script>
+  <script src="file:///Users/charles/src/github.com/Shopify/prettier-plugin-liquid/node_modules/prettier/standalone.js"></script>
+  <script src="file:///Users/charles/src/github.com/Shopify/prettier-plugin-liquid/standalone.js"></script>
   <title>Prettier Liquid Plugin</title>
+  <!--
+    You may use this file to test the standalone build and make sure everything works in a browser.
+    All you need to do is to open this file from your terminal with your browser.
+
+    ```bash
+    # macOS
+    $ open standalone-demo.html
+
+    # linux
+    $ xdg-open standalone-demo.html
+    ```
+  -->
   <style>
     textarea {
       width: 100ex;
@@ -53,6 +65,5 @@
     format();
     input.oninput = format;
     input.addEventListener('keyup', onKeyup)
-    input.onkeydown = keybind;
   </script>
 </body>
