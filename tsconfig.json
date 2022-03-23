@@ -5,7 +5,18 @@
     "noImplicitAny": true,
     "removeComments": true,
     "preserveConstEnums": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "emitDecoratorMetadata": true,
+    "module": "commonjs",
+    "diagnostics": false,
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "inlineSourceMap": true,
+    "target": "ES6",
+    "allowJs": true,
+    "jsx": "react",
+    "experimentalDecorators": true,
+    "allowUnusedLabels": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "**/*.spec.ts"]

@@ -1,4 +1,6 @@
 {
-  "require": "test/register.js",
+  "require": [
+    "ts-node/register/transpile-only"
+  ],
   "reporter": "spec"
 }

@@ -18,19 +18,19 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   } catch (e) {
     // Improve the stack trace so that it points to the fixed file instead
     // of this test-helper file. Might make navigation smoother.
-    if (e.stack) {
-      e.stack = e.stack.replace(
+    if ((e as any).stack as any) {
+      (e as any).stack = ((e as any).stack as string).replace(
         /^(\s+)at assertFormattedEqualsFixed \(.*:\d+:\d+\)/im,
         [
-          `$1in expected.liquid (${path.join(
+          `$1at expected.liquid (${path.join(
             dirname,
             'fixed.liquid',
           )}:${diffLoc(expected, formatted).join(':')})`,
-          `$1in actual.liquid (${path.join(dirname, 'actual.liquid')}:${diffLoc(
+          `$1at actual.liquid (${path.join(dirname, 'actual.liquid')}:${diffLoc(
             formatted,
             expected,
           ).join(':')})`,
-          `$1in input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
+          `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
         ].join('\n'),
       );
     }

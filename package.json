@@ -18,27 +18,32 @@
   ],
   "scripts": {
     "build": "yarn build:ts && yarn build:shims && yarn build:standalone",
-    "build:ts": "tsc -p .",
     "build:shims": "node build/shims.js",
     "build:standalone": "webpack -c webpack.config.js",
+    "build:ts": "tsc -p .",
+    "coverage": "nyc yarn test",
+    "coverage:json": "nyc --reporter=json yarn test",
+    "coverage:lcov": "nyc --reporter=lcov yarn test",
     "debug": "node --inspect-brk node_modules/.bin/_mocha \"{src,test}/**/*.ts\"",
     "format": "prettier --write --ignore-unknown \"{src,test}/**/*.ts\"",
     "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
     "prettier": "prettier --plugin . --parser=liquid-html",
-    "test": "yarn test:spec '{src,test}/**/*.spec.ts'",
-    "test:spec": "node_modules/.bin/_mocha"
+    "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'"
   },
   "peerDependencies": {
     "prettier": "^1.15.0 || ^2.0.0"
   },
   "devDependencies": {
+    "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@tsconfig/node14": "^1.0.1",
     "@types/chai": "^4.2.22",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.11",
     "chai": "^4.3.4",
     "mocha": "^9.1.3",
+    "nyc": "^15.1.0",
     "prettier": "^2.5.0",
+    "source-map-support": "^0.5.21",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2",
     "webpack": "^5.70.0",
