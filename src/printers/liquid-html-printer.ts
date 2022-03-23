@@ -21,8 +21,6 @@ type LiquidAstPath = AstPath<LiquidHtmlNode>;
 type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
 type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 
-const identity = <T>(x: T): T => x;
-
 const { builders } = doc;
 const { ifBreak, fill, group, hardline, indent, join, line, softline } =
   builders;
