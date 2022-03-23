@@ -1,0 +1,47 @@
+When it doesn't break, it should conditionally omit the trailing space
+
+It should omit the trailing space if it is stripped anyway
+{% form %}space {%- endform %}
+
+It should not omit the trailing space if there's trailing whitespace
+{% form %}space {% endform %}
+{%- form %}space {% endform -%}
+{% form %}space {% endform %}
+
+It should not omit the whitespace because of whitespace stripping outside the tag
+<p>
+{% form %}aaaaaaaaaaaaaaaaaaaaaaaaaaaa {% endform %}{{ value }}
+</p>
+
+It should not omit the whitespace if it is included inline in a paragraph
+<p>haha{% form %}space {% endform %}haha</p>
+
+---
+
+When it unbreaks, it should conditionally omit a trailing space
+
+It should omit a trailing space if it is stripped anyway
+{% form %}space
+  {%- endform %}
+
+It should not omit a trailing space when there's space before the tag
+{% form %}space
+{% endform %}
+
+It should not omit a trailing space if there is otherwise
+<p>
+{% form %}space
+{% endform %}
+</p>
+
+It should not omit a trailing space if there wouldn't be otherwise
+<p>
+{% form %}space
+{% endform %}X
+</p>
+
+It should not omit a trailing space if the outer left whitespace is stripped
+{% form %}space
+{% endform %}
+{%- form %}space
+{% endform %}

@@ -10,7 +10,12 @@ import {
   TextNode,
 } from '../parsers';
 import { assertNever } from '../utils';
-import { getWhitespaceTrim, isTrimmingInnerLeft, isWhitespace } from './utils';
+import {
+  getWhitespaceTrim,
+  isTrimmingInnerLeft,
+  isTrimmingInnerRight,
+  isWhitespace,
+} from './utils';
 
 type LiquidAstPath = AstPath<LiquidHtmlNode>;
 type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
@@ -364,7 +369,7 @@ function printLiquidTag(
   let meat: Doc = [];
   let trailingWhitespace: Doc[] = [];
   if (node.blockEndPosition) {
-    trailingWhitespace.push(softline);
+    trailingWhitespace.push(innerTrailingWhitespace(node, source));
   }
 
   if (isBranchedTag(node)) {
@@ -385,22 +390,6 @@ function printLiquidTag(
   });
 }
 
-// This is complicated... Stuff is slightly more obtuse because it
-// depends on the output, and whenever that happens we need to branch with
-// `ifBranch` instead of a normal condition.
-//
-// The idea is this. We don't care what happens when the line breaks. When
-// it breaks, it breaks. But when it _doesn't_ break, we need to make sure
-// that we should maintain whitespace in the output if there was in the
-// input.
-//
-// e.g. {% if A %} selected{% endif %} should become
-//      {% if A %}selected{% endif %} UNLESS
-// - The outer left whitespace is stripped.
-//    + That can be caused by _this node_ being whitespaceStriped to the left: {%- if A %}
-//    + OR the sibling to whitespace to the right: {% assign x = 1 -%} {% if A %}
-// - The inner left whitespace is stripped: {% if A -%}
-// - There is no whitespace to the left AND the parent doesn't break.
 function innerLeadingWhitespace(
   node: LiquidTag | LiquidBranch,
   source: string,
@@ -408,6 +397,21 @@ function innerLeadingWhitespace(
   if (
     !isWhitespace(source, node.blockStartPosition.end) ||
     isTrimmingInnerLeft(node)
+  ) {
+    return softline;
+  }
+
+  return line;
+}
+
+function innerTrailingWhitespace(
+  node: LiquidTag | LiquidBranch,
+  source: string,
+) {
+  if (node.type === NodeTypes.LiquidBranch || !node.blockEndPosition) return '';
+  if (
+    !isWhitespace(source, node.blockEndPosition.start - 1) ||
+    isTrimmingInnerRight(node)
   ) {
     return softline;
   }
