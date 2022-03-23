@@ -208,7 +208,7 @@ function printLiquidBlockEnd(
 
 function attributes(path: any, _options: any, print: any): Doc {
   const node = path.getValue();
-  if (node.attributes.length == 0) return '';
+  if (isEmpty(node.attributes)) return '';
   return group(
     [indent([line, join(line, path.map(print, 'attributes'))]), softline],
     {
@@ -373,11 +373,9 @@ function printLiquidTag(
   }
 
   if (isBranchedTag(node)) {
-    const wrapper = node.name === 'case' ? indent : identity;
-    meat = wrapper(
-      mapGenericPrint(path, 'children', options, print, tagGroupId),
-    );
-  } else {
+    meat = mapGenericPrint(path, 'children', options, print, tagGroupId);
+    if (node.name === 'case') meat = indent(meat);
+  } else if (node.children.length > 0) {
     meat = indent([
       innerLeadingWhitespace(node, source),
       join(softline, mapWithNewLine(path, options, print, 'children')),
@@ -436,6 +434,10 @@ function branchInnerLeadingWhitespace(
   return line;
 }
 
+function isEmpty(col: any[]): boolean {
+  return col.length === 0;
+}
+
 function printLiquidBranch(
   path: AstPath<LiquidBranch>,
   options: LiquidParserOptions,
@@ -445,18 +447,24 @@ function printLiquidBranch(
   const branch = path.getValue();
   const parentNode: LiquidTag = path.getParentNode() as any;
   const source = getSource(path);
+  const isDefaultBranch = !branch.name;
 
   const meat = join(softline, mapWithNewLine(path, options, print, 'children'));
+  const shouldCollapseSpace =
+    isEmpty(branch.children) && parentNode.children!.length === 1;
 
-  if (!branch.name && branch.children.length === 0) {
-    return ifBreak(
-      '',
-      isWhitespace(source, branch.blockStartPosition.end) ? ' ' : '',
-    );
-  }
-
-  if (!branch.name) {
-    return indent([innerLeadingWhitespace(parentNode, source), meat]);
+  if (isDefaultBranch) {
+    if (
+      (isEmpty(branch.children) &&
+        !isWhitespace(source, parentNode.blockStartPosition.end)) ||
+      shouldCollapseSpace
+    ) {
+      return '';
+    } else if (isEmpty(branch.children)) {
+      return ifBreak('', ' ');
+    } else {
+      return indent([innerLeadingWhitespace(parentNode, source), meat]);
+    }
   }
 
   const outerLeadingWhitespace = isWhitespace(source, branch.position.start)
@@ -470,10 +478,7 @@ function printLiquidBranch(
       parentGroupId,
       parentGroupId,
     ),
-    indent([
-      branchInnerLeadingWhitespace(branch, source),
-      join(softline, mapWithNewLine(path, options, print, 'children')),
-    ]),
+    indent([branchInnerLeadingWhitespace(branch, source), meat]),
   ];
 }
 
