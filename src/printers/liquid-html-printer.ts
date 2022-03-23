@@ -569,7 +569,7 @@ function genericPrint(
       return group([
         '<',
         printName(node.name, path, print),
-        attributes(path, options, print),
+        node.attributes.length > 0 ? attributes(path, options, print) : ' ',
         '/>',
       ]);
     }
