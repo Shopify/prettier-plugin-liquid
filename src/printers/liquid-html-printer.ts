@@ -1,26 +1,36 @@
-import { Printer, AstPath, Doc, ParserOptions, doc } from 'prettier';
+import { Printer, AstPath, Doc, doc } from 'prettier';
 import {
   LiquidHtmlNode,
   NodeTypes,
-  DocumentNode,
   LiquidTag,
   LiquidBranch,
   LiquidDrop,
   isBranchedTag,
   TextNode,
   HtmlElement,
+  AttributeNode,
+  HtmlVoidElement,
+  HtmlSelfClosingElement,
+  HtmlRawNode,
 } from '../parsers';
 import { assertNever } from '../utils';
 import {
+  getSource,
   getWhitespaceTrim,
+  isEmpty,
   isTrimmingInnerLeft,
   isTrimmingInnerRight,
   isWhitespace,
+  LiquidAstPath,
+  LiquidParserOptions,
+  LiquidPrinter,
+  maybeIndent,
+  originallyHadLineBreaks,
+  trim,
+  bodyLines,
+  markupLines,
+  reindent,
 } from './utils';
-
-type LiquidAstPath = AstPath<LiquidHtmlNode>;
-type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
-type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
 
 const { builders } = doc;
 const { ifBreak, fill, group, hardline, indent, join, line, softline } =
@@ -38,34 +48,6 @@ const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'ol',
 ];
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
-
-const trim = (x: string) => x.trim();
-const trimEnd = (x: string) => x.trimEnd();
-
-function bodyLines(str: string): string[] {
-  return str
-    .replace(/^\n*|\s*$/g, '') // only want the meat
-    .split(/\r?\n/);
-}
-
-function markupLines(node: LiquidTag | LiquidDrop | LiquidBranch): string[] {
-  return node.markup.trim().split('\n');
-}
-
-function reindent(lines: string[], skipFirst = false): string[] {
-  const minIndentLevel = lines
-    .filter((_, i) => (skipFirst ? i > 0 : true))
-    .filter((line) => line.trim().length > 0)
-    .map((line) => (line.match(/^\s*/) as any)[0].length)
-    .reduce((a, b) => Math.min(a, b), Infinity);
-
-  if (minIndentLevel === Infinity) {
-    return lines;
-  }
-
-  const indentStrip = ' '.repeat(minIndentLevel);
-  return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
-}
 
 function printLiquidDrop(
   path: LiquidAstPath,
@@ -205,7 +187,9 @@ function printLiquidBlockEnd(
   ]);
 }
 
-function attributes(path: any, _options: any, print: any): Doc {
+function printAttributes<
+  T extends LiquidHtmlNode & { attributes: AttributeNode[] },
+>(path: AstPath<T>, _options: LiquidParserOptions, print: LiquidPrinter): Doc {
   const node = path.getValue();
   if (isEmpty(node.attributes)) return '';
   return group(
@@ -225,21 +209,7 @@ function printName(
   return path.call(print, 'name');
 }
 
-function originallyHadLineBreaks(
-  path: LiquidAstPath,
-  { locStart, locEnd }: LiquidParserOptions,
-): boolean {
-  const source = getSource(path);
-  const node = path.getValue();
-  const indexOfNewLine = source.indexOf('\n', locStart(node));
-  return 0 <= indexOfNewLine && indexOfNewLine < locEnd(node);
-}
-
-function getSource(path: LiquidAstPath) {
-  return (path.stack[0] as DocumentNode).source;
-}
-
-function mapGenericPrint(
+function mapPrintNode(
   path: AstPath,
   property: string,
   options: LiquidParserOptions,
@@ -247,7 +217,7 @@ function mapGenericPrint(
   parentGroupId?: symbol,
 ): Doc[] {
   return path
-    .map((p) => genericPrint(p, options, print, parentGroupId), property)
+    .map((p) => printNode(p, options, print, parentGroupId), property)
     .filter((x) => x !== '');
 }
 
@@ -278,7 +248,7 @@ function mapWithNewLine(
         doc.push('');
       }
     }
-    doc.push(genericPrint(path, options, print, parentGroupId));
+    doc.push(printNode(path, options, print, parentGroupId));
     prev = curr;
   }, property);
   return doc;
@@ -342,7 +312,7 @@ function mapAsParagraph(
         doc.push(word);
       }
     } else {
-      doc.push(genericPrint(path, options, print));
+      doc.push(printNode(path, options, print));
     }
     prev = curr;
   }, property);
@@ -350,16 +320,9 @@ function mapAsParagraph(
   return fill(doc);
 }
 
-interface HasChildren {
-  children?: LiquidHtmlNode[];
-}
-
-function maybeIndent(whitespace: Doc, doc: Doc): Doc {
-  if (!doc) return '';
-  return indent([whitespace, doc]);
-}
-
-function printChildren<T extends LiquidHtmlNode & HasChildren>(
+function printChildren<
+  T extends LiquidHtmlNode & { children?: LiquidHtmlNode[] },
+>(
   path: AstPath<T>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
@@ -402,7 +365,7 @@ function printLiquidTag(
   }
 
   if (isBranchedTag(node)) {
-    meat = mapGenericPrint(path, 'children', options, print, tagGroupId);
+    meat = mapPrintNode(path, 'children', options, print, tagGroupId);
     if (node.name === 'case') meat = indent(meat);
   } else if (node.children.length > 0) {
     meat = indent([
@@ -461,10 +424,6 @@ function branchInnerLeadingWhitespace(
   }
 
   return line;
-}
-
-function isEmpty(col: any[]): boolean {
-  return col.length === 0;
 }
 
 function printLiquidBranch(
@@ -540,7 +499,7 @@ function printTextNode(
   return join(hardline, paragraphs);
 }
 
-function genericPrint(
+function printNode(
   path: LiquidAstPath,
   options: LiquidParserOptions,
   print: LiquidPrinter,
@@ -562,7 +521,7 @@ function genericPrint(
           group([
             '<',
             printName(node.name, path, print),
-            attributes(path, options, print),
+            printAttributes(path as AstPath<HtmlElement>, options, print),
             '>',
           ]),
           maybeIndent(
@@ -588,14 +547,25 @@ function genericPrint(
     }
 
     case NodeTypes.HtmlVoidElement: {
-      return group(['<', node.name, attributes(path, options, print), '>']);
+      return group([
+        '<',
+        node.name,
+        printAttributes(path as AstPath<HtmlVoidElement>, options, print),
+        '>',
+      ]);
     }
 
     case NodeTypes.HtmlSelfClosingElement: {
       return group([
         '<',
         printName(node.name, path, print),
-        node.attributes.length > 0 ? attributes(path, options, print) : ' ',
+        node.attributes.length > 0
+          ? printAttributes(
+              path as AstPath<HtmlSelfClosingElement>,
+              options,
+              print,
+            )
+          : ' ',
         '/>',
       ]);
     }
@@ -608,7 +578,12 @@ function genericPrint(
           : [softline];
 
       return group([
-        group(['<', node.name, attributes(path, options, print), '>']),
+        group([
+          '<',
+          node.name,
+          printAttributes(path as AstPath<HtmlRawNode>, options, print),
+          '>',
+        ]),
         body,
         ['</', node.name, '>'],
       ]);
@@ -684,7 +659,7 @@ function genericPrint(
                   softline,
                   join(
                     softline,
-                    mapGenericPrint(path, 'value', options, print, attrGroupId),
+                    mapPrintNode(path, 'value', options, print, attrGroupId),
                   ),
                 ]),
                 softline,
@@ -721,5 +696,5 @@ function genericPrint(
 }
 
 export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
-  print: genericPrint,
+  print: printNode,
 };

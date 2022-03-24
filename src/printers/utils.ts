@@ -1,12 +1,65 @@
-import { LiquidHtmlNode, NodeTypes } from '../parsers';
+import { LiquidHtmlNode, DocumentNode, NodeTypes } from '../parsers';
 import { assertNever } from '../utils';
-import { Doc, doc } from 'prettier';
+import { Doc, doc, AstPath, ParserOptions } from 'prettier';
+
 const { builders } = doc;
-const { ifBreak } = builders;
+const { ifBreak, indent } = builders;
+
+export type LiquidAstPath = AstPath<LiquidHtmlNode>;
+export type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
+export type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
+
+export function getSource(path: LiquidAstPath) {
+  return (path.stack[0] as DocumentNode).source;
+}
+
+export function isEmpty(col: any[]): boolean {
+  return col.length === 0;
+}
 
 export function isWhitespace(source: string, loc: number): boolean {
   if (loc < 0 || loc >= source.length) return true;
   return !!source[loc].match(/\s/);
+}
+
+export const trim = (x: string) => x.trim();
+export const trimEnd = (x: string) => x.trimEnd();
+
+export function bodyLines(str: string): string[] {
+  return str
+    .replace(/^\n*|\s*$/g, '') // only want the meat
+    .split(/\r?\n/);
+}
+
+export function markupLines<T extends LiquidHtmlNode & { markup: string }>(
+  node: T,
+): string[] {
+  return node.markup.trim().split('\n');
+}
+
+export function reindent(lines: string[], skipFirst = false): string[] {
+  const minIndentLevel = lines
+    .filter((_, i) => (skipFirst ? i > 0 : true))
+    .filter((line) => line.trim().length > 0)
+    .map((line) => (line.match(/^\s*/) as any)[0].length)
+    .reduce((a, b) => Math.min(a, b), Infinity);
+
+  if (minIndentLevel === Infinity) {
+    return lines;
+  }
+
+  const indentStrip = ' '.repeat(minIndentLevel);
+  return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
+}
+
+export function originallyHadLineBreaks(
+  path: LiquidAstPath,
+  { locStart, locEnd }: LiquidParserOptions,
+): boolean {
+  const source = getSource(path);
+  const node = path.getValue();
+  const indexOfNewLine = source.indexOf('\n', locStart(node));
+  return 0 <= indexOfNewLine && indexOfNewLine < locEnd(node);
 }
 
 export function getChildrenArray(
@@ -164,4 +217,9 @@ export function ifBreakChain(
       ifBreak(breaksContent, currFlatContent, { groupId }),
     flatContent,
   );
+}
+
+export function maybeIndent(whitespace: Doc, doc: Doc): Doc {
+  if (!doc) return '';
+  return indent([whitespace, doc]);
 }
