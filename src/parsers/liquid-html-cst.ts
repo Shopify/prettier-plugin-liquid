@@ -291,7 +291,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
-    textNode,
+    TextNode: textNode,
   });
 
   return ohmAST as LiquidHtmlCST;

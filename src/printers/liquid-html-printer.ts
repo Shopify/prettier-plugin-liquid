@@ -8,6 +8,7 @@ import {
   LiquidDrop,
   isBranchedTag,
   TextNode,
+  HtmlElement,
 } from '../parsers';
 import { assertNever } from '../utils';
 import {
@@ -306,7 +307,7 @@ function mapWithNewLine(
  * - a `line` between `Hello` and `{{ name }}`,
  * - a `softline` between `{{ name }}` and `!`.
  */
-function paragraph(
+function mapAsParagraph(
   path: LiquidAstPath,
   options: LiquidParserOptions,
   print: LiquidPrinter,
@@ -347,6 +348,36 @@ function paragraph(
   }, property);
 
   return fill(doc);
+}
+
+interface HasChildren {
+  children?: LiquidHtmlNode[];
+}
+
+function maybeIndent(whitespace: Doc, doc: Doc): Doc {
+  if (!doc) return '';
+  return indent([whitespace, doc]);
+}
+
+function printChildren<T extends LiquidHtmlNode & HasChildren>(
+  path: AstPath<T>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
+): Doc {
+  const node = path.getValue();
+  if (!node.children || isEmpty(node.children)) return '';
+
+  const hasNonEmptyTextNode = !!node.children.find(
+    (child) => child.type === NodeTypes.TextNode,
+  );
+
+  return hasNonEmptyTextNode
+    ? mapAsParagraph(path, options, print, 'children')
+    : join(
+        hardline,
+        mapWithNewLine(path, options, print, 'children', parentGroupId),
+      );
 }
 
 function printLiquidTag(
@@ -447,22 +478,21 @@ function printLiquidBranch(
   const source = getSource(path);
   const isDefaultBranch = !branch.name;
 
-  const meat = join(softline, mapWithNewLine(path, options, print, 'children'));
+  const meat = printChildren(path, options, print, parentGroupId);
   const shouldCollapseSpace =
     isEmpty(branch.children) && parentNode.children!.length === 1;
+  const isBranchEmptyWithoutSpace =
+    isEmpty(branch.children) &&
+    !isWhitespace(source, parentNode.blockStartPosition.end);
 
-  if (isDefaultBranch) {
-    if (
-      (isEmpty(branch.children) &&
-        !isWhitespace(source, parentNode.blockStartPosition.end)) ||
-      shouldCollapseSpace
-    ) {
-      return '';
-    } else if (isEmpty(branch.children)) {
-      return ifBreak('', ' ');
-    } else {
-      return indent([innerLeadingWhitespace(parentNode, source), meat]);
-    }
+  if (isDefaultBranch && !isEmpty(branch.children)) {
+    return indent([innerLeadingWhitespace(parentNode, source), meat]);
+  }
+
+  if (isDefaultBranch && (isBranchEmptyWithoutSpace || shouldCollapseSpace)) {
+    return '';
+  } else if (isDefaultBranch && isEmpty(branch.children)) {
+    return ifBreak('', ' ');
   }
 
   const outerLeadingWhitespace = isWhitespace(source, branch.position.start)
@@ -526,9 +556,6 @@ function genericPrint(
     }
 
     case NodeTypes.HtmlElement: {
-      const hasNonEmptyTextNode = !!node.children.find(
-        (child) => child.type === NodeTypes.TextNode,
-      );
       const htmlElementGroupId = Symbol('html-element-id');
       return group(
         [
@@ -538,23 +565,15 @@ function genericPrint(
             attributes(path, options, print),
             '>',
           ]),
-          node.children.length > 0
-            ? indent([
-                softline,
-                hasNonEmptyTextNode
-                  ? paragraph(path, options, print, 'children')
-                  : join(
-                      hardline,
-                      mapWithNewLine(
-                        path,
-                        options,
-                        print,
-                        'children',
-                        htmlElementGroupId,
-                      ),
-                    ),
-              ])
-            : '',
+          maybeIndent(
+            softline,
+            printChildren(
+              path as AstPath<HtmlElement>,
+              options,
+              print,
+              htmlElementGroupId,
+            ),
+          ),
           softline,
           group(['</', printName(node.name, path, print), '>']),
         ],

@@ -1,6 +1,6 @@
 LiquidHTML {
   Node
-    = (HtmlNode | liquidNode | textNode)*
+    = (HtmlNode | liquidNode | TextNode)*
 
   HtmlNode =
     | HtmlComment
@@ -130,7 +130,9 @@ LiquidHTML {
   anyExcept<lit> = (~ lit any)
   anyExceptStar<lit> = (~ lit any)*
   anyExceptPlus<lit> = (~ lit any)+
+  AnyExcept<lit> = (~ lit any)
+  AnyExceptStar<lit> = (~ lit any)*
 
-  textNode = anyExcept<openControl> anyExceptStar<openControl>
+  TextNode = AnyExcept<openControl> AnyExceptStar<openControl>
   openControl = "<" | "{{" | "{%"
 }

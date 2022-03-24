@@ -207,6 +207,12 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         },
       );
     });
+    it('should trim whitespace left and right', () => {
+      const cst = toLiquidHtmlCST('<div>  \n hello  world  </div>');
+      expectPath(cst, '1.type').to.equal('TextNode');
+      expectPath(cst, '1.value').to.equal('hello  world');
+      expectLocation(cst, [1]);
+    });
   });
 
   function expectLocation(cst: LiquidHtmlCST, path: (string | number)[]) {
