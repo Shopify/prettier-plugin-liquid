@@ -318,8 +318,8 @@ function printAttributes<
 
 function printAttribute<T extends AttributeNodeBase<any>>(
   path: AstPath<T>,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
+  _options: LiquidParserOptions,
+  _print: LiquidPrinter,
 ) {
   const node = path.getValue();
   const attrGroupId = Symbol('attr-group-id');
@@ -476,21 +476,47 @@ function innerTrailingWhitespace(
   return line;
 }
 
-// Same same but different. This one has to check if the parent is
-// whitespace stripping to the outer left, and the node itself if it is
-// stripping the inner left.
-function branchInnerLeadingWhitespace(
-  branch: LiquidBranch,
-  source: string,
+function printLiquidDefaultBranch(
+  path: AstPath<LiquidBranch>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
 ): Doc {
-  if (
-    !isWhitespace(source, branch.blockStartPosition.end) ||
-    isTrimmingInnerLeft(branch)
-  ) {
-    return softline;
+  const branch = path.getValue();
+  const parentNode: LiquidTag = path.getParentNode() as any;
+  const source = getSource(path);
+
+  // When the node is empty and the parent is empty. The space will come
+  // from the trailingWhitespace of the parent. When this happens, we don't
+  // want the branch to print another one so we collapse it.
+  // e.g. {% if A %} {% endif %}
+  const shouldCollapseSpace =
+    isEmpty(branch.children) && parentNode.children!.length === 1;
+  if (shouldCollapseSpace) return '';
+
+  // When the branch is empty and doesn't have whitespace, we don't want
+  // anything so print nothing.
+  // e.g. {% if A %}{% endif %}
+  // e.g. {% if A %}{% else %}...{% endif %}
+  const isBranchEmptyWithoutSpace =
+    isEmpty(branch.children) &&
+    !isWhitespace(source, parentNode.blockStartPosition.end);
+  if (isBranchEmptyWithoutSpace) return '';
+
+  // If the branch does not break, is empty and had whitespace, we might
+  // want a space in there. We don't collapse those because the trailing
+  // whitespace does not come from the parent.
+  // {% if A %} {% else %}...{% endif %}
+  if (isEmpty(branch.children)) {
+    return ifBreak('', ' ');
   }
 
-  return line;
+  // Otherwise print the branch as usual
+  // {% if A %} content...{% endif %}
+  return indent([
+    innerLeadingWhitespace(parentNode, source),
+    printChildren(path, options, print, parentGroupId),
+  ]);
 }
 
 function printLiquidBranch(
@@ -498,29 +524,15 @@ function printLiquidBranch(
   options: LiquidParserOptions,
   print: LiquidPrinter,
   parentGroupId?: symbol,
-) {
+): Doc {
   const branch = path.getValue();
-  const parentNode: LiquidTag = path.getParentNode() as any;
-  const source = getSource(path);
   const isDefaultBranch = !branch.name;
 
-  const meat = printChildren(path, options, print, parentGroupId);
-  const shouldCollapseSpace =
-    isEmpty(branch.children) && parentNode.children!.length === 1;
-  const isBranchEmptyWithoutSpace =
-    isEmpty(branch.children) &&
-    !isWhitespace(source, parentNode.blockStartPosition.end);
-
-  if (isDefaultBranch && !isEmpty(branch.children)) {
-    return indent([innerLeadingWhitespace(parentNode, source), meat]);
+  if (isDefaultBranch) {
+    return printLiquidDefaultBranch(path, options, print, parentGroupId);
   }
 
-  if (isDefaultBranch && (isBranchEmptyWithoutSpace || shouldCollapseSpace)) {
-    return '';
-  } else if (isDefaultBranch && isEmpty(branch.children)) {
-    return ifBreak('', ' ');
-  }
-
+  const source = getSource(path);
   const outerLeadingWhitespace = isWhitespace(source, branch.position.start)
     ? line
     : softline;
@@ -532,7 +544,10 @@ function printLiquidBranch(
       parentGroupId,
       parentGroupId,
     ),
-    indent([branchInnerLeadingWhitespace(branch, source), meat]),
+    indent([
+      innerLeadingWhitespace(branch, source),
+      printChildren(path, options, print, parentGroupId),
+    ]),
   ];
 }
 
