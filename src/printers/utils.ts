@@ -58,8 +58,16 @@ export function originallyHadLineBreaks(
 ): boolean {
   const source = getSource(path);
   const node = path.getValue();
-  const indexOfNewLine = source.indexOf('\n', locStart(node));
-  return 0 <= indexOfNewLine && indexOfNewLine < locEnd(node);
+  return hasLineBreakInRange(source, locStart(node), locEnd(node));
+}
+
+export function hasLineBreakInRange(
+  source: string,
+  locStart: number,
+  locEnd: number,
+): boolean {
+  const indexOfNewLine = source.indexOf('\n', locStart);
+  return 0 <= indexOfNewLine && indexOfNewLine < locEnd;
 }
 
 export function getChildrenArray(

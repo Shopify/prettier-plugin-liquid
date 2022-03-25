@@ -12,24 +12,29 @@ import {
   HtmlVoidElement,
   HtmlSelfClosingElement,
   HtmlRawNode,
+  AttributeNodeBase,
+  AttrUnquoted,
+  AttrSingleQuoted,
+  AttrDoubleQuoted,
 } from '../parsers';
 import { assertNever } from '../utils';
 import {
+  LiquidAstPath,
+  LiquidParserOptions,
+  LiquidPrinter,
+  bodyLines,
   getSource,
   getWhitespaceTrim,
+  hasLineBreakInRange,
   isEmpty,
   isTrimmingInnerLeft,
   isTrimmingInnerRight,
   isWhitespace,
-  LiquidAstPath,
-  LiquidParserOptions,
-  LiquidPrinter,
+  markupLines,
   maybeIndent,
   originallyHadLineBreaks,
-  trim,
-  bodyLines,
-  markupLines,
   reindent,
+  trim,
 } from './utils';
 
 const { builders } = doc;
@@ -48,6 +53,117 @@ const HTML_TAGS_THAT_ALWAYS_BREAK = [
   'ol',
 ];
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
+
+function mapPrintNode(
+  path: AstPath,
+  property: string,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  parentGroupId?: symbol,
+): Doc[] {
+  return path
+    .map((p) => printNode(p, options, print, parentGroupId), property)
+    .filter((x) => x !== '');
+}
+
+/**
+ * This one is a bit like path.map except that it tries to maintain new
+ * lines in between nodes. And it will shrink multiple new lines into one.
+ */
+function mapWithNewLine(
+  path: LiquidAstPath,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  property: string,
+  parentGroupId?: symbol,
+): Doc[] {
+  const doc: Doc[] = [];
+  const source = getSource(path);
+  const { locStart, locEnd } = options;
+  let curr: LiquidHtmlNode | null = null;
+  let prev: LiquidHtmlNode | null = null;
+  path.each((path) => {
+    curr = path.getValue();
+    if (curr && prev && locEnd(prev) < locStart(curr)) {
+      const gap = source.slice(locEnd(prev), locStart(curr));
+      // if we have more than one new line between nodes, insert an empty
+      // node in between the result of the `map`. This way we can join with
+      // hardline or softline and maintain 'em.
+      if (gap.replace(/ |\t|\r/g, '').length > 1) {
+        doc.push('');
+      }
+    }
+    doc.push(printNode(path, options, print, parentGroupId));
+    prev = curr;
+  }, property);
+  return doc;
+}
+
+/**
+ * This function takes a node (assuming it has at least one TextNode
+ * children) and reindents the text as a paragraph while maintaining
+ * whitespace (if there is some) between adjacent nodes
+ *
+ * Example:
+ *
+ * <div>Hello {{ name }}! How are you doing today?</div> -->
+ *   fill([
+ *     "Hello", line,
+ *     LiquidDrop<"name">, softline,
+ *     "!", line,
+ *     "How", line,
+ *     "are", line,
+ *     "you", line,
+ *     "doing", line,
+ *     "today?"
+ *   ])
+ *
+ * Note how we have
+ * - a `line` between `Hello` and `{{ name }}`,
+ * - a `softline` between `{{ name }}` and `!`.
+ */
+function mapAsParagraph(
+  path: LiquidAstPath,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  property: string,
+): Doc {
+  // So I have a bunch of text nodes. What do I want out of 'em?
+  const doc: Doc[] = [];
+  const { locStart, locEnd } = options;
+  let curr: LiquidHtmlNode | null = null;
+  let prev: LiquidHtmlNode | null = null;
+
+  path.each((path) => {
+    curr = path.getValue();
+    if (curr && prev) {
+      if (locEnd(prev) === locStart(curr)) {
+        doc.push(softline);
+      } else {
+        doc.push(line);
+      }
+    }
+
+    // Boi this is ugly.
+    if (curr.type === NodeTypes.TextNode) {
+      const words = curr.value.split(/\s+/g);
+      let isFirst = true;
+      for (const word of words) {
+        if (isFirst) {
+          isFirst = false;
+        } else {
+          doc.push(line);
+        }
+        doc.push(word);
+      }
+    } else {
+      doc.push(printNode(path, options, print));
+    }
+    prev = curr;
+  }, property);
+
+  return fill(doc);
+}
 
 function printLiquidDrop(
   path: LiquidAstPath,
@@ -200,6 +316,68 @@ function printAttributes<
   );
 }
 
+function printAttribute<T extends AttributeNodeBase<any>>(
+  path: AstPath<T>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+) {
+  const node = path.getValue();
+  const attrGroupId = Symbol('attr-group-id');
+  // What should be the rule here? Should it really be "paragraph"?
+  // ideally... if the thing is and the line is too long
+  // use cases:
+  //  - attr-{{ section.id }}--something.
+  //  * We should try to put that "block" on one line
+  //
+  //  - attr {{ classname }} foo
+  //  * we should try to put on one line?
+  //
+  //  - attr hello world ok fellow friends what do
+  //  * if the line becomes too long do we want to break one per line?
+  //    - for alt, would be paragraph
+  //    - for classes, yeah maybe
+  //    - for srcset?, it should be "split on comma"
+  //    - for sizes?, it should be "split on comma"
+  //    - for href?, it should be no space url
+  //    - for others?, it should be keywords
+  //    - for style, should be break on ;
+  //    - for other?, should be...
+  //    - how the fuck am I going to do that?
+  //    - same way we do this? with a big ass switch case?
+  //    - or we... don't and leave it as is?
+  //
+  // Anyway, for that reason ^, for now I'll just paste in what we have in
+  // the source. It's too hard to get right.
+
+  const source = getSource(path);
+  const value = source.slice(
+    node.attributePosition.start,
+    node.attributePosition.end,
+  );
+  return [
+    node.name,
+    '=',
+    '"',
+    hasLineBreakInRange(
+      source,
+      node.attributePosition.start,
+      node.attributePosition.end,
+    )
+      ? group(
+          [
+            indent([
+              softline,
+              join(hardline, reindent(bodyLines(value), true)),
+            ]),
+            softline,
+          ],
+          { id: attrGroupId },
+        )
+      : value,
+    '"',
+  ];
+}
+
 function printName(
   name: string | LiquidDrop,
   path: LiquidAstPath,
@@ -207,117 +385,6 @@ function printName(
 ): Doc {
   if (typeof name === 'string') return name;
   return path.call(print, 'name');
-}
-
-function mapPrintNode(
-  path: AstPath,
-  property: string,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  parentGroupId?: symbol,
-): Doc[] {
-  return path
-    .map((p) => printNode(p, options, print, parentGroupId), property)
-    .filter((x) => x !== '');
-}
-
-/**
- * This one is a bit like path.map except that it tries to maintain new
- * lines in between nodes. And it will shrink multiple new lines into one.
- */
-function mapWithNewLine(
-  path: LiquidAstPath,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  property: string,
-  parentGroupId?: symbol,
-): Doc[] {
-  const doc: Doc[] = [];
-  const source = getSource(path);
-  const { locStart, locEnd } = options;
-  let curr: LiquidHtmlNode | null = null;
-  let prev: LiquidHtmlNode | null = null;
-  path.each((path) => {
-    curr = path.getValue();
-    if (curr && prev && locEnd(prev) < locStart(curr)) {
-      const gap = source.slice(locEnd(prev), locStart(curr));
-      // if we have more than one new line between nodes, insert an empty
-      // node in between the result of the `map`. This way we can join with
-      // hardline or softline and maintain 'em.
-      if (gap.replace(/ |\t|\r/g, '').length > 1) {
-        doc.push('');
-      }
-    }
-    doc.push(printNode(path, options, print, parentGroupId));
-    prev = curr;
-  }, property);
-  return doc;
-}
-
-/**
- * This function takes a node (assuming it has at least one TextNode
- * children) and reindents the text as a paragraph while maintaining
- * whitespace (if there is some) between adjacent nodes
- *
- * Example:
- *
- * <div>Hello {{ name }}! How are you doing today?</div> -->
- *   fill([
- *     "Hello", line,
- *     LiquidDrop<"name">, softline,
- *     "!", line,
- *     "How", line,
- *     "are", line,
- *     "you", line,
- *     "doing", line,
- *     "today?"
- *   ])
- *
- * Note how we have
- * - a `line` between `Hello` and `{{ name }}`,
- * - a `softline` between `{{ name }}` and `!`.
- */
-function mapAsParagraph(
-  path: LiquidAstPath,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  property: string,
-): Doc {
-  // So I have a bunch of text nodes. What do I want out of 'em?
-  const doc: Doc[] = [];
-  const { locStart, locEnd } = options;
-  let curr: LiquidHtmlNode | null = null;
-  let prev: LiquidHtmlNode | null = null;
-
-  path.each((path) => {
-    curr = path.getValue();
-    if (curr && prev) {
-      if (locEnd(prev) === locStart(curr)) {
-        doc.push(softline);
-      } else {
-        doc.push(line);
-      }
-    }
-
-    // Boi this is ugly.
-    if (curr.type === NodeTypes.TextNode) {
-      const words = curr.value.split(/\s+/g);
-      let isFirst = true;
-      for (const word of words) {
-        if (isFirst) {
-          isFirst = false;
-        } else {
-          doc.push(line);
-        }
-        doc.push(word);
-      }
-    } else {
-      doc.push(printNode(path, options, print));
-    }
-    prev = curr;
-  }, property);
-
-  return fill(doc);
 }
 
 function printChildren<
@@ -647,28 +714,11 @@ function printNode(
     case NodeTypes.AttrUnquoted:
     case NodeTypes.AttrSingleQuoted:
     case NodeTypes.AttrDoubleQuoted: {
-      const attrGroupId = Symbol('attr-group-id');
-      return [
-        node.name,
-        '=',
-        '"',
-        node.value.length > 1
-          ? group(
-              [
-                indent([
-                  softline,
-                  join(
-                    softline,
-                    mapPrintNode(path, 'value', options, print, attrGroupId),
-                  ),
-                ]),
-                softline,
-              ],
-              { id: attrGroupId },
-            )
-          : path.map(print, 'value'),
-        '"',
-      ];
+      return printAttribute(
+        path as AstPath<AttrUnquoted | AttrSingleQuoted | AttrDoubleQuoted>,
+        options,
+        print,
+      );
     }
 
     case NodeTypes.HtmlComment: {

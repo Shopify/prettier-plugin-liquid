@@ -12,6 +12,9 @@ import {
   LiquidHtmlConcreteNode,
   toLiquidHtmlCST,
   ConcreteHtmlSelfClosingElement,
+  ConcreteAttrSingleQuoted,
+  ConcreteAttrDoubleQuoted,
+  ConcreteAttrUnquoted,
 } from './liquid-html-cst';
 import { assertNever } from '../utils';
 import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
@@ -167,6 +170,7 @@ export interface AttrEmpty extends ASTNode<NodeTypes.AttrEmpty> {
 export interface AttributeNodeBase<T> extends ASTNode<T> {
   name: string;
   value: (TextNode | LiquidNode)[];
+  attributePosition: Position;
 }
 
 export interface TextNode extends ASTNode<NodeTypes.TextNode> {
@@ -456,14 +460,16 @@ export function cstToAst(
       case ConcreteNodeTypes.AttrSingleQuoted:
       case ConcreteNodeTypes.AttrDoubleQuoted:
       case ConcreteNodeTypes.AttrUnquoted: {
+        const value = toAttributeValue(node.value, source);
         builder.push({
           type: node.type as unknown as
-            | NodeTypes.AttrUnquoted
+            | NodeTypes.AttrSingleQuoted
             | NodeTypes.AttrDoubleQuoted
             | NodeTypes.AttrUnquoted,
           name: node.name,
-          value: toAttributeValue(node.value, source),
           position: position(node),
+          attributePosition: toAttributePosition(node, value),
+          value,
         });
         break;
       }
@@ -475,6 +481,36 @@ export function cstToAst(
   }
 
   return builder.ast;
+}
+
+function toAttributePosition(
+  node:
+    | ConcreteAttrSingleQuoted
+    | ConcreteAttrDoubleQuoted
+    | ConcreteAttrUnquoted,
+  value: (LiquidNode | TextNode)[],
+): Position {
+  if (value.length === 0) {
+    // This is bugged when there's whitespace on either side. But I don't
+    // think it's worth solving.
+    return {
+      start: node.locStart + node.name.length + '='.length + '"'.length,
+      // name=""
+      // 012345678
+      // 0 + 4 + 1 + 1
+      // = 6
+      end: node.locStart + node.name.length + '='.length + '"'.length,
+      // name=""
+      // 012345678
+      // 0 + 4 + 1 + 2
+      // = 6
+    };
+  }
+
+  return {
+    start: value[0].position.start,
+    end: value[value.length - 1].position.end,
+  };
 }
 
 function toAttributeValue(

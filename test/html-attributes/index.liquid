@@ -2,6 +2,7 @@
   id=1234
   class="long string of class names"
   style="width: 100px; height: auto;"
+  content=""
 >
 <img
   src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
@@ -25,3 +26,24 @@
 <span>Hi, muffin!</span>
 
 <img class="image {% if sticky %}image--sticky{% endif %} {% if wrapped %}image--wrapped{% endif %}" id="img--{{ product.id }}" src="{{ product.featured_image }}" width="{{ product.featured_image.width }}" height="{{ product.featured_image.height }}" loading="lazy">
+
+<img
+srcset="{% if media.preview_image.width >= 493 %}{{ media.preview_image | image_url: width: 493 }} 493w,{% endif %}
+{% if media.preview_image.width >= 600 %}{{ media.preview_image | image_url: width: 600 }} 600w,{% endif %}
+{% if media.preview_image.width >= 713 %}{{ media.preview_image | image_url: width: 713 }} 713w,{% endif %}
+{% if media.preview_image.width >= 823 %}{{ media.preview_image | image_url: width: 823 }} 823w,{% endif %}
+{% if media.preview_image.width >= 990 %}{{ media.preview_image | image_url: width: 990 }} 990w,{% endif %}
+{% if media.preview_image.width >= 1100 %}{{ media.preview_image | image_url: width: 1100 }} 1100w,{% endif %}
+{% if media.preview_image.width >= 1206 %}{{ media.preview_image | image_url: width: 1206 }} 1206w,{% endif %}
+{% if media.preview_image.width >= 1346 %}{{ media.preview_image | image_url: width: 1346 }} 1346w,{% endif %}
+{% if media.preview_image.width >= 1426 %}{{ media.preview_image | image_url: width: 1426 }} 1426w,{% endif %}
+{% if media.preview_image.width >= 1646 %}{{ media.preview_image | image_url: width: 1646 }} 1646w,{% endif %}
+{% if media.preview_image.width >= 1946 %}{{ media.preview_image | image_url: width: 1946 }} 1946w,{% endif %}
+{{ media.preview_image | image_url }} {{ media.preview_image.width }}w"
+src="{{ media | image_url: width: 1946 }}"
+sizes="(min-width: {{ settings.page_width }}px) {{ settings.page_width | minus: 100 | times: media_width | round }}px, (min-width: 990px) calc({{ media_width | times: 100 }}vw - 10rem), (min-width: 750px) calc((100vw - 11.5rem) / 2), calc(100vw - 4rem)"
+{% unless lazy_load == false %}loading="lazy"{% endunless %}
+width="973"
+height="{{ 973 | divided_by: media.preview_image.aspect_ratio | ceil }}"
+alt="{{ media.preview_image.alt | escape }}"
+>
