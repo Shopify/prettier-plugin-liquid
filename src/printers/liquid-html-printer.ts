@@ -425,23 +425,23 @@ function printLiquidTag(
   const blockEnd = printLiquidBlockEnd(path, tagGroupId, parentGroupId); // {% endif %}
   const source = getSource(path);
 
-  let meat: Doc = [];
+  let body: Doc = [];
   let trailingWhitespace: Doc[] = [];
   if (node.blockEndPosition) {
     trailingWhitespace.push(innerTrailingWhitespace(node, source));
   }
 
   if (isBranchedTag(node)) {
-    meat = mapPrintNode(path, 'children', options, print, tagGroupId);
-    if (node.name === 'case') meat = indent(meat);
+    body = mapPrintNode(path, 'children', options, print, tagGroupId);
+    if (node.name === 'case') body = indent(body);
   } else if (node.children.length > 0) {
-    meat = indent([
+    body = indent([
       innerLeadingWhitespace(node, source),
       join(softline, mapWithNewLine(path, options, print, 'children')),
     ]);
   }
 
-  return group([blockStart, meat, ...trailingWhitespace, blockEnd], {
+  return group([blockStart, body, ...trailingWhitespace, blockEnd], {
     id: tagGroupId,
     shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
   });
