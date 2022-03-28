@@ -690,29 +690,49 @@ function printNode(
     case NodeTypes.LiquidRawTag: {
       const lines = bodyLines(node.body);
       const body = reindent(lines);
+      const source = getSource(path);
+      const blockStart = group([
+        '{%',
+        node.whitespaceStart,
+        ' ',
+        node.name,
+        ' ',
+        node.whitespaceEnd,
+        '%}',
+      ]);
+      const blockEnd = [
+        '{%',
+        node.whitespaceStart,
+        ' ',
+        'end',
+        node.name,
+        ' ',
+        node.whitespaceEnd,
+        '%}',
+      ];
+
+      if (
+        !hasLineBreakInRange(
+          getSource(path),
+          node.blockStartPosition.end,
+          node.blockEndPosition.start,
+        )
+      ) {
+        return [
+          blockStart,
+          source.slice(
+            node.blockStartPosition.end,
+            node.blockEndPosition.start,
+          ),
+          blockEnd,
+        ];
+      }
 
       return [
-        group([
-          '{%',
-          node.whitespaceStart,
-          ' ',
-          node.name,
-          ' ',
-          node.whitespaceEnd,
-          '%}',
-        ]),
+        blockStart,
         indent([hardline, join(hardline, body)]),
         hardline,
-        [
-          '{%',
-          node.whitespaceStart,
-          ' ',
-          'end',
-          node.name,
-          ' ',
-          node.whitespaceEnd,
-          '%}',
-        ],
+        blockEnd,
       ];
     }
 

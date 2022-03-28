@@ -67,6 +67,8 @@ export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
   whitespaceEnd: '-' | '';
   delimiterWhitespaceStart: '-' | '';
   delimiterWhitespaceEnd: '-' | '';
+  blockStartPosition: Position;
+  blockEndPosition: Position;
 }
 
 export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
@@ -404,6 +406,14 @@ export function cstToAst(
           delimiterWhitespaceStart: node.delimiterWhitespaceStart ?? '',
           delimiterWhitespaceEnd: node.delimiterWhitespaceEnd ?? '',
           position: position(node),
+          blockStartPosition: {
+            start: node.blockStartLocStart,
+            end: node.blockStartLocEnd,
+          },
+          blockEndPosition: {
+            start: node.blockEndLocStart,
+            end: node.blockEndLocEnd,
+          },
         });
         break;
       }

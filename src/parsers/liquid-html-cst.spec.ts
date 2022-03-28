@@ -159,6 +159,20 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it.only('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
+      const source = '{% raw -%}<div>{%- endraw %}';
+      const cst = toLiquidHtmlCST(source);
+      expectPath(cst, '0.type').to.equal('LiquidRawTag');
+      expectPath(cst, '0.body').to.equal('<div>');
+      expectPath(cst, '0.blockStartLocStart').to.equal(0);
+      expectPath(cst, '0.blockStartLocEnd').to.equal(source.indexOf('<'));
+      expectPath(cst, '0.blockEndLocStart').to.equal(source.indexOf('>') + 1);
+      expectPath(cst, '0.blockEndLocEnd').to.equal(source.length);
+      expectPath(cst, '0.delimiterWhitespaceStart').to.equal('-');
+      expectPath(cst, '0.delimiterWhitespaceEnd').to.equal(null);
+      expectLocation(cst, [0]);
+    });
+
     it('should basically parse liquid tags', () => {
       const cst = toLiquidHtmlCST(
         '{%   assign x = 1 %}{% if hi -%}{%- endif %}',

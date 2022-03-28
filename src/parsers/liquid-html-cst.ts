@@ -99,6 +99,10 @@ export interface ConcreteLiquidRawTag
   body: string;
   delimiterWhitespaceStart: null | '-';
   delimiterWhitespaceEnd: null | '-';
+  blockStartLocStart: number;
+  blockStartLocEnd: number;
+  blockEndLocStart: number;
+  blockEndLocEnd: number;
 }
 
 export interface ConcreteLiquidTagOpen
@@ -251,6 +255,10 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       delimiterWhitespaceEnd: 14,
       locStart,
       locEnd,
+      blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: any) => tokens[6].source.endIdx,
+      blockEndLocStart: (tokens: any) => tokens[8].source.startIdx,
+      blockEndLocEnd: (tokens: any) => tokens[15].source.endIdx,
     },
 
     liquidTagOpen: {
