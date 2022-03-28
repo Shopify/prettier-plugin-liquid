@@ -15,33 +15,3 @@ It should not omit the whitespace because of whitespace stripping outside the ta
 
 It should not omit the whitespace if it is included inline in a paragraph
 <p>haha{% form %} space{% endform %}</p>
-
----
-
-When it unbreaks, it should conditionally omit a leading space
-
-It should omit a leading space if it is stripped anyway
-{% form -%}
-  space{% endform %}
-
-It should not omit a leading space when there's space before the tag
-{% form %}
-  space{% endform %}
-
-It should not omit a leading space if there is otherwise
-<p>
-{% form %}
-  space{% endform %}
-</p>
-
-It should not omit a leading space if there wouldn't be otherwise
-<p>
-X{% form %}
-  space{% endform %}
-</p>
-
-It should not omit a leading space if the outer left whitespace is stripped
-{%- form %}
-  space{% endform -%}
-{% form %}
-  space{% endform %}

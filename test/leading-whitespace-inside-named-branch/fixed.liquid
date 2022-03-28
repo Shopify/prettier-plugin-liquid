@@ -20,24 +20,3 @@ It should not omit the leading space if there's space before the named branch
 
 It should not omit the whitespace if it is included inline in a paragraph
 <p>haha{% if A %}{% else %} space{% endif %}</p>
-
----
-
-When it unbreaks, it should conditionally omit a leading space
-
-It should omit a leading space if it is stripped anyway
-<p>
-  X{% if A -%}space{% endif %}
-</p>
-
-It should not omit a leading space when there's space before the tag
-{% if A %} space{% endif %}
-
-It should not omit a leading space if there is otherwise
-<p>
-  {% if A %} space{% endif %}
-</p>
-
-It should not omit a leading space if the outer left whitespace is stripped
-{%- if A %} space{% endif -%}
-{% if A %} space{% endif %}

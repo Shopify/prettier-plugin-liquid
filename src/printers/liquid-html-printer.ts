@@ -511,7 +511,9 @@ function printLiquidTag(
 
   return group([blockStart, body, ...trailingWhitespace, blockEnd], {
     id: tagGroupId,
-    shouldBreak: LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name),
+    shouldBreak:
+      LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
+      originallyHadLineBreaks(path, options),
   });
 }
 

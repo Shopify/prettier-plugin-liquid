@@ -19,27 +19,3 @@ tag
 
 It should not omit the whitespace if it is included inline in a paragraph
 <p>haha{% if a %} space{% endif %}</p>
-
----
-
-When it unbreaks, it should conditionally omit a leading space
-
-It should omit a leading space if it is stripped anyway
-{% if a -%}space{% endif %}
-
-It should not omit a leading space when there's space before the tag
-{% if a %} space{% endif %}
-
-It should not omit a leading space if there is otherwise
-<p>
-  {% if a %} space{% endif %}
-</p>
-
-It should not omit a leading space if there wouldn't be otherwise
-<p>
-  X{% if a %} space{% endif %}
-</p>
-
-It should not omit a leading space if the outer left whitespace is stripped
-{%- if a %} space{% endif -%}
-{% if a %} space{% endif %}

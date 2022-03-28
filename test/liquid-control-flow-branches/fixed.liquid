@@ -54,7 +54,21 @@ line.
     <div>Hello</div>
     <div>content</div>
   {% else if b %}
-    {% if greeting %} <div>hello</div> {% endif %}
+    {% if greeting %}
+      <div>hello</div>
+    {% endif %}
     <div>content</div>
   {% endif %}
 </section>
+
+When there's a new line in the input, there should be a new line in the output.
+{% if a -%}
+  hello
+{% endif %}
+{% if a -%}
+  hello
+{%- elsif b -%}
+  b
+{%- else -%}
+  c
+{% endif %}
