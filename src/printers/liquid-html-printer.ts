@@ -17,6 +17,7 @@ import {
   AttrSingleQuoted,
   AttrDoubleQuoted,
   Position,
+  HtmlNodeBase,
 } from '../parsers';
 import { assertNever } from '../utils';
 import {
@@ -303,6 +304,63 @@ function printLiquidBlockEnd(
     whitespaceEnd,
     '%}',
   ]);
+}
+
+function printHtmlBlockStart(
+  path: AstPath<LiquidHtmlNode & HtmlNodeBase<any>>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+): Doc {
+  const node = path.getValue();
+
+  if (node.attributes.length === 1) {
+    return [
+      '<',
+      printName(node.name, path, print),
+      ' ',
+      path.map(print, 'attributes'),
+      '>',
+    ];
+  }
+
+  return group([
+    '<',
+    printName(node.name, path, print),
+    printAttributes(path as AstPath<HtmlElement>, options, print),
+    '>',
+  ]);
+}
+
+function printHtmlElement(
+  path: AstPath<HtmlElement>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+): Doc {
+  const node = path.getValue();
+  const htmlElementGroupId = Symbol('html-element-id');
+  return group(
+    [
+      printHtmlBlockStart(path, options, print),
+      maybeIndent(
+        softline,
+        printChildren(
+          path as AstPath<HtmlElement>,
+          options,
+          print,
+          htmlElementGroupId,
+        ),
+      ),
+      softline,
+      group(['</', printName(node.name, path, print), '>']),
+    ],
+    {
+      shouldBreak:
+        (typeof node.name === 'string' &&
+          HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
+        originallyHadLineBreaks(path, options),
+      id: htmlElementGroupId,
+    },
+  );
 }
 
 function printAttributes<
@@ -618,44 +676,15 @@ function printNode(
     }
 
     case NodeTypes.HtmlElement: {
-      const htmlElementGroupId = Symbol('html-element-id');
-      return group(
-        [
-          group([
-            '<',
-            printName(node.name, path, print),
-            printAttributes(path as AstPath<HtmlElement>, options, print),
-            '>',
-          ]),
-          maybeIndent(
-            softline,
-            printChildren(
-              path as AstPath<HtmlElement>,
-              options,
-              print,
-              htmlElementGroupId,
-            ),
-          ),
-          softline,
-          group(['</', printName(node.name, path, print), '>']),
-        ],
-        {
-          shouldBreak:
-            (typeof node.name === 'string' &&
-              HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
-            originallyHadLineBreaks(path, options),
-          id: htmlElementGroupId,
-        },
-      );
+      return printHtmlElement(path as AstPath<HtmlElement>, options, print);
     }
 
     case NodeTypes.HtmlVoidElement: {
-      return group([
-        '<',
-        node.name,
-        printAttributes(path as AstPath<HtmlVoidElement>, options, print),
-        '>',
-      ]);
+      return printHtmlBlockStart(
+        path as AstPath<HtmlVoidElement>,
+        options,
+        print,
+      );
     }
 
     case NodeTypes.HtmlSelfClosingElement: {
@@ -667,7 +696,7 @@ function printNode(
           options,
           print,
         ),
-        ' ',
+        line,
         '/>',
       ]);
     }
