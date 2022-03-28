@@ -65,3 +65,7 @@ When there's a new line in the input, there should be a new line in the output.
 {% endif %}
 {% if a %}hello{% elsif b %}b{% else %}c
 {% endif %}
+
+Deeply nested tags should break line
+{% if greeting %}hello world{% endif %}
+{% if greeting %}<span>hello world</span>{% endif %}

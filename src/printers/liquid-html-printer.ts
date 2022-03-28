@@ -24,6 +24,7 @@ import {
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
+  isDeeplyNested,
   bodyLines,
   getSource,
   getWhitespaceTrim,
@@ -513,7 +514,8 @@ function printLiquidTag(
     id: tagGroupId,
     shouldBreak:
       LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
-      originallyHadLineBreaks(path, options),
+      originallyHadLineBreaks(path, options) ||
+      isDeeplyNested(node),
   });
 }
 

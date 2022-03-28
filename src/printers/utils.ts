@@ -1,4 +1,10 @@
-import { LiquidHtmlNode, DocumentNode, NodeTypes } from '../parsers';
+import {
+  LiquidHtmlNode,
+  DocumentNode,
+  NodeTypes,
+  isBranchedTag,
+  LiquidBranch,
+} from '../parsers';
 import { assertNever } from '../utils';
 import { Doc, doc, AstPath, ParserOptions } from 'prettier';
 
@@ -68,6 +74,20 @@ export function hasLineBreakInRange(
 ): boolean {
   const indexOfNewLine = source.indexOf('\n', locStart);
   return 0 <= indexOfNewLine && indexOfNewLine < locEnd;
+}
+
+export function isDeeplyNested(
+  node: LiquidHtmlNode & { children?: LiquidHtmlNode[] },
+): boolean {
+  if (!node.children) return false;
+  if (isBranchedTag(node)) {
+    return !!node.children.find((child) =>
+      isDeeplyNested(child as LiquidBranch),
+    );
+  }
+  return !!node.children.find(
+    (child) => !isEmpty((child as any).children || []),
+  );
 }
 
 export function getChildrenArray(
