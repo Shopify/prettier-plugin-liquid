@@ -207,11 +207,29 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         },
       );
     });
+
     it('should trim whitespace left and right', () => {
-      const cst = toLiquidHtmlCST('<div>  \n hello  world  </div>');
-      expectPath(cst, '1.type').to.equal('TextNode');
-      expectPath(cst, '1.value').to.equal('hello  world');
-      expectLocation(cst, [1]);
+      [
+        {
+          testCase: '<div>  \n hello  world  </div>',
+          expected: 'hello  world',
+        },
+        { testCase: '<div>  \n bb  </div>', expected: 'bb' },
+        { testCase: '<div>  \n b  </div>', expected: 'b' },
+        {
+          testCase: '{% if a %}  \n hello  world  {% endif %}',
+          expected: 'hello  world',
+        },
+        { testCase: '{% if a %}  \n bb  {% endif %}', expected: 'bb' },
+        { testCase: '{% if a %}  \n b  {% endif %}', expected: 'b' },
+      ].forEach(({ testCase, expected }) => {
+        const cst = toLiquidHtmlCST(testCase);
+        expectPath(cst, '1.type').to.equal('TextNode');
+        expectPathStringified(cst, '1.value').to.equal(
+          JSON.stringify(expected),
+        );
+        expectLocation(cst, [1]);
+      });
     });
   });
 
@@ -222,5 +240,9 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
   function expectPath(cst: LiquidHtmlCST, path: string) {
     return expect(deepGet(path.split('.'), cst));
+  }
+
+  function expectPathStringified(cst: LiquidHtmlCST, path: string) {
+    return expect(JSON.stringify(deepGet(path.split('.'), cst)));
   }
 });

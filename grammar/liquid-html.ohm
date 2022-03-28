@@ -131,8 +131,9 @@ LiquidHTML {
   anyExceptStar<lit> = (~ lit any)*
   anyExceptPlus<lit> = (~ lit any)+
   AnyExcept<lit> = (~ lit any)
+  AnyExceptPlus<lit> = (~ lit any)+
   AnyExceptStar<lit> = (~ lit any)*
 
-  TextNode = AnyExcept<openControl> AnyExceptStar<openControl>
+  TextNode = AnyExceptPlus<openControl>
   openControl = "<" | "{{" | "{%"
 }
