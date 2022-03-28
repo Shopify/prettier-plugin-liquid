@@ -16,6 +16,7 @@ import {
   AttrUnquoted,
   AttrSingleQuoted,
   AttrDoubleQuoted,
+  Position,
 } from '../parsers';
 import { assertNever } from '../utils';
 import {
@@ -305,14 +306,22 @@ function printLiquidBlockEnd(
 }
 
 function printAttributes<
-  T extends LiquidHtmlNode & { attributes: AttributeNode[] },
+  T extends LiquidHtmlNode & {
+    attributes: AttributeNode[];
+    blockStartPosition: Position;
+  },
 >(path: AstPath<T>, _options: LiquidParserOptions, print: LiquidPrinter): Doc {
   const node = path.getValue();
+  const source = getSource(path);
   if (isEmpty(node.attributes)) return '';
   return group(
     [indent([line, join(line, path.map(print, 'attributes'))]), softline],
     {
-      shouldBreak: node.attributes.length > 2,
+      shouldBreak: hasLineBreakInRange(
+        source,
+        node.blockStartPosition.start,
+        node.blockStartPosition.end,
+      ),
     },
   );
 }
@@ -653,13 +662,12 @@ function printNode(
       return group([
         '<',
         printName(node.name, path, print),
-        node.attributes.length > 0
-          ? printAttributes(
-              path as AstPath<HtmlSelfClosingElement>,
-              options,
-              print,
-            )
-          : ' ',
+        printAttributes(
+          path as AstPath<HtmlSelfClosingElement>,
+          options,
+          print,
+        ),
+        ' ',
         '/>',
       ]);
     }

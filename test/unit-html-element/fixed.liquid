@@ -8,8 +8,10 @@
   </body>
 </html>
 
-// should break if more than 2 attributes
-<div x="1" y="2"></div>
+// should break if original had line breaks
+<div x="1" y="2" z="3"></div>
+<div x="1" y="2" z="3">
+</div>
 <div
   x="1"
   y="2"
@@ -38,11 +40,6 @@
 
 // self closing
 <self-closing />
-<self-closing with="attributes"/>
-<self-closing
-  with="attributes"
-  that="would"
-  span="on"
-  multiple
-  lines
-/>
+<self-closing />
+<self-closing with="attributes" />
+<self-closing with="attributes" that="would" span="on" multiple lines />

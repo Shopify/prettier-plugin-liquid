@@ -124,8 +124,6 @@ export type HtmlNode =
 
 export interface HtmlElement extends HtmlNodeBase<NodeTypes.HtmlElement> {
   children: LiquidHtmlAST;
-  blockStartPosition: Position;
-  blockEndPosition?: Position;
 }
 export interface HtmlVoidElement
   extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {
@@ -150,6 +148,8 @@ export interface HtmlNodeBase<T> extends ASTNode<T> {
    */
   name: string | LiquidDrop;
   attributes: AttributeNode[];
+  blockStartPosition: Position;
+  blockEndPosition?: Position;
 }
 
 export type AttributeNode =
@@ -454,6 +454,14 @@ export function cstToAst(
           body: node.body,
           attributes: toAttributes(node.attrList || [], source),
           position: position(node),
+          blockStartPosition: {
+            start: node.blockStartLocStart,
+            end: node.blockStartLocEnd,
+          },
+          blockEndPosition: {
+            start: node.blockEndLocStart,
+            end: node.blockEndLocEnd,
+          },
         });
         break;
       }
@@ -572,6 +580,7 @@ function toHtmlVoidElement(
     name: node.name,
     attributes: toAttributes(node.attrList || [], source),
     position: position(node),
+    blockStartPosition: position(node),
   };
 }
 
@@ -584,6 +593,7 @@ function toHtmlSelfClosingElement(
     name: toName(node.name),
     attributes: toAttributes(node.attrList || [], source),
     position: position(node),
+    blockStartPosition: position(node),
   };
 }
 

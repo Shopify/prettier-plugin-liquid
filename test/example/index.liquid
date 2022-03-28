@@ -8,7 +8,8 @@ product | image_tag: preload: true
 {% assign x = 1 %}
 
 {% for product in products %}
-    <div id="hero" class="container" style="width: 100%; padding-top: 100%">
+  <div
+    id="hero" class="container" style="width: 100%; padding-top: 100%">
 {{ product | image_tag: preload: true }}
 
 {% assign img = product.featured_image %}

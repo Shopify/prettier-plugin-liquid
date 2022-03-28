@@ -55,6 +55,19 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectLocation(cst, [0]);
     });
 
+    it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
+      const source = '<script>const a = {{ product | json }}</script>';
+      const cst = toLiquidHtmlCST(source);
+      expectPath(cst, '0.type').to.equal('HtmlRawTag');
+      expectPath(cst, '0.blockStartLocStart').to.equal(0);
+      expectPath(cst, '0.blockStartLocEnd').to.equal(source.indexOf('const'));
+      expectPath(cst, '0.blockEndLocStart').to.equal(
+        source.indexOf('</script>'),
+      );
+      expectPath(cst, '0.blockEndLocEnd').to.equal(source.length);
+      expectLocation(cst, [0]);
+    });
+
     it('should parse void elements', () => {
       VOID_ELEMENTS.forEach((voidElementName) => {
         const cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
@@ -159,7 +172,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
-    it.only('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
+    it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
       const source = '{% raw -%}<div>{%- endraw %}';
       const cst = toLiquidHtmlCST(source);
       expectPath(cst, '0.type').to.equal('LiquidRawTag');

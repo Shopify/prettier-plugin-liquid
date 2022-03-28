@@ -1,13 +1,17 @@
 // should break on html tags that always break
 <html><head></head><body><main></main></body></html>
 
-// should break if more than 2 attributes
-<div x=1 y=2></div>
+// should break if original had line breaks
 <div x=1 y=2 z=3></div>
+<div x=1 y=2 z=3>
+</div>
+<div
+  x=1 y=2 z=3></div>
 
 // should indent child
 <div x=1 y=2>Child</div>
-<div x=1 y=2 z=3>Child</div>
+<div
+  x=1 y=2 z=3>Child</div>
 
 // should not break when it fits on a line
 <div x="1" y="2"><div>Hello</div></div>
@@ -16,6 +20,7 @@
 <div x="1" y="2"><div>Hello</div><div>World</div></div>
 
 // self closing
+<self-closing/>
 <self-closing />
 <self-closing with=attributes />
 <self-closing with=attributes that=would span=on multiple lines />

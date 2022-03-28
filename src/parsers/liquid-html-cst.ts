@@ -46,6 +46,10 @@ export interface ConcreteHtmlRawTag
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlRawTag> {
   name: string;
   body: string;
+  blockStartLocStart: number;
+  blockStartLocEnd: number;
+  blockEndLocStart: number;
+  blockEndLocEnd: number;
 }
 export interface ConcreteHtmlVoidElement
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlVoidElement> {
@@ -178,6 +182,10 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       body: 4,
       locStart,
       locEnd,
+      blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: any) => tokens[3].source.endIdx,
+      blockEndLocStart: (tokens: any) => tokens[5].source.startIdx,
+      blockEndLocEnd: (tokens: any) => tokens[5].source.endIdx,
     },
 
     HtmlVoidElement: {
