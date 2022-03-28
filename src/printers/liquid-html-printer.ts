@@ -35,6 +35,7 @@ import {
   originallyHadLineBreaks,
   reindent,
   trim,
+  getLeftSibling,
 } from './utils';
 
 const { builders } = doc;
@@ -526,6 +527,7 @@ function printLiquidBranch(
   parentGroupId?: symbol,
 ): Doc {
   const branch = path.getValue();
+  const parentNode = path.getParentNode() as unknown as LiquidTag;
   const isDefaultBranch = !branch.name;
 
   if (isDefaultBranch) {
@@ -533,9 +535,19 @@ function printLiquidBranch(
   }
 
   const source = getSource(path);
-  const outerLeadingWhitespace = isWhitespace(source, branch.position.start)
-    ? line
-    : softline;
+  const leftSibling = getLeftSibling(branch, parentNode) as
+    | LiquidBranch
+    | undefined;
+
+  // When the left sibling is empty, its trailing whitespace is its leading
+  // whitespace. So we should collapse it here and ignore it.
+  const shouldCollapseSpace = leftSibling && isEmpty(leftSibling.children);
+  const hasWhitespaceToTheLeft = isWhitespace(
+    source,
+    branch.blockStartPosition.start - 1,
+  );
+  const outerLeadingWhitespace =
+    hasWhitespaceToTheLeft && !shouldCollapseSpace ? line : softline;
 
   return [
     outerLeadingWhitespace,
