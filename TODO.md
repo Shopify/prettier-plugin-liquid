@@ -1,6 +1,6 @@
 ## Things that would make this production ready
 
-- [ ] The conditional addition of whitespace trimming modes to Liquid variables and tags when an element breaks:
+- [x] The conditional addition of whitespace trimming modes to Liquid variables and tags when an element breaks:
 
   ```liquid
   Input:
@@ -18,10 +18,11 @@
 
   - [X] Inside `HTMLElement`s
   - [X] Inside `HTMLElement`s which contain `TextNode`s (paragraphs)
-  - [ ] Inside `LiquidTag`s
-  - [ ] Inside `LiquidTag`s which contain `TextNode`s (paragraphs)
-  - [ ] Inside `HtmlAttributes`s
-  - [ ] Inside `HtmlAttributes`s which contain `TextNode`s (paragraphs)
+  - [X] Inside `LiquidTag`s
+  - [X] Inside `LiquidTag`s which contain `TextNode`s (paragraphs)
+
+- [ ] Prettier Liquid inside HTML attributes
+  - [ ] We're not reindenting/breaking. But we should add whitespace inside nodes. e.g. `{{x}}` should become `{{ x }}`
 
 - [ ] Identify issues by running prettier on our themes
   - [ ] Dawn
