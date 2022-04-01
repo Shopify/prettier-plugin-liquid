@@ -84,10 +84,10 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
   children?: LiquidHtmlAST;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
-  blockStartPosition: Position;
-  blockEndPosition?: Position;
   delimiterWhitespaceStart?: '-' | '';
   delimiterWhitespaceEnd?: '-' | '';
+  blockStartPosition: Position;
+  blockEndPosition?: Position;
 }
 
 export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {

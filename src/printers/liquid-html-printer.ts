@@ -20,15 +20,17 @@ import {
   HtmlNodeBase,
 } from '../parsers';
 import { assertNever } from '../utils';
+import { printAsParagraph } from './print-as-paragraph';
 import {
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
-  isDeeplyNested,
   bodyLines,
+  getLeftSibling,
   getSource,
   getWhitespaceTrim,
   hasLineBreakInRange,
+  isDeeplyNested,
   isEmpty,
   isTrimmingInnerLeft,
   isTrimmingInnerRight,
@@ -38,7 +40,6 @@ import {
   originallyHadLineBreaks,
   reindent,
   trim,
-  getLeftSibling,
 } from './utils';
 
 const { builders } = doc;
@@ -101,72 +102,6 @@ function mapWithNewLine(
     prev = curr;
   }, property);
   return doc;
-}
-
-/**
- * This function takes a node (assuming it has at least one TextNode
- * children) and reindents the text as a paragraph while maintaining
- * whitespace (if there is some) between adjacent nodes
- *
- * Example:
- *
- * <div>Hello {{ name }}! How are you doing today?</div> -->
- *   fill([
- *     "Hello", line,
- *     LiquidDrop<"name">, softline,
- *     "!", line,
- *     "How", line,
- *     "are", line,
- *     "you", line,
- *     "doing", line,
- *     "today?"
- *   ])
- *
- * Note how we have
- * - a `line` between `Hello` and `{{ name }}`,
- * - a `softline` between `{{ name }}` and `!`.
- */
-function mapAsParagraph(
-  path: LiquidAstPath,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  property: string,
-): Doc {
-  // So I have a bunch of text nodes. What do I want out of 'em?
-  const doc: Doc[] = [];
-  const { locStart, locEnd } = options;
-  let curr: LiquidHtmlNode | null = null;
-  let prev: LiquidHtmlNode | null = null;
-
-  path.each((path) => {
-    curr = path.getValue();
-    if (curr && prev) {
-      if (locEnd(prev) === locStart(curr)) {
-        doc.push(softline);
-      } else {
-        doc.push(line);
-      }
-    }
-
-    // Boi this is ugly.
-    if (curr.type === NodeTypes.TextNode) {
-      const words = curr.value.split(/\s+/g);
-      let isFirst = true;
-      for (const word of words) {
-        if (isFirst) {
-          isFirst = false;
-        } else {
-          doc.push(line);
-        }
-        doc.push(word);
-      }
-    } else {
-      doc.push(printNode(path, options, print));
-    }
-    prev = curr;
-  }, property);
-
-  return fill(doc);
 }
 
 function printLiquidDrop(
@@ -472,7 +407,7 @@ function printChildren<
   );
 
   return hasNonEmptyTextNode
-    ? mapAsParagraph(path, options, print, 'children')
+    ? printAsParagraph(path, options, print, 'children')
     : join(
         hardline,
         mapWithNewLine(path, options, print, 'children', parentGroupId),

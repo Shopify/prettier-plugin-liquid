@@ -18,10 +18,19 @@ hello {{ name }}!
 
 // Should break child liquid tags on new lines
 <div>
-  If a child breaks, it breaks on a new line.{%- if liquid -%}<span>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>{%- endif -%}
+  If a child breaks, it breaks on a new line. {%- if liquid -%}<span>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>{%- endif -%}
   But the paragraph that <i>follows</i> keeps on going as before. If an <em>fits on the line line</em>, it flows inline. But it will
   <em>never open in the middle of a line and end on another</em>
 </div>
 
 // Should maintain whitespace between inline elements
 <h1>  HELLO <span> WORLD</span> </h1>
+
+// Should avoid breaking between text and nodes
+<p>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (-{{ product.price }}-)</p>
+<p>Ipsum. Praesent scelerisque tortor a justo. Quisque consequat libero erat<em>product.price</em>ok</p>
+
+// Should break parent and add WTC when the child breaks
+<p>
+  (-{% if liquid %}<span>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>{% endif %}-)
+</p>

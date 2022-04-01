@@ -13,7 +13,14 @@ const { ifBreak, indent } = builders;
 
 export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
-export type LiquidPrinter = (path: AstPath<LiquidHtmlNode>) => Doc;
+export type LiquidPrinter = (
+  path: AstPath<LiquidHtmlNode>,
+  parentGroupId?: symbol,
+) => Doc;
+
+export function intersperse<T>(array: T[], delim: T): T[] {
+  return array.flatMap((val) => [delim, val]).slice(1);
+}
 
 export function getSource(path: LiquidAstPath) {
   return (path.stack[0] as DocumentNode).source;
@@ -235,11 +242,13 @@ export function getWhitespaceTrim(
 }
 
 // Threads ifBreak into multiple sources of breakage (paragraph or self, etc.)
+export const FORCE_FLAT_GROUP_ID = Symbol('force-no-break');
 export function ifBreakChain(
   breaksContent: Doc,
   flatContent: Doc,
   ...groupIds: (symbol | undefined)[]
 ) {
+  if (groupIds.includes(FORCE_FLAT_GROUP_ID)) return flatContent;
   return groupIds.reduce(
     (currFlatContent, groupId) =>
       ifBreak(breaksContent, currFlatContent, { groupId }),
