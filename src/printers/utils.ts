@@ -23,7 +23,7 @@ export function intersperse<T>(array: T[], delim: T): T[] {
 }
 
 export function getSource(path: LiquidAstPath) {
-  return (path.stack[0] as DocumentNode).source;
+  return path.getValue().source;
 }
 
 export function isEmpty(col: any[]): boolean {
@@ -69,9 +69,8 @@ export function originallyHadLineBreaks(
   path: LiquidAstPath,
   { locStart, locEnd }: LiquidParserOptions,
 ): boolean {
-  const source = getSource(path);
   const node = path.getValue();
-  return hasLineBreakInRange(source, locStart(node), locEnd(node));
+  return hasLineBreakInRange(node.source, locStart(node), locEnd(node));
 }
 
 export function hasLineBreakInRange(

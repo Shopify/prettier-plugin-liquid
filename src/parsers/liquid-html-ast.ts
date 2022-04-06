@@ -47,7 +47,6 @@ export type LiquidHtmlNode =
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
-  source: string;
   children: LiquidHtmlAST;
 }
 
@@ -187,6 +186,7 @@ export interface Position {
 export interface ASTNode<T> {
   type: T;
   position: Position;
+  source: string;
 }
 
 export function isBranchedTag(node: LiquidHtmlNode) {
@@ -261,6 +261,7 @@ class ASTBuilder {
         children: [],
         whitespaceStart: '',
         whitespaceEnd: '',
+        source: this.source,
       });
     }
   }
@@ -278,6 +279,7 @@ class ASTBuilder {
         blockStartPosition: { ...node.position },
         whitespaceStart: node.whitespaceStart,
         whitespaceEnd: node.whitespaceEnd,
+        source: this.source,
       });
     } else {
       if (this.parent?.type === NodeTypes.LiquidBranch) {
@@ -355,12 +357,13 @@ export function cstToAst(
           type: NodeTypes.TextNode,
           value: node.value,
           position: position(node),
+          source,
         });
         break;
       }
 
       case ConcreteNodeTypes.LiquidDrop: {
-        builder.push(toLiquidDrop(node));
+        builder.push(toLiquidDrop(node, source));
         break;
       }
 
@@ -374,6 +377,7 @@ export function cstToAst(
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
           blockStartPosition: position(node),
+          source,
         });
         break;
       }
@@ -392,6 +396,7 @@ export function cstToAst(
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
           blockStartPosition: position(node),
+          source,
         });
         break;
       }
@@ -414,6 +419,7 @@ export function cstToAst(
             start: node.blockEndLocStart,
             end: node.blockEndLocEnd,
           },
+          source,
         });
         break;
       }
@@ -443,6 +449,7 @@ export function cstToAst(
           type: NodeTypes.HtmlComment,
           body: node.body,
           position: position(node),
+          source,
         });
         break;
       }
@@ -454,6 +461,7 @@ export function cstToAst(
           body: node.body,
           attributes: toAttributes(node.attrList || [], source),
           position: position(node),
+          source,
           blockStartPosition: {
             start: node.blockStartLocStart,
             end: node.blockStartLocEnd,
@@ -471,6 +479,7 @@ export function cstToAst(
           type: NodeTypes.AttrEmpty,
           name: node.name,
           position: position(node),
+          source,
         });
         break;
       }
@@ -487,6 +496,7 @@ export function cstToAst(
           name: node.name,
           position: position(node),
           attributePosition: toAttributePosition(node, value),
+          source,
           value,
         });
         break;
@@ -545,29 +555,31 @@ function toAttributes(
   return cstToAst(attrList, source) as AttributeNode[];
 }
 
-function toName(name: string | ConcreteLiquidDrop) {
+function toName(name: string | ConcreteLiquidDrop, source: string) {
   if (typeof name === 'string') return name;
-  return toLiquidDrop(name);
+  return toLiquidDrop(name, source);
 }
 
-function toLiquidDrop(node: ConcreteLiquidDrop): LiquidDrop {
+function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
   return {
     type: NodeTypes.LiquidDrop,
     markup: node.markup,
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     position: position(node),
+    source,
   };
 }
 
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
   return {
     type: NodeTypes.HtmlElement,
-    name: toName(node.name),
+    name: toName(node.name, source),
     attributes: toAttributes(node.attrList || [], source),
     position: position(node),
     blockStartPosition: position(node),
     children: [],
+    source,
   };
 }
 
@@ -581,6 +593,7 @@ function toHtmlVoidElement(
     attributes: toAttributes(node.attrList || [], source),
     position: position(node),
     blockStartPosition: position(node),
+    source,
   };
 }
 
@@ -590,10 +603,11 @@ function toHtmlSelfClosingElement(
 ): HtmlSelfClosingElement {
   return {
     type: NodeTypes.HtmlSelfClosingElement,
-    name: toName(node.name),
+    name: toName(node.name, source),
     attributes: toAttributes(node.attrList || [], source),
     position: position(node),
     blockStartPosition: position(node),
+    source,
   };
 }
 

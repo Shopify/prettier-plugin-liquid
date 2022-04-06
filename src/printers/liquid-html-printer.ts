@@ -59,16 +59,8 @@ const HTML_TAGS_THAT_ALWAYS_BREAK = [
 ];
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
-function mapPrintNode(
-  path: AstPath,
-  property: string,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  parentGroupId?: symbol,
-): Doc[] {
-  return path
-    .map((p) => printNode(p, options, print, parentGroupId), property)
-    .filter((x) => x !== '');
+function cleanDoc(doc: Doc[]): Doc[] {
+  return doc.filter((x) => x !== '');
 }
 
 /**
@@ -110,16 +102,15 @@ function printLiquidDrop(
   parentGroupId?: symbol,
 ) {
   const node: LiquidDrop = path.getValue() as LiquidDrop;
-  const source = getSource(path);
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    source,
+    node.source,
     locStart(node) - 1,
     parentGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    source,
+    node.source,
     locEnd(node),
     parentGroupId,
   );
@@ -156,7 +147,6 @@ function printLiquidBlockStart(
   const node = path.getValue();
   if (!node.name) return '';
 
-  const source = getSource(path);
   const lines = markupLines(node);
   const positionStart =
     (node as LiquidTag).blockStartPosition?.start ?? node.position.start;
@@ -165,14 +155,14 @@ function printLiquidBlockStart(
 
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    source,
+    node.source,
     positionStart - 1,
     leftParentGroupId,
     rightParentGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    source,
+    node.source,
     positionEnd,
     rightParentGroupId,
   );
@@ -219,16 +209,15 @@ function printLiquidBlockEnd(
 ): Doc {
   const node = path.getValue();
   if (!node.children || !node.blockEndPosition) return '';
-  const source = getSource(path);
   const whitespaceStart = getWhitespaceTrim(
     node.delimiterWhitespaceStart ?? '',
-    source,
+    node.source,
     node.blockEndPosition.start - 1,
     leftParentGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.delimiterWhitespaceEnd ?? '',
-    source,
+    node.source,
     node.blockEndPosition.end,
     leftParentGroupId,
     rightParentGroupId,
@@ -254,7 +243,7 @@ function printHtmlBlockStart(
       '<',
       printName(node.name, path, print),
       ' ',
-      path.map(print, 'attributes'),
+      path.map((p) => print(p), 'attributes'),
       '>',
     ];
   }
@@ -306,13 +295,21 @@ function printAttributes<
   },
 >(path: AstPath<T>, _options: LiquidParserOptions, print: LiquidPrinter): Doc {
   const node = path.getValue();
-  const source = getSource(path);
   if (isEmpty(node.attributes)) return '';
   return group(
-    [indent([line, join(line, path.map(print, 'attributes'))]), softline],
+    [
+      indent([
+        line,
+        join(
+          line,
+          path.map((p) => print(p), 'attributes'),
+        ),
+      ]),
+      softline,
+    ],
     {
       shouldBreak: hasLineBreakInRange(
-        source,
+        node.source,
         node.blockStartPosition.start,
         node.blockStartPosition.end,
       ),
@@ -353,8 +350,7 @@ function printAttribute<T extends AttributeNodeBase<any>>(
   // Anyway, for that reason ^, for now I'll just paste in what we have in
   // the source. It's too hard to get right.
 
-  const source = getSource(path);
-  const value = source.slice(
+  const value = node.source.slice(
     node.attributePosition.start,
     node.attributePosition.end,
   );
@@ -363,7 +359,7 @@ function printAttribute<T extends AttributeNodeBase<any>>(
     '=',
     '"',
     hasLineBreakInRange(
-      source,
+      node.source,
       node.attributePosition.start,
       node.attributePosition.end,
     )
@@ -427,20 +423,19 @@ function printLiquidTag(
   const tagGroupId = Symbol('tag-group');
   const blockStart = printLiquidBlockStart(path, parentGroupId, tagGroupId); // {% if ... %}
   const blockEnd = printLiquidBlockEnd(path, tagGroupId, parentGroupId); // {% endif %}
-  const source = getSource(path);
 
   let body: Doc = [];
   let trailingWhitespace: Doc[] = [];
   if (node.blockEndPosition) {
-    trailingWhitespace.push(innerTrailingWhitespace(node, source));
+    trailingWhitespace.push(innerTrailingWhitespace(node));
   }
 
   if (isBranchedTag(node)) {
-    body = mapPrintNode(path, 'children', options, print, tagGroupId);
+    body = cleanDoc(path.map((p) => print(p, tagGroupId), 'children'));
     if (node.name === 'case') body = indent(body);
   } else if (node.children.length > 0) {
     body = indent([
-      innerLeadingWhitespace(node, source),
+      innerLeadingWhitespace(node),
       join(softline, mapWithNewLine(path, options, print, 'children')),
     ]);
   }
@@ -456,10 +451,9 @@ function printLiquidTag(
 
 function innerLeadingWhitespace(
   node: LiquidTag | LiquidBranch,
-  source: string,
 ) {
   if (
-    !isWhitespace(source, node.blockStartPosition.end) ||
+    !isWhitespace(node.source, node.blockStartPosition.end) ||
     isTrimmingInnerLeft(node)
   ) {
     return softline;
@@ -470,11 +464,10 @@ function innerLeadingWhitespace(
 
 function innerTrailingWhitespace(
   node: LiquidTag | LiquidBranch,
-  source: string,
 ) {
   if (node.type === NodeTypes.LiquidBranch || !node.blockEndPosition) return '';
   if (
-    !isWhitespace(source, node.blockEndPosition.start - 1) ||
+    !isWhitespace(node.source, node.blockEndPosition.start - 1) ||
     isTrimmingInnerRight(node)
   ) {
     return softline;
@@ -521,7 +514,7 @@ function printLiquidDefaultBranch(
   // Otherwise print the branch as usual
   // {% if A %} content...{% endif %}
   return indent([
-    innerLeadingWhitespace(parentNode, source),
+    innerLeadingWhitespace(parentNode),
     printChildren(path, options, print, parentGroupId),
   ]);
 }
@@ -540,7 +533,6 @@ function printLiquidBranch(
     return printLiquidDefaultBranch(path, options, print, parentGroupId);
   }
 
-  const source = getSource(path);
   const leftSibling = getLeftSibling(branch, parentNode) as
     | LiquidBranch
     | undefined;
@@ -549,7 +541,7 @@ function printLiquidBranch(
   // whitespace. So we should collapse it here and ignore it.
   const shouldCollapseSpace = leftSibling && isEmpty(leftSibling.children);
   const hasWhitespaceToTheLeft = isWhitespace(
-    source,
+    branch.source,
     branch.blockStartPosition.start - 1,
   );
   const outerLeadingWhitespace =
@@ -563,7 +555,7 @@ function printLiquidBranch(
       parentGroupId,
     ),
     indent([
-      innerLeadingWhitespace(branch, source),
+      innerLeadingWhitespace(branch),
       printChildren(path, options, print, parentGroupId),
     ]),
   ];
@@ -666,7 +658,6 @@ function printNode(
     case NodeTypes.LiquidRawTag: {
       const lines = bodyLines(node.body);
       const body = reindent(lines);
-      const source = getSource(path);
       const blockStart = group([
         '{%',
         node.whitespaceStart,
@@ -689,14 +680,14 @@ function printNode(
 
       if (
         !hasLineBreakInRange(
-          getSource(path),
+          node.source,
           node.blockStartPosition.end,
           node.blockEndPosition.start,
         )
       ) {
         return [
           blockStart,
-          source.slice(
+          node.source.slice(
             node.blockStartPosition.end,
             node.blockEndPosition.start,
           ),
