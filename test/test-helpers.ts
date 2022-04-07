@@ -69,3 +69,39 @@ export function format(content: string, options: any) {
     plugins: [plugin],
   });
 }
+
+/**
+ * Lets you write "magic" string literals that are "reindented" similar to Ruby's <<~
+ * So you can write
+ *
+ * const input = reindent`
+ *   function() {
+ *     foo();
+ *   }
+ * `;
+ *
+ * And it will be as though function() was at indent 0 and foo was indent 1.
+ */
+export function reindent(strs: TemplateStringsArray, ...keys: any[]): string {
+  const s = strs.reduce((acc, next, i) => {
+    if (keys[i] !== undefined) {
+      return acc + next + keys[i];
+    }
+    return acc + next;
+  }, '');
+  const lines = s.replace(/^\r?\n|\s+$/g, '').split(/\r?\n/);
+  const minIndentLevel = lines
+    .filter((line) => line.trim().length > 0)
+    .map((line) => (line.match(/^\s*/) as any)[0].length)
+    .reduce((a, b) => Math.min(a, b), Infinity);
+
+  if (minIndentLevel === Infinity) {
+    return lines.join('\n');
+  }
+
+  const indentStrip = ' '.repeat(minIndentLevel);
+  return lines
+    .map((line) => line.replace(indentStrip, ''))
+    .map((s) => s.trimEnd())
+    .join('\n');
+}
