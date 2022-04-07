@@ -48,9 +48,18 @@ export type LiquidHtmlNode =
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   children: LiquidHtmlAST;
+  name: '#document';
+  parentNode: undefined;
 }
 
 export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop | LiquidBranch;
+
+export type ParentNode = Extract<
+  LiquidHtmlNode,
+  | { children?: LiquidHtmlNode[] }
+  | { attributes: AttributeNode[] }
+  | { value: (TextNode | LiquidNode)[] }
+>;
 
 export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
   /**
@@ -185,6 +194,7 @@ export interface Position {
 
 export interface ASTNode<T> {
   type: T;
+  parentNode?: ParentNode;
   position: Position;
   source: string;
 }
@@ -205,26 +215,32 @@ function isBranchTag(node: LiquidHtmlNode) {
 
 export function toLiquidHtmlAST(text: string): DocumentNode {
   const cst = toLiquidHtmlCST(text);
-  return {
+  const root: DocumentNode = {
     type: NodeTypes.Document,
     source: text,
-    children: cstToAst(cst, text),
+    children: [],
+    parentNode: undefined,
+    name: '#document',
     position: {
       start: 0,
       end: text.length,
     },
-  };
+  }
+  root.children = cstToAst(cst, text, root);
+  return root;
 }
 
 class ASTBuilder {
   ast: LiquidHtmlAST;
   cursor: (string | number)[];
   source: string;
+  parentNode: ParentNode;
 
-  constructor(source: string) {
+  constructor(source: string, parentNode: ParentNode) {
     this.ast = [];
     this.cursor = [];
     this.source = source;
+    this.parentNode = parentNode;
   }
 
   get current() {
@@ -235,12 +251,13 @@ class ASTBuilder {
     return length(this.current || []) - 1;
   }
 
-  get parent(): LiquidTag | LiquidBranch | HtmlElement | undefined {
-    if (this.cursor.length == 0) return undefined;
+  get parent(): ParentNode {
+    if (this.cursor.length == 0) return this.parentNode;
     return deepGet<LiquidTag | HtmlElement>(dropLast(1, this.cursor), this.ast);
   }
 
   open(node: LiquidHtmlNode) {
+    node.parentNode = this.parent;
     this.current.push(node);
     this.cursor.push(this.currentPosition);
     this.cursor.push('children');
@@ -282,10 +299,11 @@ class ASTBuilder {
         source: this.source,
       });
     } else {
-      if (this.parent?.type === NodeTypes.LiquidBranch) {
+      if (this.parent.type === NodeTypes.LiquidBranch) {
         this.parent.position.end = node.position.end;
       }
       this.current.push(node);
+      node.parentNode = this.parent;
     }
   }
 
@@ -293,14 +311,14 @@ class ASTBuilder {
     node: ConcreteLiquidTagClose | ConcreteHtmlTagClose,
     nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
-    if (this.parent?.type === NodeTypes.LiquidBranch) {
+    if (this.parent.type === NodeTypes.LiquidBranch) {
       this.cursor.pop();
       this.cursor.pop();
     }
 
     if (
       getName(this.parent) !== getName(node) ||
-      this.parent?.type !== nodeType
+      this.parent.type !== nodeType
     ) {
       throw new LiquidHTMLASTParsingError(
         `Attempting to close ${nodeType} '${node.name}' before ${this.parent?.type} '${this.parent?.name}' was closed`,
@@ -328,11 +346,8 @@ function getName(
   node:
     | ConcreteLiquidTagClose
     | ConcreteHtmlTagClose
-    | LiquidTag
-    | LiquidBranch
-    | HtmlElement
-    | undefined,
-): string | null {
+    | ParentNode,
+): string | LiquidDrop | null {
   if (!node) return null;
   switch (node.type) {
     case NodeTypes.HtmlElement:
@@ -347,8 +362,9 @@ function getName(
 export function cstToAst(
   cst: LiquidHtmlCST | ConcreteAttributeNode[],
   source: string,
+  parentNode: ParentNode,
 ): LiquidHtmlAST {
-  const builder = new ASTBuilder(source);
+  const builder = new ASTBuilder(source, parentNode);
 
   for (const node of cst) {
     switch (node.type) {
@@ -455,11 +471,11 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlRawTag: {
-        builder.push({
+        const abstractNode: HtmlRawNode = {
           type: NodeTypes.HtmlRawNode,
           name: node.name,
           body: node.body,
-          attributes: toAttributes(node.attrList || [], source),
+          attributes: [],
           position: position(node),
           source,
           blockStartPosition: {
@@ -470,7 +486,9 @@ export function cstToAst(
             start: node.blockEndLocStart,
             end: node.blockEndLocEnd,
           },
-        });
+        }
+        abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+        builder.push(abstractNode);
         break;
       }
 
@@ -487,18 +505,23 @@ export function cstToAst(
       case ConcreteNodeTypes.AttrSingleQuoted:
       case ConcreteNodeTypes.AttrDoubleQuoted:
       case ConcreteNodeTypes.AttrUnquoted: {
-        const value = toAttributeValue(node.value, source);
-        builder.push({
+        const abstractNode: AttrUnquoted | AttrSingleQuoted | AttrDoubleQuoted = {
           type: node.type as unknown as
             | NodeTypes.AttrSingleQuoted
             | NodeTypes.AttrDoubleQuoted
             | NodeTypes.AttrUnquoted,
           name: node.name,
           position: position(node),
-          attributePosition: toAttributePosition(node, value),
           source,
-          value,
-        });
+
+          // placeholders
+          attributePosition: { start: -1, end: -1},
+          value: [],
+        }
+        const value = toAttributeValue(node.value, source, abstractNode);
+        abstractNode.value = value;
+        abstractNode.attributePosition = toAttributePosition(node, value);
+        builder.push(abstractNode);
         break;
       }
 
@@ -544,15 +567,17 @@ function toAttributePosition(
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
   source: string,
+  parentNode: ParentNode,
 ): (LiquidNode | TextNode)[] {
-  return cstToAst(value, source) as (LiquidNode | TextNode)[];
+  return cstToAst(value, source, parentNode) as (LiquidNode | TextNode)[];
 }
 
 function toAttributes(
   attrList: ConcreteAttributeNode[],
   source: string,
+  parentNode: ParentNode,
 ): AttributeNode[] {
-  return cstToAst(attrList, source) as AttributeNode[];
+  return cstToAst(attrList, source, parentNode) as AttributeNode[];
 }
 
 function toName(name: string | ConcreteLiquidDrop, source: string) {
@@ -572,43 +597,49 @@ function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
 }
 
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
-  return {
+  const abstractNode: HtmlElement = {
     type: NodeTypes.HtmlElement,
     name: toName(node.name, source),
-    attributes: toAttributes(node.attrList || [], source),
+    attributes: [],
     position: position(node),
     blockStartPosition: position(node),
     children: [],
     source,
-  };
+  }
+  abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+  return abstractNode;
 }
 
 function toHtmlVoidElement(
   node: ConcreteHtmlVoidElement,
   source: string,
 ): HtmlVoidElement {
-  return {
+  const abstractNode: HtmlVoidElement = {
     type: NodeTypes.HtmlVoidElement,
     name: node.name,
-    attributes: toAttributes(node.attrList || [], source),
+    attributes: [],
     position: position(node),
     blockStartPosition: position(node),
     source,
-  };
+  }
+  abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+  return abstractNode;
 }
 
 function toHtmlSelfClosingElement(
   node: ConcreteHtmlSelfClosingElement,
   source: string,
 ): HtmlSelfClosingElement {
-  return {
+  const abstractNode: HtmlSelfClosingElement = {
     type: NodeTypes.HtmlSelfClosingElement,
     name: toName(node.name, source),
-    attributes: toAttributes(node.attrList || [], source),
+    attributes: [],
     position: position(node),
     blockStartPosition: position(node),
     source,
-  };
+  }
+  abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+  return abstractNode;
 }
 
 function position(
