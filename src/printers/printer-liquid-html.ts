@@ -449,9 +449,7 @@ function printLiquidTag(
   });
 }
 
-function innerLeadingWhitespace(
-  node: LiquidTag | LiquidBranch,
-) {
+function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {
   if (
     !isWhitespace(node.source, node.blockStartPosition.end) ||
     isTrimmingInnerLeft(node)
@@ -462,9 +460,7 @@ function innerLeadingWhitespace(
   return line;
 }
 
-function innerTrailingWhitespace(
-  node: LiquidTag | LiquidBranch,
-) {
+function innerTrailingWhitespace(node: LiquidTag | LiquidBranch) {
   if (node.type === NodeTypes.LiquidBranch || !node.blockEndPosition) return '';
   if (
     !isWhitespace(node.source, node.blockEndPosition.start - 1) ||
@@ -759,6 +755,6 @@ function printNode(
   }
 }
 
-export const liquidHtmlPrinter: Printer<LiquidHtmlNode> = {
+export const printerLiquidHtml: Printer<LiquidHtmlNode> = {
   print: printNode,
 };

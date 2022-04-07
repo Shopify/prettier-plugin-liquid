@@ -1,5 +1,5 @@
 import { Parser, ParserOptions } from 'prettier';
-import { toLiquidHtmlAST, LiquidHtmlNode } from './liquid-html-ast';
+import { toLiquidHtmlAST, LiquidHtmlNode } from './ast';
 
 function parse(
   text: string,

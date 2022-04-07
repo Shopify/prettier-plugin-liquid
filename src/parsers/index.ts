@@ -3,9 +3,9 @@ import {
   liquidHtmlParser,
   liquidHtmlAstFormat,
   liquidHtmlLanguageName,
-} from './liquid-html-parser';
+} from './parser';
 
-export * from './liquid-html-ast';
+export * from './ast';
 
 export { liquidHtmlLanguageName, liquidHtmlAstFormat };
 

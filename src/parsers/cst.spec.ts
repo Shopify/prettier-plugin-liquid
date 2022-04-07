@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { LiquidHtmlCST, toLiquidHtmlCST } from './liquid-html-cst';
+import { LiquidHtmlCST, toLiquidHtmlCST } from './cst';
 import { BLOCKS, VOID_ELEMENTS } from './grammar';
 import { deepGet } from './utils';
 

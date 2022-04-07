@@ -1,6 +1,6 @@
-import { liquidHtmlPrinter } from './liquid-html-printer';
+import { printerLiquidHtml } from './printer-liquid-html';
 import { liquidHtmlAstFormat } from '../parsers';
 
 export const printers = {
-  [liquidHtmlAstFormat]: liquidHtmlPrinter,
+  [liquidHtmlAstFormat]: printerLiquidHtml,
 };

@@ -15,7 +15,7 @@ import {
   ConcreteAttrSingleQuoted,
   ConcreteAttrDoubleQuoted,
   ConcreteAttrUnquoted,
-} from './liquid-html-cst';
+} from './cst';
 import { assertNever } from '../utils';
 import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
 

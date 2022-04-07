@@ -39,9 +39,9 @@ But this doesn't because the div is closed before the if tag was closed:
 
 1. We parse the liquid source code into an Liquid/HTML AST.
    1. Our [harc/ohm](https://github.com/harc/ohm) grammar tokenizes the source code.[(Link to LiquidHTML grammar.)](grammar/liquid-html.ohm)
-   2. From Ohm's tokens, we build a Concrete Syntax Tree (CST). [(Link to Grammar->CST code.)](src/parsers/liquid-html-cst.ts)
-   3. From the nodes in the CST, we build an AST. [(Link to CST->AST code.)](src/parsers/liquid-html-ast.ts)
-2. From the AST, we build a [`Doc`](https://github.com/prettier/prettier/blob/main/commands.md#prettiers-intermediate-representation-doc) that prettier then prints for us.[(Link to LiquidHTML printer)](src/printers/liquid-html-printer.ts)
+   2. From Ohm's tokens, we build a Concrete Syntax Tree (CST). [(Link to Grammar->CST code.)](src/parsers/cst.ts)
+   3. From the nodes in the CST, we build an AST. [(Link to CST->AST code.)](src/parsers/ast.ts)
+2. From the AST, we build a [`Doc`](https://github.com/prettier/prettier/blob/main/commands.md#prettiers-intermediate-representation-doc) that prettier then prints for us.[(Link to LiquidHTML printer)](src/printers/printer-liquid-html.ts)
 
 Here's a flowchart that roughly illustrates the process.
 
