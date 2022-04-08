@@ -37,8 +37,6 @@ export enum NodeTypes {
   TextNode = 'TextNode',
 }
 
-export type LiquidHtmlAST = LiquidHtmlNode[];
-
 export type LiquidHtmlNode =
   | DocumentNode
   | LiquidNode
@@ -47,18 +45,26 @@ export type LiquidHtmlNode =
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
-  children: LiquidHtmlAST;
+  children: LiquidHtmlNode[];
   name: '#document';
   parentNode: undefined;
 }
 
 export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop | LiquidBranch;
 
+export interface HasChildren {
+  children?: LiquidHtmlNode[];
+}
+export interface HasAttributes {
+  attributes: AttributeNode[];
+}
+export interface HasValue {
+  value: (TextNode | LiquidNode)[];
+}
+
 export type ParentNode = Extract<
   LiquidHtmlNode,
-  | { children?: LiquidHtmlNode[] }
-  | { attributes: AttributeNode[] }
-  | { value: (TextNode | LiquidNode)[] }
+  HasChildren | HasAttributes | HasValue
 >;
 
 export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
@@ -89,7 +95,7 @@ export interface LiquidTag extends ASTNode<NodeTypes.LiquidTag> {
    * The body of the tag. May contain arguments. Excludes the name of the tag. Left trimmed.
    */
   markup: string;
-  children?: LiquidHtmlAST;
+  children?: LiquidHtmlNode[];
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
   delimiterWhitespaceStart?: '-' | '';
@@ -108,7 +114,7 @@ export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {
    * The body of the branch tag. May contain arguments. Excludes the name of the tag. Left trimmed.
    */
   markup: string;
-  children: LiquidHtmlAST;
+  children: LiquidHtmlNode[];
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
   blockStartPosition: Position;
@@ -131,7 +137,8 @@ export type HtmlNode =
   | HtmlRawNode;
 
 export interface HtmlElement extends HtmlNodeBase<NodeTypes.HtmlElement> {
-  children: LiquidHtmlAST;
+  blockEndPosition: Position;
+  children: LiquidHtmlNode[];
 }
 export interface HtmlVoidElement
   extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {
@@ -145,6 +152,7 @@ export interface HtmlRawNode extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
    */
   body: string;
   name: string;
+  blockEndPosition: Position;
 }
 export interface HtmlComment extends ASTNode<NodeTypes.HtmlComment> {
   body: string;
@@ -157,7 +165,6 @@ export interface HtmlNodeBase<T> extends ASTNode<T> {
   name: string | LiquidDrop;
   attributes: AttributeNode[];
   blockStartPosition: Position;
-  blockEndPosition?: Position;
 }
 
 export type AttributeNode =
@@ -177,9 +184,11 @@ export interface AttrEmpty extends ASTNode<NodeTypes.AttrEmpty> {
   name: string;
 }
 
+export type ValueNode = TextNode | LiquidNode;
+
 export interface AttributeNodeBase<T> extends ASTNode<T> {
   name: string;
-  value: (TextNode | LiquidNode)[];
+  value: ValueNode[];
   attributePosition: Position;
 }
 
@@ -225,13 +234,13 @@ export function toLiquidHtmlAST(text: string): DocumentNode {
       start: 0,
       end: text.length,
     },
-  }
+  };
   root.children = cstToAst(cst, text, root);
   return root;
 }
 
 class ASTBuilder {
-  ast: LiquidHtmlAST;
+  ast: LiquidHtmlNode[];
   cursor: (string | number)[];
   source: string;
   parentNode: ParentNode;
@@ -244,7 +253,7 @@ class ASTBuilder {
   }
 
   get current() {
-    return deepGet<LiquidHtmlAST>(this.cursor, this.ast) as LiquidHtmlAST;
+    return deepGet<LiquidHtmlNode[]>(this.cursor, this.ast) as LiquidHtmlNode[];
   }
 
   get currentPosition(): number {
@@ -343,10 +352,7 @@ class ASTBuilder {
 }
 
 function getName(
-  node:
-    | ConcreteLiquidTagClose
-    | ConcreteHtmlTagClose
-    | ParentNode,
+  node: ConcreteLiquidTagClose | ConcreteHtmlTagClose | ParentNode,
 ): string | LiquidDrop | null {
   if (!node) return null;
   switch (node.type) {
@@ -363,7 +369,7 @@ export function cstToAst(
   cst: LiquidHtmlCST | ConcreteAttributeNode[],
   source: string,
   parentNode: ParentNode,
-): LiquidHtmlAST {
+): LiquidHtmlNode[] {
   const builder = new ASTBuilder(source, parentNode);
 
   for (const node of cst) {
@@ -486,8 +492,12 @@ export function cstToAst(
             start: node.blockEndLocStart,
             end: node.blockEndLocEnd,
           },
-        }
-        abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+        };
+        abstractNode.attributes = toAttributes(
+          node.attrList || [],
+          source,
+          abstractNode,
+        );
         builder.push(abstractNode);
         break;
       }
@@ -505,19 +515,20 @@ export function cstToAst(
       case ConcreteNodeTypes.AttrSingleQuoted:
       case ConcreteNodeTypes.AttrDoubleQuoted:
       case ConcreteNodeTypes.AttrUnquoted: {
-        const abstractNode: AttrUnquoted | AttrSingleQuoted | AttrDoubleQuoted = {
-          type: node.type as unknown as
-            | NodeTypes.AttrSingleQuoted
-            | NodeTypes.AttrDoubleQuoted
-            | NodeTypes.AttrUnquoted,
-          name: node.name,
-          position: position(node),
-          source,
+        const abstractNode: AttrUnquoted | AttrSingleQuoted | AttrDoubleQuoted =
+          {
+            type: node.type as unknown as
+              | NodeTypes.AttrSingleQuoted
+              | NodeTypes.AttrDoubleQuoted
+              | NodeTypes.AttrUnquoted,
+            name: node.name,
+            position: position(node),
+            source,
 
-          // placeholders
-          attributePosition: { start: -1, end: -1},
-          value: [],
-        }
+            // placeholders
+            attributePosition: { start: -1, end: -1 },
+            value: [],
+          };
         const value = toAttributeValue(node.value, source, abstractNode);
         abstractNode.value = value;
         abstractNode.attributePosition = toAttributePosition(node, value);
@@ -603,10 +614,15 @@ function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
     attributes: [],
     position: position(node),
     blockStartPosition: position(node),
+    blockEndPosition: { start: -1, end: -1 },
     children: [],
     source,
-  }
-  abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+  };
+  abstractNode.attributes = toAttributes(
+    node.attrList || [],
+    source,
+    abstractNode,
+  );
   return abstractNode;
 }
 
@@ -621,8 +637,12 @@ function toHtmlVoidElement(
     position: position(node),
     blockStartPosition: position(node),
     source,
-  }
-  abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+  };
+  abstractNode.attributes = toAttributes(
+    node.attrList || [],
+    source,
+    abstractNode,
+  );
   return abstractNode;
 }
 
@@ -637,8 +657,12 @@ function toHtmlSelfClosingElement(
     position: position(node),
     blockStartPosition: position(node),
     source,
-  }
-  abstractNode.attributes = toAttributes(node.attrList || [], source, abstractNode);
+  };
+  abstractNode.attributes = toAttributes(
+    node.attrList || [],
+    source,
+    abstractNode,
+  );
   return abstractNode;
 }
 
@@ -649,4 +673,27 @@ function position(
     start: node.locStart,
     end: node.locEnd,
   };
+}
+
+export function walk(
+  ast: LiquidHtmlNode,
+  fn: (
+    ast: LiquidHtmlNode,
+    parentNode: LiquidHtmlNode | undefined,
+  ) => void,
+  parentNode?: LiquidHtmlNode,
+) {
+  for (const key of ['children', 'attributes']) {
+    if (key in ast) {
+      (ast as any)[key].forEach((node: LiquidHtmlNode) => walk(node, fn, ast));
+    }
+  }
+
+  if ('value' in ast) {
+    if (Array.isArray(ast.value)) {
+      ast.value.forEach((node) => walk(node, fn, ast));
+    }
+  }
+
+  fn(ast, parentNode);
 }

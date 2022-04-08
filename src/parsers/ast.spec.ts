@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { toLiquidHtmlAST, LiquidHtmlNode } from './ast';
+import { toLiquidHtmlAST, LiquidHtmlNode, walk } from './ast';
 import { LiquidHTMLASTParsingError, deepGet } from './utils';
 
 describe('Unit: toLiquidHtmlAST', () => {
@@ -215,29 +215,6 @@ describe('Unit: toLiquidHtmlAST', () => {
   function expectPosition(ast: LiquidHtmlNode, path: string) {
     expectPath(ast, path + '.position.start').to.be.a('number');
     expectPath(ast, path + '.position.end').to.be.a('number');
-  }
-
-  function walk(
-    ast: LiquidHtmlNode,
-    fn: (
-      ast: LiquidHtmlNode | string,
-      parentNode: LiquidHtmlNode | undefined,
-    ) => any,
-    parentNode?: LiquidHtmlNode,
-  ) {
-    for (const key of ['children', 'attributes']) {
-      if (key in ast) {
-        ast[key].forEach((node: LiquidHtmlNode) => walk(node, fn, ast));
-      }
-    }
-
-    if ('value' in ast) {
-      if (Array.isArray(ast.value)) {
-        ast.value.forEach((node) => walk(node, fn, ast));
-      }
-    }
-
-    fn(ast, parentNode);
   }
 
   function expectParentNodes(ast: LiquidHtmlNode) {
