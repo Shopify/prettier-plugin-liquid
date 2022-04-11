@@ -61,10 +61,13 @@ export interface HasAttributes {
 export interface HasValue {
   value: (TextNode | LiquidNode)[];
 }
+export interface HasName {
+  name: string | LiquidDrop;
+}
 
 export type ParentNode = Extract<
   LiquidHtmlNode,
-  HasChildren | HasAttributes | HasValue
+  HasChildren | HasAttributes | HasValue | HasName
 >;
 
 export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
@@ -591,18 +594,27 @@ function toAttributes(
   return cstToAst(attrList, source, parentNode) as AttributeNode[];
 }
 
-function toName(name: string | ConcreteLiquidDrop, source: string) {
+function toName(
+  name: string | ConcreteLiquidDrop,
+  source: string,
+  parentNode: ParentNode,
+) {
   if (typeof name === 'string') return name;
-  return toLiquidDrop(name, source);
+  return toLiquidDrop(name, source, parentNode);
 }
 
-function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
+function toLiquidDrop(
+  node: ConcreteLiquidDrop,
+  source: string,
+  parentNode?: ParentNode,
+): LiquidDrop {
   return {
     type: NodeTypes.LiquidDrop,
     markup: node.markup,
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     position: position(node),
+    parentNode,
     source,
   };
 }
@@ -610,7 +622,7 @@ function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
   const abstractNode: HtmlElement = {
     type: NodeTypes.HtmlElement,
-    name: toName(node.name, source),
+    name: 'placeholder',
     attributes: [],
     position: position(node),
     blockStartPosition: position(node),
@@ -618,6 +630,7 @@ function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
     children: [],
     source,
   };
+  abstractNode.name = toName(node.name, source, abstractNode);
   abstractNode.attributes = toAttributes(
     node.attrList || [],
     source,
@@ -652,12 +665,13 @@ function toHtmlSelfClosingElement(
 ): HtmlSelfClosingElement {
   const abstractNode: HtmlSelfClosingElement = {
     type: NodeTypes.HtmlSelfClosingElement,
-    name: toName(node.name, source),
+    name: 'placeholder',
     attributes: [],
     position: position(node),
     blockStartPosition: position(node),
     source,
   };
+  abstractNode.name = toName(node.name, source, abstractNode);
   abstractNode.attributes = toAttributes(
     node.attrList || [],
     source,
@@ -677,10 +691,7 @@ function position(
 
 export function walk(
   ast: LiquidHtmlNode,
-  fn: (
-    ast: LiquidHtmlNode,
-    parentNode: LiquidHtmlNode | undefined,
-  ) => void,
+  fn: (ast: LiquidHtmlNode, parentNode: LiquidHtmlNode | undefined) => void,
   parentNode?: LiquidHtmlNode,
 ) {
   for (const key of ['children', 'attributes']) {
@@ -692,6 +703,12 @@ export function walk(
   if ('value' in ast) {
     if (Array.isArray(ast.value)) {
       ast.value.forEach((node) => walk(node, fn, ast));
+    }
+  }
+
+  if ('name' in ast) {
+    if (ast.name && typeof ast.name !== 'string' && ast.name.type) {
+      walk(ast.name, fn, ast);
     }
   }
 

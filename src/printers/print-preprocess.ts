@@ -1,24 +1,44 @@
 import * as AST from '../parsers/ast';
 
+export {
+  Position,
+  HtmlNodeBase,
+  AttributeNodeBase,
+  isBranchedTag,
+  NodeTypes,
+} from '../parsers/ast';
+
 export type Augmentations = {
   isDanglingWhitespaceSensitive: boolean;
 };
 
+// This one warrants a bit of an explanation 'cuz it's definitely next
+// level typescript kung-fu shit.
+//
+// We have an AST, right? And we want to augment every node in the AST with
+// new properties. But we don't want to traverse the tree and repeat
+// ourselves. So we use a mapped type to map on the properties of T to do
+// the following:
+//
+// - If the property is an array of LiquidHtmlNode, we'll map that to an array of
+// Augmented<T[property]> instead.
+//
+// - If the property is a something | LiquidHtmlNode, then we'll map that type
+// to something | Augmented<T[Property]>
+//
+// So this thing will go through node.name, node.children, node.attributes,
+// and so on and give us augmented types.
+//
 // prettier-ignore
-export type Augmented<T> =
-  T extends AST.HasChildren
-    ? T extends AST.HasAttributes
-      ? T & Augmentations & { children?: Children } & { attributes: Attributes }
-      : T & Augmentations & { children?: Children }
-    : T extends AST.HasAttributes
-      ? T & Augmentations & { attributes: Attributes }
-      : T extends AST.HasValue
-        ? T & Augmentations & { value: Value }
-        : T & Augmentations
-
-type Children = Augmented<AST.LiquidHtmlNode>[];
-type Attributes = Augmented<AST.AttributeNode>[];
-type Value = Augmented<AST.ValueNode>[];
+export type Augmented<T> = {
+  [Property in keyof T]: [T[Property]] extends [(infer Item)[]]
+    ? Augmented<Item>[]
+    : [T[Property]] extends [infer P] // this here is to distribute the condition
+      ? P extends AST.LiquidHtmlNode // so string and LiquidDrop go through this check independently
+        ? Augmented<P>
+        : P
+      : never;
+} & Augmentations;
 
 export type LiquidHtmlNode = Augmented<AST.LiquidHtmlNode>;
 export type DocumentNode = Augmented<AST.DocumentNode>;
@@ -50,8 +70,8 @@ export function preprocess(ast: AST.DocumentNode): DocumentNode {
 
 function augment(node: AST.LiquidHtmlNode): void {
   const augmentations: Augmentations = {
-    isDanglingWhitespaceSensitive: isDanglingWhitespaceSensitiveNode(node)
-  }
+    isDanglingWhitespaceSensitive: isDanglingWhitespaceSensitiveNode(node),
+  };
 
   Object.assign(node, augmentations);
 }
@@ -59,4 +79,3 @@ function augment(node: AST.LiquidHtmlNode): void {
 function isDanglingWhitespaceSensitiveNode(_node: AST.LiquidHtmlNode) {
   return true;
 }
-

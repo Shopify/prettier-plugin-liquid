@@ -224,7 +224,9 @@ describe('Unit: toLiquidHtmlAST', () => {
       expect(
         node.parentNode,
         `
-          Expected ${node.type} node to have a parentNode of type ${parentNode.type}
+          Expected ${node.type} node to have a parentNode of type ${
+          parentNode.type
+        }
 
           Expected parentNode of type ${parentNode.type}:
             ${sourceExcerpt(parentNode)}
