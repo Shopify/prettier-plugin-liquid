@@ -1,25 +1,27 @@
 import { Printer, AstPath, Doc, doc } from 'prettier';
+import { preprocess } from './print-preprocess';
 import {
   LiquidHtmlNode,
-  NodeTypes,
   LiquidTag,
   LiquidBranch,
   LiquidDrop,
-  isBranchedTag,
   TextNode,
   HtmlElement,
   AttributeNode,
   HtmlVoidElement,
   HtmlSelfClosingElement,
   HtmlRawNode,
-  AttributeNodeBase,
   AttrUnquoted,
   AttrSingleQuoted,
   AttrDoubleQuoted,
+} from './preprocess/types';
+import {
+  AttributeNodeBase,
+  isBranchedTag,
+  NodeTypes,
   Position,
   HtmlNodeBase,
-  preprocess,
-} from './print-preprocess';
+} from '../parsers/ast';
 import { assertNever } from '../utils';
 import { printAsParagraph } from './print-as-paragraph';
 import {
@@ -528,9 +530,7 @@ function printLiquidBranch(
     return printLiquidDefaultBranch(path, options, print, parentGroupId);
   }
 
-  const leftSibling = branch.prev as
-    | LiquidBranch
-    | undefined;
+  const leftSibling = branch.prev as LiquidBranch | undefined;
 
   // When the left sibling is empty, its trailing whitespace is its leading
   // whitespace. So we should collapse it here and ignore it.
@@ -754,7 +754,8 @@ function printNode(
   }
 }
 
-export const printerLiquidHtml: Printer<LiquidHtmlNode> & { preprocess: any } = {
-  print: printNode,
-  preprocess,
-};
+export const printerLiquidHtml: Printer<LiquidHtmlNode> & { preprocess: any } =
+  {
+    print: printNode,
+    preprocess,
+  };

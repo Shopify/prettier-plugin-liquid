@@ -1,13 +1,11 @@
-import {
-  LiquidHtmlNode,
-  NodeTypes,
-  isBranchedTag,
-  LiquidBranch,
-} from './print-preprocess';
+import { LiquidHtmlNode, LiquidBranch } from '../preprocess';
+import { isBranchedTag, NodeTypes } from '../../parsers';
 import { Doc, doc, AstPath, ParserOptions } from 'prettier';
 
 const { builders } = doc;
 const { ifBreak, indent } = builders;
+
+export * from './node';
 
 export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
@@ -81,7 +79,7 @@ export function hasLineBreakInRange(
 }
 
 export function isDeeplyNested(
-  node: Extract<LiquidHtmlNode, { children: LiquidHtmlNode[] | undefined }>,
+  node: Extract<LiquidHtmlNode, { children?: LiquidHtmlNode[] }>,
 ): boolean {
   if (!node.children) return false;
   if (isBranchedTag(node)) {

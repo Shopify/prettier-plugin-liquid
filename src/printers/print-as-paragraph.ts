@@ -1,5 +1,5 @@
 import { Doc, doc } from 'prettier';
-import { LiquidHtmlNode, NodeTypes } from '../parsers';
+import { LiquidHtmlNode } from './preprocess/types';
 import { assertNever } from '../utils';
 import {
   FORCE_FLAT_GROUP_ID,
@@ -8,6 +8,7 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
 } from './utils';
+import { NodeTypes } from '../parsers/ast';
 
 const { builders } = doc;
 const { fill, line, softline } = builders;

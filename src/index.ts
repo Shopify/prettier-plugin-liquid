@@ -1,6 +1,7 @@
 import { Plugin } from 'prettier';
-import { parsers, LiquidHtmlNode, liquidHtmlLanguageName } from './parsers';
+import { parsers, liquidHtmlLanguageName } from './parsers';
 import { printers } from './printers';
+import { LiquidHtmlNode } from './printers/preprocess';
 
 const languages = [
   {
