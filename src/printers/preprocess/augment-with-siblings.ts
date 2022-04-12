@@ -1,4 +1,10 @@
-import { AugmentedNode, Augment, LiquidHtmlNode, WithParent, WithSiblings } from './types';
+import {
+  AugmentedNode,
+  Augment,
+  LiquidHtmlNode,
+  WithParent,
+  WithSiblings,
+} from './types';
 
 const COLLECTION_KEYS = ['children', 'attributes', 'value'];
 
