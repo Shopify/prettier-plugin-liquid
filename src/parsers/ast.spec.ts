@@ -9,7 +9,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
     expectPath(ast, 'children.0.markup').to.eql(' name ');
     expectPosition(ast, 'children.0');
-    expectParentNodes(ast);
   });
 
   it('should transform a basic Liquid Tag into a LiquidTag', () => {
@@ -24,7 +23,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.1.delimiterWhitespaceStart').to.eql('-');
     expectPath(ast, 'children.1.delimiterWhitespaceEnd').to.eql('');
     expectPosition(ast, 'children.0');
-    expectParentNodes(ast);
   });
 
   it('should parse a basic text node into a TextNode', () => {
@@ -33,7 +31,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.value').to.eql('Hello world!');
     expectPosition(ast, 'children.0');
-    expectParentNodes(ast);
   });
 
   it('should parse HTML attributes', () => {
@@ -61,7 +58,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPosition(ast, 'children.0.attributes.1');
     expectPosition(ast, 'children.0.attributes.1.value.0');
     expectPosition(ast, 'children.0.attributes.2');
-    expectParentNodes(ast);
   });
 
   it('should parse HTML tags with Liquid Drop names', () => {
@@ -92,7 +88,6 @@ describe('Unit: toLiquidHtmlAST', () => {
       );
       expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
       expectPath(ast, 'children.0.attributes.2.name').to.eql('disabled');
-      expectParentNodes(ast);
     });
   });
 
@@ -117,7 +112,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.type').to.eql('HtmlComment');
     expectPath(ast, 'children.0.body').to.eql('\n  hello {{ product.name }}\n');
     expectPosition(ast, 'children.0');
-    expectParentNodes(ast);
   });
 
   it('should parse script tags as raw', () => {
@@ -130,7 +124,6 @@ describe('Unit: toLiquidHtmlAST', () => {
       '\n  const a = {{ product | json }};\n',
     );
     expectPosition(ast, 'children.0');
-    expectParentNodes(ast);
   });
 
   it('should parse style tags as raw', () => {
@@ -143,7 +136,6 @@ describe('Unit: toLiquidHtmlAST', () => {
       '\n  :root { --bg: {{ settings.bg }}}\n',
     );
     expectPosition(ast, 'children.0');
-    expectParentNodes(ast);
   });
 
   it('should parse liquid ifs as branches', () => {
@@ -170,7 +162,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.children.2.name').to.eql('else');
     expectPath(ast, 'children.0.children.2.children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.children.2.children.0.value').to.eql('C');
-    expectParentNodes(ast);
   });
 
   it('should parse liquid case as branches', () => {
@@ -205,7 +196,6 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.children.3.name').to.eql('else');
     expectPath(ast, 'children.0.children.3.children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.children.3.children.0.value').to.eql('C');
-    expectParentNodes(ast);
   });
 
   function expectPath(ast: LiquidHtmlNode, path: string) {
@@ -215,30 +205,6 @@ describe('Unit: toLiquidHtmlAST', () => {
   function expectPosition(ast: LiquidHtmlNode, path: string) {
     expectPath(ast, path + '.position.start').to.be.a('number');
     expectPath(ast, path + '.position.end').to.be.a('number');
-  }
-
-  function expectParentNodes(ast: LiquidHtmlNode) {
-    walk(ast, (node, parentNode) => {
-      if (typeof node === 'string') return;
-      if (node.type === 'Document') return;
-      expect(
-        node.parentNode,
-        `
-          Expected ${node.type} node to have a parentNode of type ${
-          parentNode.type
-        }
-
-          Expected parentNode of type ${parentNode.type}:
-            ${sourceExcerpt(parentNode)}
-
-          Actual parentNode of type ${node.parentNode.type}:
-            ${sourceExcerpt(node.parentNode)}
-
-          Actual node of type ${node.type}:
-            ${sourceExcerpt(node)}
-        `,
-      ).to.eql(parentNode);
-    });
   }
 
   function sourceExcerpt(node: LiquidHtmlNode) {

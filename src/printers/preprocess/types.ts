@@ -20,7 +20,7 @@ import { LiquidParserOptions } from '../utils';
 //
 // prettier-ignore
 export type Augmented<T, Aug> = {
-  [Property in keyof T]: [T[Property]] extends [(infer Item)[]]
+  [Property in keyof T]: [T[Property]] extends [(infer Item)[] | undefined]
     ? [Item] extends [AST.LiquidHtmlNode]
       ? Augmented<Item, Aug>[]
       : Item[]
@@ -31,12 +31,13 @@ export type Augmented<T, Aug> = {
       : never;
 } & Aug;
 
-export type AllAugmentations = WithCssDisplay &
+export type AllAugmentations = WithParent &
   WithSiblings &
+  WithCssDisplay &
   WithWhitespaceHelpers;
 
-export type WithCssDisplay = {
-  cssDisplay: string;
+export type WithParent = {
+  parentNode?: ParentNode;
 };
 
 export type WithSiblings = {
@@ -47,15 +48,20 @@ export type WithSiblings = {
   next: LiquidHtmlNode | undefined;
 };
 
+export type WithCssDisplay = {
+  cssDisplay: string;
+};
+
 export type WithWhitespaceHelpers = {
   isDanglingWhitespaceSensitive: boolean;
 };
 
 export type AugmentedNode<Aug> = Augmented<AST.LiquidHtmlNode, Aug>;
 
-export type Augment<Aug> = <T extends AugmentedNode<Aug>>(
-  o: LiquidParserOptions,
-  n: T,
+export type Augment<Aug> = <NodeType extends AugmentedNode<Aug>>(
+  options: LiquidParserOptions,
+  node: NodeType,
+  parentNode?: NodeType,
 ) => void;
 
 export type LiquidHtmlNode = Augmented<AST.LiquidHtmlNode, AllAugmentations>;
@@ -87,4 +93,3 @@ export type AttrDoubleQuoted = Augmented<
 export type AttrUnquoted = Augmented<AST.AttrUnquoted, AllAugmentations>;
 export type AttrEmpty = Augmented<AST.AttrEmpty, AllAugmentations>;
 export type TextNode = Augmented<AST.TextNode, AllAugmentations>;
-

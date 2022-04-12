@@ -47,7 +47,6 @@ export type LiquidHtmlNode =
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   children: LiquidHtmlNode[];
   name: '#document';
-  parentNode: undefined;
 }
 
 export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop | LiquidBranch;
@@ -206,7 +205,6 @@ export interface Position {
 
 export interface ASTNode<T> {
   type: T;
-  parentNode?: ParentNode;
   position: Position;
   source: string;
 }
@@ -230,15 +228,13 @@ export function toLiquidHtmlAST(text: string): DocumentNode {
   const root: DocumentNode = {
     type: NodeTypes.Document,
     source: text,
-    children: [],
-    parentNode: undefined,
+    children: cstToAst(cst, text),
     name: '#document',
     position: {
       start: 0,
       end: text.length,
     },
   };
-  root.children = cstToAst(cst, text, root);
   return root;
 }
 
@@ -246,13 +242,11 @@ class ASTBuilder {
   ast: LiquidHtmlNode[];
   cursor: (string | number)[];
   source: string;
-  parentNode: ParentNode;
 
-  constructor(source: string, parentNode: ParentNode) {
+  constructor(source: string) {
     this.ast = [];
     this.cursor = [];
     this.source = source;
-    this.parentNode = parentNode;
   }
 
   get current() {
@@ -263,13 +257,12 @@ class ASTBuilder {
     return length(this.current || []) - 1;
   }
 
-  get parent(): ParentNode {
-    if (this.cursor.length == 0) return this.parentNode;
+  get parent(): ParentNode | undefined {
+    if (this.cursor.length == 0) return undefined;
     return deepGet<LiquidTag | HtmlElement>(dropLast(1, this.cursor), this.ast);
   }
 
   open(node: LiquidHtmlNode) {
-    node.parentNode = this.parent;
     this.current.push(node);
     this.cursor.push(this.currentPosition);
     this.cursor.push('children');
@@ -311,11 +304,10 @@ class ASTBuilder {
         source: this.source,
       });
     } else {
-      if (this.parent.type === NodeTypes.LiquidBranch) {
+      if (this.parent?.type === NodeTypes.LiquidBranch) {
         this.parent.position.end = node.position.end;
       }
       this.current.push(node);
-      node.parentNode = this.parent;
     }
   }
 
@@ -323,14 +315,14 @@ class ASTBuilder {
     node: ConcreteLiquidTagClose | ConcreteHtmlTagClose,
     nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
-    if (this.parent.type === NodeTypes.LiquidBranch) {
+    if (this.parent?.type === NodeTypes.LiquidBranch) {
       this.cursor.pop();
       this.cursor.pop();
     }
 
     if (
       getName(this.parent) !== getName(node) ||
-      this.parent.type !== nodeType
+      this.parent?.type !== nodeType
     ) {
       throw new LiquidHTMLASTParsingError(
         `Attempting to close ${nodeType} '${node.name}' before ${this.parent?.type} '${this.parent?.name}' was closed`,
@@ -355,7 +347,7 @@ class ASTBuilder {
 }
 
 function getName(
-  node: ConcreteLiquidTagClose | ConcreteHtmlTagClose | ParentNode,
+  node: ConcreteLiquidTagClose | ConcreteHtmlTagClose | ParentNode | undefined,
 ): string | LiquidDrop | null {
   if (!node) return null;
   switch (node.type) {
@@ -371,9 +363,8 @@ function getName(
 export function cstToAst(
   cst: LiquidHtmlCST | ConcreteAttributeNode[],
   source: string,
-  parentNode: ParentNode,
 ): LiquidHtmlNode[] {
-  const builder = new ASTBuilder(source, parentNode);
+  const builder = new ASTBuilder(source);
 
   for (const node of cst) {
     switch (node.type) {
@@ -480,11 +471,11 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlRawTag: {
-        const abstractNode: HtmlRawNode = {
+        builder.push({
           type: NodeTypes.HtmlRawNode,
           name: node.name,
           body: node.body,
-          attributes: [],
+          attributes: toAttributes(node.attrList || [], source),
           position: position(node),
           source,
           blockStartPosition: {
@@ -495,13 +486,7 @@ export function cstToAst(
             start: node.blockEndLocStart,
             end: node.blockEndLocEnd,
           },
-        };
-        abstractNode.attributes = toAttributes(
-          node.attrList || [],
-          source,
-          abstractNode,
-        );
-        builder.push(abstractNode);
+        });
         break;
       }
 
@@ -532,7 +517,7 @@ export function cstToAst(
             attributePosition: { start: -1, end: -1 },
             value: [],
           };
-        const value = toAttributeValue(node.value, source, abstractNode);
+        const value = toAttributeValue(node.value, source);
         abstractNode.value = value;
         abstractNode.attributePosition = toAttributePosition(node, value);
         builder.push(abstractNode);
@@ -581,103 +566,72 @@ function toAttributePosition(
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
   source: string,
-  parentNode: ParentNode,
 ): (LiquidNode | TextNode)[] {
-  return cstToAst(value, source, parentNode) as (LiquidNode | TextNode)[];
+  return cstToAst(value, source) as (LiquidNode | TextNode)[];
 }
 
 function toAttributes(
   attrList: ConcreteAttributeNode[],
   source: string,
-  parentNode: ParentNode,
 ): AttributeNode[] {
-  return cstToAst(attrList, source, parentNode) as AttributeNode[];
+  return cstToAst(attrList, source) as AttributeNode[];
 }
 
-function toName(
-  name: string | ConcreteLiquidDrop,
-  source: string,
-  parentNode: ParentNode,
-) {
+function toName(name: string | ConcreteLiquidDrop, source: string) {
   if (typeof name === 'string') return name;
-  return toLiquidDrop(name, source, parentNode);
+  return toLiquidDrop(name, source);
 }
 
-function toLiquidDrop(
-  node: ConcreteLiquidDrop,
-  source: string,
-  parentNode?: ParentNode,
-): LiquidDrop {
+function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
   return {
     type: NodeTypes.LiquidDrop,
     markup: node.markup,
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     position: position(node),
-    parentNode,
     source,
   };
 }
 
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
-  const abstractNode: HtmlElement = {
+  return {
     type: NodeTypes.HtmlElement,
-    name: 'placeholder',
-    attributes: [],
+    name: toName(node.name, source),
+    attributes: toAttributes(node.attrList || [], source),
     position: position(node),
     blockStartPosition: position(node),
     blockEndPosition: { start: -1, end: -1 },
     children: [],
     source,
   };
-  abstractNode.name = toName(node.name, source, abstractNode);
-  abstractNode.attributes = toAttributes(
-    node.attrList || [],
-    source,
-    abstractNode,
-  );
-  return abstractNode;
 }
 
 function toHtmlVoidElement(
   node: ConcreteHtmlVoidElement,
   source: string,
 ): HtmlVoidElement {
-  const abstractNode: HtmlVoidElement = {
+  return {
     type: NodeTypes.HtmlVoidElement,
     name: node.name,
-    attributes: [],
+    attributes: toAttributes(node.attrList || [], source),
     position: position(node),
     blockStartPosition: position(node),
     source,
   };
-  abstractNode.attributes = toAttributes(
-    node.attrList || [],
-    source,
-    abstractNode,
-  );
-  return abstractNode;
 }
 
 function toHtmlSelfClosingElement(
   node: ConcreteHtmlSelfClosingElement,
   source: string,
 ): HtmlSelfClosingElement {
-  const abstractNode: HtmlSelfClosingElement = {
+  return {
     type: NodeTypes.HtmlSelfClosingElement,
-    name: 'placeholder',
-    attributes: [],
+    name: toName(node.name, source),
+    attributes: toAttributes(node.attrList || [], source),
     position: position(node),
     blockStartPosition: position(node),
     source,
   };
-  abstractNode.name = toName(node.name, source, abstractNode);
-  abstractNode.attributes = toAttributes(
-    node.attrList || [],
-    source,
-    abstractNode,
-  );
-  return abstractNode;
 }
 
 function position(
