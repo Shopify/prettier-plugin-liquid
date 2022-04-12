@@ -1,11 +1,9 @@
 import {
   LiquidHtmlNode,
-  DocumentNode,
   NodeTypes,
   isBranchedTag,
   LiquidBranch,
-} from '../parsers';
-import { assertNever } from '../utils';
+} from './print-preprocess';
 import { Doc, doc, AstPath, ParserOptions } from 'prettier';
 
 const { builders } = doc;
@@ -83,7 +81,7 @@ export function hasLineBreakInRange(
 }
 
 export function isDeeplyNested(
-  node: LiquidHtmlNode & { children?: LiquidHtmlNode[] },
+  node: Extract<LiquidHtmlNode, { children: LiquidHtmlNode[] | undefined }>,
 ): boolean {
   if (!node.children) return false;
   if (isBranchedTag(node)) {
@@ -94,72 +92,6 @@ export function isDeeplyNested(
   return !!node.children.find(
     (child) => !isEmpty((child as any).children || []),
   );
-}
-
-export function getChildrenArray(
-  node: LiquidHtmlNode,
-  parentNode: LiquidHtmlNode,
-) {
-  switch (parentNode.type) {
-    case NodeTypes.LiquidTag:
-    case NodeTypes.Document:
-    case NodeTypes.LiquidBranch:
-      return parentNode.children;
-    case NodeTypes.HtmlElement:
-      if (parentNode.attributes.indexOf(node as any) !== -1) {
-        return parentNode.attributes;
-      } else if (parentNode.children) {
-        return parentNode.children;
-      }
-    case NodeTypes.HtmlVoidElement:
-    case NodeTypes.HtmlSelfClosingElement:
-      return parentNode.attributes;
-    case NodeTypes.AttrUnquoted:
-    case NodeTypes.AttrDoubleQuoted:
-    case NodeTypes.AttrSingleQuoted:
-      return parentNode.value;
-    case NodeTypes.HtmlComment:
-    case NodeTypes.HtmlRawNode:
-    case NodeTypes.AttrEmpty:
-    case NodeTypes.TextNode:
-    case NodeTypes.LiquidDrop:
-    case NodeTypes.LiquidRawTag:
-      return undefined;
-    default:
-      assertNever(parentNode);
-  }
-}
-
-export function getLeftSibling(
-  node: LiquidHtmlNode,
-  parentNode: LiquidHtmlNode | null,
-): LiquidHtmlNode | undefined {
-  if (!parentNode) return undefined;
-  const children = getChildrenArray(node, parentNode);
-  if (!children) return undefined;
-  const index = children.indexOf(node);
-
-  if (index === -1) {
-    throw new Error(`Could not find ${node} in ${parentNode}`);
-  }
-
-  return children[index - 1];
-}
-
-export function getRightSibling(
-  node: LiquidHtmlNode,
-  parentNode: LiquidHtmlNode,
-): LiquidHtmlNode | undefined {
-  if (!parentNode) return undefined;
-  const children = getChildrenArray(node, parentNode);
-  if (!children) return undefined;
-  const index = children.indexOf(node);
-
-  if (index === -1) {
-    throw new Error(`Could not find ${node} in ${parentNode}`);
-  }
-
-  return children[index + 1];
 }
 
 export function isTrimmingOuterLeft(node: LiquidHtmlNode | undefined): boolean {

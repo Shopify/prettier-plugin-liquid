@@ -18,7 +18,8 @@ import {
   AttrDoubleQuoted,
   Position,
   HtmlNodeBase,
-} from '../parsers';
+  preprocess,
+} from './print-preprocess';
 import { assertNever } from '../utils';
 import { printAsParagraph } from './print-as-paragraph';
 import {
@@ -26,7 +27,6 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
   bodyLines,
-  getLeftSibling,
   getSource,
   getWhitespaceTrim,
   hasLineBreakInRange,
@@ -232,7 +232,7 @@ function printLiquidBlockEnd(
 }
 
 function printHtmlBlockStart(
-  path: AstPath<LiquidHtmlNode & HtmlNodeBase<any>>,
+  path: AstPath<Extract<LiquidHtmlNode, HtmlNodeBase<any>>>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
 ): Doc {
@@ -522,14 +522,13 @@ function printLiquidBranch(
   parentGroupId?: symbol,
 ): Doc {
   const branch = path.getValue();
-  const parentNode = path.getParentNode() as unknown as LiquidTag;
   const isDefaultBranch = !branch.name;
 
   if (isDefaultBranch) {
     return printLiquidDefaultBranch(path, options, print, parentGroupId);
   }
 
-  const leftSibling = getLeftSibling(branch, parentNode) as
+  const leftSibling = branch.prev as
     | LiquidBranch
     | undefined;
 
@@ -755,6 +754,7 @@ function printNode(
   }
 }
 
-export const printerLiquidHtml: Printer<LiquidHtmlNode> = {
+export const printerLiquidHtml: Printer<LiquidHtmlNode> & { preprocess: any } = {
   print: printNode,
+  preprocess,
 };

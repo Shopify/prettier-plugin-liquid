@@ -708,7 +708,7 @@ export function walk(
 
   if ('name' in ast) {
     if (ast.name && typeof ast.name !== 'string' && ast.name.type) {
-      walk(ast.name, fn, ast);
+      fn(ast.name, ast);
     }
   }
 
