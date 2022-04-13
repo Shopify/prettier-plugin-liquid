@@ -55,6 +55,8 @@ export type WithCssDisplay = {
 export type WithWhitespaceHelpers = {
   isDanglingWhitespaceSensitive: boolean;
   isWhitespaceSensitive: boolean;
+  isLeadingWhitespaceSensitive: boolean;
+  isTrailingWhitespaceSensitive: boolean;
   isIndentationSensitive: boolean;
 };
 

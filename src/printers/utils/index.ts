@@ -90,19 +90,6 @@ export function isDeeplyNested(
   );
 }
 
-export function isTrimmingOuterLeft(node: LiquidHtmlNode | undefined): boolean {
-  if (!node) return false;
-  switch (node.type) {
-    case NodeTypes.LiquidRawTag:
-    case NodeTypes.LiquidTag: // {%- if a %}{% endif %}, {%- assign x = 1 %}
-    case NodeTypes.LiquidBranch: // {%- else %}
-    case NodeTypes.LiquidDrop: // {{- 'val' }}
-      return node.whitespaceStart === '-';
-    default:
-      return false;
-  }
-}
-
 export function isTrimmingInnerLeft(node: LiquidHtmlNode | undefined): boolean {
   if (!node) return false;
   switch (node.type) {
@@ -130,23 +117,6 @@ export function isTrimmingInnerRight(
       return node.delimiterWhitespaceStart === '-';
     case NodeTypes.LiquidBranch:
     case NodeTypes.LiquidDrop:
-    default:
-      return false;
-  }
-}
-
-export function isTrimmingOuterRight(
-  node: LiquidHtmlNode | undefined,
-): boolean {
-  if (!node) return false;
-  switch (node.type) {
-    case NodeTypes.LiquidRawTag:
-    case NodeTypes.LiquidTag: // {% if a %}{% endif -%}, {% assign x -%}
-      return (node.delimiterWhitespaceEnd ?? node.whitespaceEnd) === '-';
-    case NodeTypes.LiquidBranch:
-      return false;
-    case NodeTypes.LiquidDrop: // {{ foo -}}
-      return node.whitespaceEnd === '-';
     default:
       return false;
   }
