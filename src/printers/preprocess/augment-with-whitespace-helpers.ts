@@ -160,6 +160,17 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
     return false;
   }
 
+  // That's for when the node would create a block formatting context.
+  //
+  // example:
+  //   <p><div>hello</div> {{ drop }}</p>
+  //
+  // The div would create a block formatting context, so even though
+  // {{ drop }} is inline, it isn't because of the block.
+  if (!isNextLeadingSpaceSensitiveCssDisplay(node.cssDisplay)) {
+    return false
+  }
+
   // Default to true. We might be wrong, but we err on the side of caution.
   return true;
 }

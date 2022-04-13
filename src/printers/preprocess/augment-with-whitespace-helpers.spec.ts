@@ -3,9 +3,11 @@ import { deepGet } from '../../parsers/utils';
 import { preprocess } from '../print-preprocess';
 import { LiquidParserOptions } from '../utils';
 import { NodeTypes, toLiquidHtmlAST } from '../../parsers';
-import { LiquidHtmlNode } from './types';
+import { DocumentNode, LiquidHtmlNode } from './types';
 
 describe('Module: augmentWithWhitespaceHelpers', () => {
+  let ast: DocumentNode;
+
   describe('Unit: isTrailingWhitespaceSensitive', () => {
     it('should return false when the next node is whitespace stripping to the left', () => {
       const firstChilds = [
@@ -21,7 +23,7 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
       ];
       for (const left of firstChilds) {
         for (const right of secondChilds) {
-          const ast = toAugmentedAst(`<p>${left} ${right}</p>`);
+          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
           expectPath(ast, 'children.0.type').to.eql(NodeTypes.HtmlElement);
           expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive')
             .to.be.false;
@@ -44,20 +46,36 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
       ];
       for (const left of firstChilds) {
         for (const right of secondChilds) {
-          const ast = toAugmentedAst(`<p>${left} ${right}</p>`);
+          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
           expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive')
             .to.be.false;
         }
       }
     });
 
+    it('should return true when an inline formatting context is implied because the next node is a text node', () => {
+      ast = toAugmentedAst('<p>hello {{ drop }}</p>');
+      expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to
+        .be.true;
+
+      ast = toAugmentedAst('<p>{{ drop }}hello</p>');
+      expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to
+        .be.true;
+    });
+
+    it('should return false when a block formatting context is implied because of the current node', () => {
+      ast = toAugmentedAst('<p><div>hello</div> {{ drop }}</p>');
+      expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to
+        .be.false;
+    });
+
     it('should return false for the document node', () => {
-      const ast = toAugmentedAst('');
+      ast = toAugmentedAst('');
       expectPath(ast, 'isTrailingWhitespaceSensitive').to.be.false;
     });
 
     it('should return false for display none elements', () => {
-      const ast = toAugmentedAst(
+      ast = toAugmentedAst(
         '<datalist><option value="hello world" /></datalist>',
       );
       expectPath(ast, 'children.0.isTrailingWhitespaceSensitive').to.be.false;
@@ -79,7 +97,7 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
 
       for (const [wrapStart, wrapEnd] of wrappers) {
         for (const node of nodes) {
-          const ast = toAugmentedAst(`${wrapStart}${node} ${wrapEnd}`);
+          ast = toAugmentedAst(`${wrapStart}${node} ${wrapEnd}`);
           expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive')
             .to.be.true;
         }
@@ -88,59 +106,55 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
 
     describe('When: the node is the last children of its parent', () => {
       it('should return false for direct children of the document', () => {
-        const ast = toAugmentedAst('{{ drop1 }} {{ drop }}');
+        ast = toAugmentedAst('{{ drop1 }} {{ drop }}');
         expectPath(ast, 'children.1.isTrailingWhitespaceSensitive').to.be.false;
       });
 
       it('should return false for pre-like nodes', () => {
-        const ast = toAugmentedAst(
-          '{% form %}hello <pre> ... </pre> {% endform %}',
-        );
+        ast = toAugmentedAst('{% form %}hello <pre> ... </pre> {% endform %}');
         expectPath(ast, 'children.0.children.1.isTrailingWhitespaceSensitive')
           .to.be.false;
       });
 
       it('should return false for last child of block ', () => {
-        const ast = toAugmentedAst('<p>hello <span>world</span> </p>');
+        ast = toAugmentedAst('<p>hello <span>world</span> </p>');
         expectPath(ast, 'children.0.children.1.isTrailingWhitespaceSensitive')
           .to.be.false;
       });
 
       it('should return false if the parent is trimming to the inner right', () => {
-        const defaultBranch = toAugmentedAst(
+        ast = toAugmentedAst(
           '{% if true %}branch a{%- else %}branch b{% endif %}',
         );
-        expectPath(defaultBranch, 'children.0.children.0.type').to.eql(
+        expectPath(ast, 'children.0.children.0.type').to.eql(
           NodeTypes.LiquidBranch,
         );
-        expectPath(defaultBranch, 'children.0.children.0.name').to.eql(null);
+        expectPath(ast, 'children.0.children.0.name').to.eql(null);
         expectPath(
-          defaultBranch,
+          ast,
           'children.0.children.0.children.0.isTrailingWhitespaceSensitive',
         ).to.be.false;
 
-        const elseTest = toAugmentedAst(
+        ast = toAugmentedAst(
           '{% if true %}branch a{% else %}branch b{%- endif %}',
         );
-        expectPath(elseTest, 'children.0.children.1.type').to.eql(
+        expectPath(ast, 'children.0.children.1.type').to.eql(
           NodeTypes.LiquidBranch,
         );
-        expectPath(elseTest, 'children.0.children.1.name').to.eql('else');
+        expectPath(ast, 'children.0.children.1.name').to.eql('else');
         expectPath(
-          elseTest,
+          ast,
           'children.0.children.1.children.0.isTrailingWhitespaceSensitive',
         ).to.be.false;
 
-        const blockTest = toAugmentedAst('{% form %}branch a{%- endform %}');
-        expectPath(
-          blockTest,
-          'children.0.children.0.isTrailingWhitespaceSensitive',
-        ).to.be.false;
+        ast = toAugmentedAst('{% form %}branch a{%- endform %}');
+        expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive')
+          .to.be.false;
       });
     });
 
     it('should return false if the next child is not whitespace sensitive to the outer left', () => {
-      const ast = toAugmentedAst('<p>Hello <div> world </div></p>');
+      ast = toAugmentedAst('<p>Hello <div> world </div></p>');
       expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.TextNode);
       expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to
         .be.false;
