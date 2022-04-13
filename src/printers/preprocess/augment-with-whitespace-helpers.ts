@@ -25,7 +25,7 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
     isDanglingWhitespaceSensitive: isDanglingWhitespaceSensitiveNode(node),
     isWhitespaceSensitive: isWhitespaceSensitiveNode(node),
     isLeadingWhitespaceSensitive: isLeadingWhitespaceSensitiveNode(node),
-    isTrailingWhitespaceSensitive: isTrailingSpaceSensitiveNode(node),
+    isTrailingWhitespaceSensitive: isTrailingWhitespaceSensitiveNode(node),
     isIndentationSensitive: isIndentationSensitiveNode(node),
   };
 
@@ -98,7 +98,7 @@ function isLeadingWhitespaceSensitiveNode(_node: AugmentedAstNode): boolean {
  * This is really complicated to get right, so treat it as though it is not
  * the actual solution. We'll default to true and consider the edge cases.
  */
-function isTrailingSpaceSensitiveNode(node: AugmentedAstNode): boolean {
+function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // '{{ drop -}} text'
   if (isTrimmingOuterRight(node)) {
     return false;
@@ -115,8 +115,8 @@ function isTrailingSpaceSensitiveNode(node: AugmentedAstNode): boolean {
     return false;
   }
 
-  // pre nodes are whitespace sensitive, therefore this node is whitespace
-  // sensitive to the right
+  // pre-like nodes are whitespace sensitive (globally), therefore if this
+  // node's parent is pre-like, this node is whitespace sensitive to the right.
   if (isPreLikeNode(node.parentNode)) {
     return true;
   }
@@ -136,8 +136,8 @@ function isTrailingSpaceSensitiveNode(node: AugmentedAstNode): boolean {
   if (
     !node.next && (
       node.parentNode.type === NodeTypes.Document
-      || (isPreLikeNode(node) && node.parentNode)
-      || isScriptLikeTag(node.parentNode)
+      || isPreLikeNode(node)
+      || isScriptLikeTag(node.parentNode) // technically we don't use this one.
       || !isLastChildTrailingSpaceSensitiveCssDisplay(node.parentNode.cssDisplay)
       || isTrimmingInnerRight(node.parentNode)
     )
@@ -292,11 +292,7 @@ export function isTrimmingInnerRight(
 
 /// The helpers below were taken from prettier/src/language-html
 function isScriptLikeTag(node: AugmentedAstNode) {
-  return (
-    isHtmlNode(node) &&
-    typeof node.name === 'string' &&
-    (node.name === 'script' || node.name === 'style')
-  );
+  return node.type === NodeTypes.HtmlRawNode;
 }
 
 function isBlockLikeCssDisplay(cssDisplay: string) {
