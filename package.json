@@ -28,7 +28,8 @@
     "format": "prettier --write --ignore-unknown \"{src,test}/**/*.ts\"",
     "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
     "prettier": "prettier --plugin . --parser=liquid-html",
-    "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'"
+    "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'",
+    "prepare": "husky install"
   },
   "peerDependencies": {
     "prettier": "^1.15.0 || ^2.0.0"
@@ -40,9 +41,11 @@
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.11",
     "chai": "^4.3.4",
+    "husky": "^7.0.0",
     "mocha": "^9.1.3",
     "nyc": "^15.1.0",
     "prettier": "^2.6.1",
+    "pretty-quick": "^3.1.3",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.2",
