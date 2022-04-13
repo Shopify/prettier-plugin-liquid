@@ -54,6 +54,8 @@ export type WithCssDisplay = {
 
 export type WithWhitespaceHelpers = {
   isDanglingWhitespaceSensitive: boolean;
+  isWhitespaceSensitive: boolean;
+  isIndentationSensitive: boolean;
 };
 
 export type AugmentedNode<Aug> = Augmented<AST.LiquidHtmlNode, Aug>;
