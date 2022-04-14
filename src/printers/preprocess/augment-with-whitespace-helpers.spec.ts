@@ -131,9 +131,12 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
     });
 
     it('should return false if the next child is not whitespace sensitive to the outer left', () => {
-      ast = toAugmentedAst('<p>Hello <div> world </div></p>');
-      expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.TextNode);
-      expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to.be.false;
+      const blocks = ['<div> world </div>', '{% form %} hello {% endform %}'];
+      for (const block of blocks) {
+        ast = toAugmentedAst(`<p>Hello ${block}</p>`);
+        expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.TextNode);
+        expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to.be.false;
+      }
     });
   });
 

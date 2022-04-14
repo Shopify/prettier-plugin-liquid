@@ -1,5 +1,7 @@
 import {
   CSS_DISPLAY_DEFAULT,
+  CSS_DISPLAY_LIQUID_DEFAULT,
+  CSS_DISPLAY_LIQUID_TAGS,
   CSS_DISPLAY_TAGS,
 } from '../../constants.evaluate';
 import { NodeTypes } from '../../parsers';
@@ -45,6 +47,18 @@ function getCssDisplay(
 
     case NodeTypes.LiquidTag:
     case NodeTypes.LiquidRawTag:
+      switch (options.htmlWhitespaceSensitivity) {
+        case 'strict':
+          return 'inline';
+        case 'ignore':
+          return 'block';
+        default: {
+          return (
+            CSS_DISPLAY_LIQUID_TAGS[node.name] || CSS_DISPLAY_LIQUID_DEFAULT
+          );
+        }
+      }
+
     case NodeTypes.LiquidBranch:
     case NodeTypes.LiquidDrop:
       return 'inline';
