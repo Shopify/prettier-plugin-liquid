@@ -72,7 +72,71 @@ function isIndentationSensitiveNode(node: AugmentedAstNode) {
   return getNodeCssStyleWhiteSpace(node).startsWith('pre');
 }
 
-function isLeadingWhitespaceSensitiveNode(_node: AugmentedAstNode): boolean {
+function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
+  // {{- this }}
+  if (isTrimmingOuterLeft(node)) {
+    return false;
+  }
+
+  // {{ drop -}} this
+  if (node.prev && isTrimmingOuterRight(node.prev)) {
+    return false;
+  }
+
+  // Invisible nodes aren't whitespace sensitive
+  if (!node.parentNode || node.parentNode.cssDisplay === 'none') {
+    return false;
+  }
+
+  // <pre> tags are whitespace sensitive, so nodes in 'em are all leading
+  // whitespace sensitive.
+  if (isPreLikeNode(node.parentNode)) {
+    return true;
+  }
+
+  // The first child of a node is NOT leading whitespace sensitive if one of
+  // the following is true:
+  //
+  // - the parent is DocumentNode
+  // - the node itself is pre-like (since pre are block-like)
+  // - the parent is a script-like (since scripts are not rendered)
+  // - the parent has a CSS display that strips whitespace from both ends
+  // - the parent is whitespace stripping to the inner left
+  //
+  // prettier-ignore
+  if (
+    !node.prev && (
+      node.parentNode.type === NodeTypes.Document
+      || isPreLikeNode(node)
+      || isScriptLikeTag(node.parentNode)
+      || !isInnerLeftSpaceSensitiveCssDisplay(node.parentNode.cssDisplay)
+      || isTrimmingInnerLeft(node.parentNode)
+    )
+  ) {
+    return false;
+  }
+
+  // This node is not leading whitespace sensitive if the previous node
+  // creates a block rendering context.
+  //
+  // example:
+  //   - <p><div>hello</div> this</p>
+  if (
+    node.prev &&
+    !isOuterRightWhitespaceSensitiveCssDisplay(node.prev.cssDisplay)
+  ) {
+    return false;
+  }
+
+  // this node is not leading whitespace sensitive if it creates a block
+  // rendering context
+  //
+  // example:
+  //   - <p>hello <div>this</div></p>
+  if (!isOuterLeftWhitespaceSensitiveCssDisplay(node.cssDisplay)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -138,7 +202,7 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
       node.parentNode.type === NodeTypes.Document
       || isPreLikeNode(node)
       || isScriptLikeTag(node.parentNode) // technically we don't use this one.
-      || !isLastChildTrailingSpaceSensitiveCssDisplay(node.parentNode.cssDisplay)
+      || !isInnerRightWhitespaceSensitiveCssDisplay(node.parentNode.cssDisplay)
       || isTrimmingInnerRight(node.parentNode)
     )
   ) {
@@ -155,7 +219,7 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // element is a block and doesn't care about whitespace to its left.
   if (
     node.next &&
-    !isPrevTrailingSpaceSensitiveCssDisplay(node.next.cssDisplay)
+    !isOuterLeftWhitespaceSensitiveCssDisplay(node.next.cssDisplay)
   ) {
     return false;
   }
@@ -167,8 +231,8 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   //
   // The div would create a block formatting context, so even though
   // {{ drop }} is inline, it isn't because of the block.
-  if (!isNextLeadingSpaceSensitiveCssDisplay(node.cssDisplay)) {
-    return false
+  if (!isOuterRightWhitespaceSensitiveCssDisplay(node.cssDisplay)) {
+    return false;
   }
 
   // Default to true. We might be wrong, but we err on the side of caution.
@@ -314,19 +378,19 @@ function isBlockLikeCssDisplay(cssDisplay: string) {
   );
 }
 
-function isFirstChildLeadingSpaceSensitiveCssDisplay(cssDisplay: string) {
+function isInnerLeftSpaceSensitiveCssDisplay(cssDisplay: string) {
   return !isBlockLikeCssDisplay(cssDisplay) && cssDisplay !== 'inline-block';
 }
 
-function isLastChildTrailingSpaceSensitiveCssDisplay(cssDisplay: string) {
+function isInnerRightWhitespaceSensitiveCssDisplay(cssDisplay: string) {
   return !isBlockLikeCssDisplay(cssDisplay) && cssDisplay !== 'inline-block';
 }
 
-function isPrevTrailingSpaceSensitiveCssDisplay(cssDisplay: string) {
+function isOuterLeftWhitespaceSensitiveCssDisplay(cssDisplay: string) {
   return !isBlockLikeCssDisplay(cssDisplay);
 }
 
-function isNextLeadingSpaceSensitiveCssDisplay(cssDisplay: string) {
+function isOuterRightWhitespaceSensitiveCssDisplay(cssDisplay: string) {
   return !isBlockLikeCssDisplay(cssDisplay);
 }
 
