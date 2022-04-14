@@ -34,17 +34,13 @@ describe('Unit: toLiquidHtmlAST', () => {
   });
 
   it('should parse HTML attributes', () => {
-    const ast = toLiquidHtmlAST(
-      `<img src="https://1234" loading='lazy' disabled checked="">`,
-    );
+    const ast = toLiquidHtmlAST(`<img src="https://1234" loading='lazy' disabled checked="">`);
     expectPath(ast, 'children.0').to.exist;
     expectPath(ast, 'children.0.type').to.eql('HtmlVoidElement');
     expectPath(ast, 'children.0.name').to.eql('img');
     expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
     expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');
-    expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql(
-      'https://1234',
-    );
+    expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql('https://1234');
     expectPath(ast, 'children.0.attributes.1.name').to.eql('loading');
     expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
@@ -76,16 +72,10 @@ describe('Unit: toLiquidHtmlAST', () => {
       expectPath(ast, 'children.0.name.type').to.eql('LiquidDrop');
       expectPath(ast, 'children.0.name.markup').to.eql(' node_type ');
       expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
-      expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql(
-        'TextNode',
-      );
-      expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql(
-        'https://1234',
-      );
+      expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');
+      expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql('https://1234');
       expectPath(ast, 'children.0.attributes.1.name').to.eql('loading');
-      expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql(
-        'TextNode',
-      );
+      expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql('TextNode');
       expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
       expectPath(ast, 'children.0.attributes.2.name').to.eql('disabled');
     });
@@ -101,9 +91,7 @@ describe('Unit: toLiquidHtmlAST', () => {
       '<{{ node_type }}></{{ wrong_end_node }}>',
     ];
     for (const testCase of testCases) {
-      expect(() => toLiquidHtmlAST(testCase)).to.throw(
-        LiquidHTMLASTParsingError,
-      );
+      expect(() => toLiquidHtmlAST(testCase)).to.throw(LiquidHTMLASTParsingError);
     }
   });
 
@@ -115,33 +103,23 @@ describe('Unit: toLiquidHtmlAST', () => {
   });
 
   it('should parse script tags as raw', () => {
-    const ast = toLiquidHtmlAST(
-      `<script>\n  const a = {{ product | json }};\n</script>`,
-    );
+    const ast = toLiquidHtmlAST(`<script>\n  const a = {{ product | json }};\n</script>`);
     expectPath(ast, 'children.0.type').to.eql('HtmlRawNode');
     expectPath(ast, 'children.0.name').to.eql('script');
-    expectPath(ast, 'children.0.body').to.eql(
-      '\n  const a = {{ product | json }};\n',
-    );
+    expectPath(ast, 'children.0.body').to.eql('\n  const a = {{ product | json }};\n');
     expectPosition(ast, 'children.0');
   });
 
   it('should parse style tags as raw', () => {
-    const ast = toLiquidHtmlAST(
-      `<style>\n  :root { --bg: {{ settings.bg }}}\n</style>`,
-    );
+    const ast = toLiquidHtmlAST(`<style>\n  :root { --bg: {{ settings.bg }}}\n</style>`);
     expectPath(ast, 'children.0.type').to.eql('HtmlRawNode');
     expectPath(ast, 'children.0.name').to.eql('style');
-    expectPath(ast, 'children.0.body').to.eql(
-      '\n  :root { --bg: {{ settings.bg }}}\n',
-    );
+    expectPath(ast, 'children.0.body').to.eql('\n  :root { --bg: {{ settings.bg }}}\n');
     expectPosition(ast, 'children.0');
   });
 
   it('should parse liquid ifs as branches', () => {
-    const ast = toLiquidHtmlAST(
-      `{% if A %}A{% elsif B %}B{% else %}C{% endif %}`,
-    );
+    const ast = toLiquidHtmlAST(`{% if A %}A{% elsif B %}B{% else %}C{% endif %}`);
     expectPath(ast, 'children.0').to.exist;
     expectPath(ast, 'children.0.type').to.eql('LiquidTag');
     expectPath(ast, 'children.0.name').to.eql('if');
@@ -165,9 +143,7 @@ describe('Unit: toLiquidHtmlAST', () => {
   });
 
   it('should parse liquid case as branches', () => {
-    const ast = toLiquidHtmlAST(
-      `{% case A %}{% when A %}A{% when B %}B{% else %}C{% endcase %}`,
-    );
+    const ast = toLiquidHtmlAST(`{% case A %}{% when A %}A{% when B %}B{% else %}C{% endcase %}`);
     expectPath(ast, 'children.0').to.exist;
     expectPath(ast, 'children.0.type').to.eql('LiquidTag');
     expectPath(ast, 'children.0.name').to.eql('case');
