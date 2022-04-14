@@ -40,8 +40,11 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
  *   - <span> </span> is dangling whitespace sensitive (cssDisplay === inline)
  *   - <div> </div> is not dangling whitespace sensitive (cssDisplay === block)
  */
-function isDanglingWhitespaceSensitiveNode(_node: AugmentedAstNode) {
-  return true;
+function isDanglingWhitespaceSensitiveNode(node: AugmentedAstNode) {
+  return (
+    isDanglingSpaceSensitiveCssDisplay(node.cssDisplay) &&
+    !isScriptLikeTag(node)
+  );
 }
 
 /**
