@@ -248,8 +248,88 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
     });
   });
 
+  describe('Unit: hasDanglingWhitespace', () => {
+    it('should handle LiquidBranch tags properly', () => {
+      ast = toAugmentedAst('{% if true %} {% endif %}');
+      // The if tag itself is not dangling, it has branches
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+
+      // The default branch has dangling whitespace though
+      expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasDanglingWhitespace').to.be.true;
+
+      // same goes for else tags
+      ast = toAugmentedAst('{% if true %} {% else %} {% endif %}');
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasDanglingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.type').to.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.1.hasDanglingWhitespace').to.be.true;
+
+      // reports false when branch is empty
+      ast = toAugmentedAst('{% if true %}{% else %}{% endif %}');
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasDanglingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.1.type').to.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.1.hasDanglingWhitespace').to.be.false;
+    });
+
+    it('should work for LiquidTags', () => {
+      ast = toAugmentedAst('{% form %} {% endform %}');
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.true;
+
+      ast = toAugmentedAst('{% form %}{% endform %}');
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+    });
+
+    it('should work for HtmlElements', () => {
+      ast = toAugmentedAst('<p> </p>');
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.true;
+
+      ast = toAugmentedAst('<p></p>');
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+    });
+  });
+
+  describe('Unit: isDanglingWhitespaceSensitive', () => {
+    it('should return true for inline elements', () => {
+      ast = toAugmentedAst('<span> </span>');
+      expectPath(ast, 'children.0.isDanglingWhitespaceSensitive').to.be.true;
+    });
+
+    it('should return false for block elements', () => {
+      ast = toAugmentedAst('<p> </p>');
+      expectPath(ast, 'children.0.isDanglingWhitespaceSensitive').to.be.false;
+    });
+
+    it('should return true for LiquidBranch tags', () => {
+      ast = toAugmentedAst('{% if A %} {% endif %}');
+      expectPath(ast, 'children.0.children.0.isDanglingWhitespaceSensitive').to.be.true;
+    });
+
+    it('should return false for LiquidBranch tags that are whitespace stripped', () => {
+      ast = toAugmentedAst('{% if A -%} {% endif %}');
+      expectPath(ast, 'children.0.children.0.isDanglingWhitespaceSensitive').to.be.false;
+      ast = toAugmentedAst('{% if A %} {%- endif %}');
+      expectPath(ast, 'children.0.children.0.isDanglingWhitespaceSensitive').to.be.false;
+    });
+
+    it('should return false for script-like tags', () => {
+      const tags = ['script', 'style'];
+      for (const tag of tags) {
+        ast = toAugmentedAst(`<${tag}> </${tag}>`);
+        expectPath(ast, 'children.0.isDanglingWhitespaceSensitive').to.be.false;
+      }
+    });
+  });
+
   function toAugmentedAst(code: string, options: Partial<LiquidParserOptions> = {}) {
-    return preprocess(toLiquidHtmlAST(code), options as LiquidParserOptions);
+    const ast = toLiquidHtmlAST(code);
+    options.originalText = ast.source;
+    options.locStart = (node: LiquidHtmlNode) => node.position.start;
+    options.locEnd = (node: LiquidHtmlNode) => node.position.end;
+    return preprocess(ast, options as LiquidParserOptions);
   }
 
   function expectPath(ast: LiquidHtmlNode, path: string, message?: string) {

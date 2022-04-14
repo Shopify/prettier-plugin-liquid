@@ -13,6 +13,7 @@ import {
   WithSiblings,
   WithWhitespaceHelpers,
 } from './types';
+import { isWhitespace } from '../utils';
 
 type RequiredAugmentations = WithParent & WithSiblings & WithCssDisplay;
 type AugmentedAstNode = AugmentedNode<RequiredAugmentations>;
@@ -27,6 +28,9 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
     isLeadingWhitespaceSensitive: isLeadingWhitespaceSensitiveNode(node),
     isTrailingWhitespaceSensitive: isTrailingWhitespaceSensitiveNode(node),
     isIndentationSensitive: isIndentationSensitiveNode(node),
+    hasLeadingWhitespace: isWhitespace(node.source, node.position.start - 1),
+    hasTrailingWhitespace: isWhitespace(node.source, node.position.end),
+    hasDanglingWhitespace: hasDanglingWhitespace(node),
   };
 
   Object.assign(node, augmentations);
@@ -39,11 +43,15 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
  * examples:
  *   - <span> </span> is dangling whitespace sensitive (cssDisplay === inline)
  *   - <div> </div> is not dangling whitespace sensitive (cssDisplay === block)
+ *   - {% if %} {% endif %} is dangling whitespace sensitive
+ *   - {% if -%} {% endif %} is not dangling whitespace sensitive
  */
 function isDanglingWhitespaceSensitiveNode(node: AugmentedAstNode) {
   return (
     isDanglingSpaceSensitiveCssDisplay(node.cssDisplay) &&
-    !isScriptLikeTag(node)
+    !isScriptLikeTag(node) &&
+    !isTrimmingInnerLeft(node) &&
+    !isTrimmingInnerRight(node)
   );
 }
 
@@ -75,6 +83,11 @@ function isIndentationSensitiveNode(node: AugmentedAstNode) {
   return getNodeCssStyleWhiteSpace(node).startsWith('pre');
 }
 
+/**
+ * A node is leading whitespace sensitive when whitespace to the outer left
+ * of it has meaning. Removing or adding whitespace there would alter the
+ * rendered output.
+ */
 function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // {{- this }}
   if (isTrimmingOuterLeft(node)) {
@@ -242,6 +255,22 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   return true;
 }
 
+/**
+ * Dangling whitespace is whitespace in an empty parent.
+ *
+ * examples
+ *  - <div> </div>
+ *  - {% if A %} {% else %} nope {% endif %}
+ */
+function hasDanglingWhitespace(node: AugmentedAstNode) {
+  if (!isParentNode(node)) return false;
+  if (node.type === NodeTypes.Document) {
+    return node.children.length === 0 && node.source.length > 0;
+  }
+  if (!node.children || node.children.length > 0) return false;
+  return isWhitespace(node.source, node.blockStartPosition.end);
+}
+
 const HtmlNodeTypes = [
   NodeTypes.HtmlElement,
   NodeTypes.HtmlRawNode,
@@ -255,6 +284,10 @@ const LiquidNodeTypes = [
   NodeTypes.LiquidBranch,
   NodeTypes.LiquidRawTag,
 ] as const;
+
+// Slightly different definition here but I can't find a better name.
+// We _do_ only want those with _children_ specifically here... do we?
+type ParentNode = Extract<AugmentedAstNode, { children?: AugmentedAstNode[] }>;
 
 type HtmlNode = Extract<
   AugmentedAstNode,
@@ -270,6 +303,10 @@ type TextNode = Extract<AugmentedAstNode, { type: NodeTypes.TextNode }>;
 
 export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
   return HtmlNodeTypes.includes(node.type as any);
+}
+
+export function isParentNode(node: AugmentedAstNode): node is ParentNode {
+  return (node as any).children;
 }
 
 export function isLiquidNode(node: AugmentedAstNode): node is LiquidNode {

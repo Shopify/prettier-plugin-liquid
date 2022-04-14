@@ -58,6 +58,9 @@ export type WithWhitespaceHelpers = {
   isLeadingWhitespaceSensitive: boolean;
   isTrailingWhitespaceSensitive: boolean;
   isIndentationSensitive: boolean;
+  hasLeadingWhitespace: boolean;
+  hasTrailingWhitespace: boolean;
+  hasDanglingWhitespace: boolean;
 };
 
 export type AugmentedNode<Aug> = Augmented<AST.LiquidHtmlNode, Aug>;
