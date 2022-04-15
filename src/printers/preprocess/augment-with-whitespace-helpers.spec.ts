@@ -91,7 +91,11 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
       for (const [wrapStart, wrapEnd] of wrappers) {
         for (const node of nodes) {
           ast = toAugmentedAst(`${wrapStart}${node} ${wrapEnd}`);
-          expectPath(ast, 'children.0.children.0.isTrailingWhitespaceSensitive').to.be.true;
+          expectPath(
+            ast,
+            'children.0.children.0.isTrailingWhitespaceSensitive',
+            `${wrapStart}${node} ${wrapEnd}`,
+          ).to.be.true;
         }
       }
     });

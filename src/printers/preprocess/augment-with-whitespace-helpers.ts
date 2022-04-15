@@ -24,10 +24,16 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
 ) => {
   const augmentations: WithWhitespaceHelpers = {
     isDanglingWhitespaceSensitive: isDanglingWhitespaceSensitiveNode(node),
-    isWhitespaceSensitive: isWhitespaceSensitiveNode(node),
-    isLeadingWhitespaceSensitive: isLeadingWhitespaceSensitiveNode(node),
-    isTrailingWhitespaceSensitive: isTrailingWhitespaceSensitiveNode(node),
     isIndentationSensitive: isIndentationSensitiveNode(node),
+    isWhitespaceSensitive: isWhitespaceSensitiveNode(node),
+    // If either isn't sensitive, then this one isn't
+    isLeadingWhitespaceSensitive:
+      isLeadingWhitespaceSensitiveNode(node) &&
+      (!node.prev || isTrailingWhitespaceSensitiveNode(node.prev)),
+    // If either isn't sensitive, then this one isn't
+    isTrailingWhitespaceSensitive:
+      isTrailingWhitespaceSensitiveNode(node) &&
+      (!node.next || isLeadingWhitespaceSensitiveNode(node.next)),
     hasLeadingWhitespace: isWhitespace(node.source, node.position.start - 1),
     hasTrailingWhitespace: isWhitespace(node.source, node.position.end),
     hasDanglingWhitespace: hasDanglingWhitespace(node),
