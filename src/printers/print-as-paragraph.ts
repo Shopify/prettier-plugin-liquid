@@ -8,7 +8,7 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
 } from './utils';
-import { NodeTypes } from '../parsers/ast';
+import { NodeTypes } from '../types';
 
 const { builders } = doc;
 const { fill, line, softline } = builders;

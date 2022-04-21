@@ -1,16 +1,16 @@
 import { LiquidHtmlNode, LiquidBranch } from '../preprocess';
-import { isBranchedTag, NodeTypes } from '../../parsers';
-import { Doc, doc, AstPath, ParserOptions } from 'prettier';
+import { NodeTypes } from '../../types';
+import { isBranchedTag } from '../../parsers';
+import { Doc, doc } from 'prettier';
+import { isWhitespace } from './string';
+import { LiquidAstPath } from './types';
+
+export * from './types';
+export * from './string';
+export * from './node';
 
 const { builders } = doc;
 const { ifBreak, indent } = builders;
-
-export type LiquidAstPath = AstPath<LiquidHtmlNode>;
-export type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
-export type LiquidPrinter = (
-  path: AstPath<LiquidHtmlNode>,
-  parentGroupId?: symbol,
-) => Doc;
 
 export function intersperse<T>(array: T[], delim: T): T[] {
   return array.flatMap((val) => [delim, val]).slice(1);
@@ -22,58 +22,6 @@ export function getSource(path: LiquidAstPath) {
 
 export function isEmpty(col: any[]): boolean {
   return col.length === 0;
-}
-
-export function isWhitespace(source: string, loc: number): boolean {
-  if (loc < 0 || loc >= source.length) return true;
-  return !!source[loc].match(/\s/);
-}
-
-export const trim = (x: string) => x.trim();
-export const trimEnd = (x: string) => x.trimEnd();
-
-export function bodyLines(str: string): string[] {
-  return str
-    .replace(/^\n*|\s*$/g, '') // only want the meat
-    .split(/\r?\n/);
-}
-
-export function markupLines<T extends LiquidHtmlNode & { markup: string }>(
-  node: T,
-): string[] {
-  return node.markup.trim().split('\n');
-}
-
-export function reindent(lines: string[], skipFirst = false): string[] {
-  const minIndentLevel = lines
-    .filter((_, i) => (skipFirst ? i > 0 : true))
-    .filter((line) => line.trim().length > 0)
-    .map((line) => (line.match(/^\s*/) as any)[0].length)
-    .reduce((a, b) => Math.min(a, b), Infinity);
-
-  if (minIndentLevel === Infinity) {
-    return lines;
-  }
-
-  const indentStrip = ' '.repeat(minIndentLevel);
-  return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
-}
-
-export function originallyHadLineBreaks(
-  path: LiquidAstPath,
-  { locStart, locEnd }: LiquidParserOptions,
-): boolean {
-  const node = path.getValue();
-  return hasLineBreakInRange(node.source, locStart(node), locEnd(node));
-}
-
-export function hasLineBreakInRange(
-  source: string,
-  locStart: number,
-  locEnd: number,
-): boolean {
-  const indexOfNewLine = source.indexOf('\n', locStart);
-  return 0 <= indexOfNewLine && indexOfNewLine < locEnd;
 }
 
 export function isDeeplyNested(
@@ -156,4 +104,8 @@ export function ifBreakChain(
 export function maybeIndent(whitespace: Doc, doc: Doc): Doc {
   if (!doc) return '';
   return indent([whitespace, doc]);
+}
+
+export function isNonEmptyArray(object: any): object is any[] {
+  return Array.isArray(object) && object.length > 0;
 }

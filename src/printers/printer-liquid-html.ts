@@ -15,13 +15,8 @@ import {
   AttrSingleQuoted,
   AttrDoubleQuoted,
 } from './preprocess/types';
-import {
-  AttributeNodeBase,
-  isBranchedTag,
-  NodeTypes,
-  Position,
-  HtmlNodeBase,
-} from '../parsers/ast';
+import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '../parsers/ast';
+import { NodeTypes, Position } from '../types';
 import { assertNever } from '../utils';
 import { printAsParagraph } from './print-as-paragraph';
 import {

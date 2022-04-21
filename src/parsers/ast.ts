@@ -16,26 +16,9 @@ import {
   ConcreteAttrDoubleQuoted,
   ConcreteAttrUnquoted,
 } from './cst';
+import { NodeTypes, Position } from '../types';
 import { assertNever } from '../utils';
 import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
-
-export enum NodeTypes {
-  Document = 'Document',
-  LiquidRawTag = 'LiquidRawTag',
-  LiquidTag = 'LiquidTag',
-  LiquidBranch = 'LiquidBranch',
-  LiquidDrop = 'LiquidDrop',
-  HtmlSelfClosingElement = 'HtmlSelfClosingElement',
-  HtmlVoidElement = 'HtmlVoidElement',
-  HtmlComment = 'HtmlComment',
-  HtmlElement = 'HtmlElement',
-  HtmlRawNode = 'HtmlRawNode',
-  AttrSingleQuoted = 'AttrSingleQuoted',
-  AttrDoubleQuoted = 'AttrDoubleQuoted',
-  AttrUnquoted = 'AttrUnquoted',
-  AttrEmpty = 'AttrEmpty',
-  TextNode = 'TextNode',
-}
 
 export type LiquidHtmlNode =
   | DocumentNode
@@ -196,11 +179,6 @@ export interface AttributeNodeBase<T> extends ASTNode<T> {
 
 export interface TextNode extends ASTNode<NodeTypes.TextNode> {
   value: string;
-}
-
-export interface Position {
-  start: number;
-  end: number;
 }
 
 export interface ASTNode<T> {

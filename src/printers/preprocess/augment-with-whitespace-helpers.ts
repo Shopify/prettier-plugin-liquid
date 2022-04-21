@@ -1,6 +1,6 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { NodeTypes } from '../../parsers';
+import { NodeTypes } from '../../types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
@@ -13,7 +13,7 @@ import {
   WithSiblings,
   WithWhitespaceHelpers,
 } from './types';
-import { isWhitespace } from '../utils';
+import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '../utils';
 
 type RequiredAugmentations = WithParent & WithSiblings & WithCssDisplay;
 type AugmentedAstNode = AugmentedNode<RequiredAugmentations>;
@@ -95,6 +95,10 @@ function isIndentationSensitiveNode(node: AugmentedAstNode) {
  * rendered output.
  */
 function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
+  if (!node) {
+    return false;
+  }
+
   // {{- this }}
   if (isTrimmingOuterLeft(node)) {
     return false;
@@ -411,11 +415,6 @@ export function isTrimmingInnerRight(
   }
 }
 
-/// The helpers below were taken from prettier/src/language-html
-function isScriptLikeTag(node: AugmentedAstNode) {
-  return node.type === NodeTypes.HtmlRawNode;
-}
-
 function isBlockLikeCssDisplay(cssDisplay: string) {
   return (
     cssDisplay === 'block' ||
@@ -442,10 +441,6 @@ function isOuterRightWhitespaceSensitiveCssDisplay(cssDisplay: string) {
 
 function isDanglingSpaceSensitiveCssDisplay(cssDisplay: string) {
   return !isBlockLikeCssDisplay(cssDisplay) && cssDisplay !== 'inline-block';
-}
-
-function isPreLikeNode(node: AugmentedAstNode) {
-  return getNodeCssStyleWhiteSpace(node).startsWith('pre');
 }
 
 function getNodeCssStyleWhiteSpace(node: AugmentedAstNode) {

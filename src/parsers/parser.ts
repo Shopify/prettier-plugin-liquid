@@ -1,4 +1,5 @@
 import { Parser, ParserOptions } from 'prettier';
+import { locEnd, locStart } from '../utils';
 import { toLiquidHtmlAST, LiquidHtmlNode } from './ast';
 
 function parse(
@@ -7,14 +8,6 @@ function parse(
   _opts: ParserOptions<LiquidHtmlNode>,
 ): LiquidHtmlNode {
   return toLiquidHtmlAST(text);
-}
-
-function locStart(node: LiquidHtmlNode) {
-  return node.position.start;
-}
-
-function locEnd(node: LiquidHtmlNode) {
-  return node.position.end;
 }
 
 export const liquidHtmlAstFormat = 'liquid-html-ast';
