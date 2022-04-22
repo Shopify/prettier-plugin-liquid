@@ -1,6 +1,6 @@
 import { LiquidHtmlNode, LiquidBranch } from '../preprocess';
 import { NodeTypes } from '../../types';
-import { isBranchedTag } from '../../parsers';
+import { isBranchedTag } from '../../parser';
 import { Doc, doc } from 'prettier';
 import { isWhitespace } from './string';
 import { LiquidAstPath } from './types';

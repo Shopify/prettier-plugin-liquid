@@ -1,4 +1,4 @@
-import * as AST from '../parsers/ast';
+import * as AST from '../parser/ast';
 import { LiquidParserOptions } from './utils';
 import { AUGMENTATION_PIPELINE, DocumentNode } from './preprocess';
 

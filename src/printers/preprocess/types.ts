@@ -1,4 +1,4 @@
-import * as AST from '../../parsers/ast';
+import * as AST from '../../parser/ast';
 import { LiquidParserOptions } from '../utils';
 
 // This one warrants a bit of an explanation 'cuz it's definitely next

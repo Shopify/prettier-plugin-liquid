@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import { deepGet } from '../../parsers/utils';
+import { deepGet } from '../../parser/utils';
 import { NodeTypes } from '../../types';
-import { toLiquidHtmlAST } from '../../parsers';
+import { toLiquidHtmlAST } from '../../parser';
 import { preprocess } from '../print-preprocess';
 import { LiquidParserOptions } from '../utils';
 import { DocumentNode, LiquidHtmlNode } from './types';
