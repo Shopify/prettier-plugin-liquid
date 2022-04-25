@@ -17,8 +17,8 @@ import {
   ConcreteAttrUnquoted,
 } from './cst';
 import { NodeTypes, Position } from '../types';
-import { assertNever } from '../utils';
-import { LiquidHTMLASTParsingError, deepGet, length, dropLast } from './utils';
+import { assertNever, deepGet, dropLast } from '../utils';
+import { LiquidHTMLASTParsingError } from './errors';
 
 export type LiquidHtmlNode =
   | DocumentNode
@@ -232,7 +232,7 @@ class ASTBuilder {
   }
 
   get currentPosition(): number {
-    return length(this.current || []) - 1;
+    return (this.current || []).length - 1;
   }
 
   get parent(): ParentNode | undefined {
