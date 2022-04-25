@@ -64,7 +64,7 @@ export type Augmented<T, Aug> = {
 export type AllAugmentations = WithParent &
   WithSiblings &
   WithFamily &
-  WithCssDisplay &
+  WithCssProperties &
   WithWhitespaceHelpers;
 
 export type WithParent = {
@@ -84,7 +84,7 @@ export type WithFamily = {
   lastChild: LiquidHtmlNode | undefined;
 };
 
-export type WithCssDisplay = {
+export type WithCssProperties = {
   cssDisplay: string;
   cssWhitespace: string;
 };

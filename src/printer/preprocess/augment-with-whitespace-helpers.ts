@@ -8,14 +8,14 @@ import {
 import {
   Augment,
   AugmentedNode,
-  WithCssDisplay,
+  WithCssProperties,
   WithParent,
   WithSiblings,
   WithWhitespaceHelpers,
 } from '../../types';
 import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '../utils';
 
-type RequiredAugmentations = WithParent & WithSiblings & WithCssDisplay;
+type RequiredAugmentations = WithParent & WithSiblings & WithCssProperties;
 type AugmentedAstNode = AugmentedNode<RequiredAugmentations>;
 
 export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (

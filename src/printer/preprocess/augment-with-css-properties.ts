@@ -11,7 +11,7 @@ import {
   LiquidParserOptions,
   Augment,
   AugmentedNode,
-  WithCssDisplay,
+  WithCssProperties,
   WithSiblings,
 } from '../../types';
 import { assertNever } from '../../utils';
@@ -127,8 +127,11 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
   }
 }
 
-export const augmentWithCSSDisplay: Augment<WithSiblings> = (options, node) => {
-  const augmentations: WithCssDisplay = {
+export const augmentWithCSSProperties: Augment<WithSiblings> = (
+  options,
+  node,
+) => {
+  const augmentations: WithCssProperties = {
     cssDisplay: getCssDisplay(node, options),
     cssWhitespace: getNodeCssStyleWhiteSpace(node),
   };
