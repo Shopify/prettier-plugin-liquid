@@ -60,64 +60,75 @@ function printChild(
 }
 
 function printBetweenLine(prevNode: LiquidHtmlNode, nextNode: LiquidHtmlNode) {
-  return isTextLikeNode(prevNode) && isTextLikeNode(nextNode)
-    ? prevNode.isTrailingWhitespaceSensitive
-      ? prevNode.hasTrailingWhitespace
+  // space between text-like nodes
+  if (isTextLikeNode(prevNode) && isTextLikeNode(nextNode)) {
+    if (prevNode.isTrailingWhitespaceSensitive) {
+      return prevNode.hasTrailingWhitespace
         ? preferHardlineAsLeadingSpaces(nextNode)
           ? hardline
           : line
-        : ''
-      : preferHardlineAsLeadingSpaces(nextNode)
-      ? hardline
-      : softline
-    : (needsToBorrowNextOpeningTagStartMarker(prevNode) &&
-        (hasPrettierIgnore(nextNode) ||
-          /**
-           *     123<a
-           *          ~
-           *       ><b>
-           */
-          nextNode.firstChild ||
-          /**
-           *     123<!--
-           *            ~
-           *     -->
-           */
-          isSelfClosing(nextNode) ||
-          /**
-           *     123<span
-           *             ~
-           *       attr
-           */
-          (nextNode.type === NodeTypes.HtmlElement &&
-            nextNode.attributes.length > 0))) ||
-      /**
-       *     <img
-       *       src="long"
-       *                 ~
-       *     />123
-       */
-      (prevNode.type === NodeTypes.HtmlElement &&
-        isSelfClosing(prevNode) &&
-        needsToBorrowPrevClosingTagEndMarker(nextNode))
-    ? ''
-    : !nextNode.isLeadingWhitespaceSensitive ||
-      preferHardlineAsLeadingSpaces(nextNode) ||
-      /**
-       *       Want to write us a letter? Use our<a
-       *         ><b><a>mailing address</a></b></a
-       *                                          ~
-       *       >.
-       */
-      (needsToBorrowPrevClosingTagEndMarker(nextNode) &&
-        prevNode.lastChild &&
-        needsToBorrowParentClosingTagStartMarker(prevNode.lastChild) &&
-        prevNode.lastChild.lastChild &&
-        needsToBorrowParentClosingTagStartMarker(prevNode.lastChild.lastChild))
-    ? hardline
-    : nextNode.hasLeadingWhitespace
-    ? line
-    : softline;
+        : '';
+    }
+
+    return preferHardlineAsLeadingSpaces(nextNode) ? hardline : softline;
+  }
+
+  const spaceBetweenLinesIsHandledSomewhereElse =
+    (needsToBorrowNextOpeningTagStartMarker(prevNode) &&
+      (hasPrettierIgnore(nextNode) ||
+        /**
+         *     123<a
+         *          ~
+         *       ><b>
+         */
+        nextNode.firstChild ||
+        /**
+         *     123<!--
+         *            ~
+         *     -->
+         */
+        isSelfClosing(nextNode) ||
+        /**
+         *     123<span
+         *             ~
+         *       attr
+         */
+        (nextNode.type === NodeTypes.HtmlElement &&
+          nextNode.attributes.length > 0))) ||
+    /**
+     *     <img
+     *       src="long"
+     *                 ~
+     *     />123
+     */
+    (prevNode.type === NodeTypes.HtmlElement &&
+      isSelfClosing(prevNode) &&
+      needsToBorrowPrevClosingTagEndMarker(nextNode));
+
+  if (spaceBetweenLinesIsHandledSomewhereElse) {
+    return '';
+  }
+
+  const shouldUseHardline =
+    !nextNode.isLeadingWhitespaceSensitive ||
+    preferHardlineAsLeadingSpaces(nextNode) ||
+    /**
+     *       Want to write us a letter? Use our<a
+     *         ><b><a>mailing address</a></b></a
+     *                                          ~
+     *       >.
+     */
+    (needsToBorrowPrevClosingTagEndMarker(nextNode) &&
+      prevNode.lastChild &&
+      needsToBorrowParentClosingTagStartMarker(prevNode.lastChild) &&
+      prevNode.lastChild.lastChild &&
+      needsToBorrowParentClosingTagStartMarker(prevNode.lastChild.lastChild));
+
+  if (shouldUseHardline) {
+    return hardline;
+  }
+
+  return nextNode.hasLeadingWhitespace ? line : softline;
 }
 
 export type HasChildren = Extract<
