@@ -11,6 +11,8 @@ import {
 import {
   getLastDescendant,
   hasPrettierIgnore,
+  isHtmlNode,
+  isLiquidNode,
   isNonEmptyArray,
   isPreLikeNode,
   isSelfClosing,
@@ -163,9 +165,10 @@ export function needsToBorrowPrevClosingTagEndMarker(node: LiquidHtmlNode) {
    *     ^
    */
   return (
+    !isLiquidNode(node) &&
     node.prev &&
     // node.prev.type !== 'docType' &&
-    !isTextLikeNode(node.prev) &&
+    isHtmlNode(node.prev) &&
     node.isLeadingWhitespaceSensitive &&
     !node.hasLeadingWhitespace
   );
@@ -183,10 +186,11 @@ export function needsToBorrowLastChildClosingTagEndMarker(
    *     >
    */
   return (
+    isHtmlNode(node) &&
     node.lastChild &&
     node.lastChild.isTrailingWhitespaceSensitive &&
     !node.lastChild.hasTrailingWhitespace &&
-    !isTextLikeNode(getLastDescendant(node.lastChild)) &&
+    isHtmlNode(getLastDescendant(node.lastChild)) &&
     !isPreLikeNode(node)
   );
 }
@@ -204,6 +208,7 @@ export function needsToBorrowParentClosingTagStartMarker(node: LiquidHtmlNode) {
    *     >
    */
   return (
+    isHtmlNode(node.parentNode) &&
     !node.next &&
     !node.hasTrailingWhitespace &&
     node.isTrailingWhitespaceSensitive &&
@@ -219,7 +224,7 @@ export function needsToBorrowNextOpeningTagStartMarker(node: LiquidHtmlNode) {
    */
   return (
     node.next &&
-    !isTextLikeNode(node.next) &&
+    isHtmlNode(node.next) &&
     isTextLikeNode(node) &&
     node.isTrailingWhitespaceSensitive &&
     !node.hasTrailingWhitespace
@@ -251,9 +256,11 @@ export function needsToBorrowParentOpeningTagEndMarker(node: LiquidHtmlNode) {
    *       ^
    */
   return (
+    isHtmlNode(node.parentNode) &&
     !node.prev &&
     node.isLeadingWhitespaceSensitive &&
-    !node.hasLeadingWhitespace
+    !node.hasLeadingWhitespace &&
+    !isLiquidNode(node)
   );
 }
 

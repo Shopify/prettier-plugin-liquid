@@ -24,6 +24,20 @@ export enum NodeTypes {
   TextNode = 'TextNode',
 }
 
+export const HtmlNodeTypes = [
+  NodeTypes.HtmlElement,
+  NodeTypes.HtmlRawNode,
+  NodeTypes.HtmlVoidElement,
+  NodeTypes.HtmlSelfClosingElement,
+] as const;
+
+export const LiquidNodeTypes = [
+  NodeTypes.LiquidTag,
+  NodeTypes.LiquidDrop,
+  NodeTypes.LiquidBranch,
+  NodeTypes.LiquidRawTag,
+] as const;
+
 export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;

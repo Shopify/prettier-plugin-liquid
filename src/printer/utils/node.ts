@@ -5,6 +5,10 @@ import {
   LiquidParserOptions,
   NodeTypes,
   TextNode,
+  LiquidNode,
+  LiquidNodeTypes,
+  HtmlNodeTypes,
+  HtmlNode,
 } from '~/types';
 
 // placeholder while I get my shit together
@@ -30,6 +34,16 @@ export function isTextLikeNode(
   node: LiquidHtmlNode | undefined,
 ): node is TextNode {
   return !!node && node.type === NodeTypes.TextNode;
+}
+
+export function isLiquidNode(
+  node: LiquidHtmlNode | undefined,
+): node is LiquidNode {
+  return !!node && LiquidNodeTypes.includes(node.type as any);
+}
+
+export function isHtmlNode(node: LiquidHtmlNode | undefined): node is HtmlNode {
+  return !!node && HtmlNodeTypes.includes(node.type as any);
 }
 
 export function hasNonTextChild(node: LiquidHtmlNode) {

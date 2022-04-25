@@ -1,6 +1,6 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { NodeTypes } from '~/types';
+import { HtmlNodeTypes, LiquidNodeTypes, NodeTypes } from '~/types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
@@ -280,20 +280,6 @@ function hasDanglingWhitespace(node: AugmentedAstNode) {
   if (!node.children || node.children.length > 0) return false;
   return isWhitespace(node.source, node.blockStartPosition.end);
 }
-
-const HtmlNodeTypes = [
-  NodeTypes.HtmlElement,
-  NodeTypes.HtmlRawNode,
-  NodeTypes.HtmlVoidElement,
-  NodeTypes.HtmlSelfClosingElement,
-] as const;
-
-const LiquidNodeTypes = [
-  NodeTypes.LiquidTag,
-  NodeTypes.LiquidDrop,
-  NodeTypes.LiquidBranch,
-  NodeTypes.LiquidRawTag,
-] as const;
 
 // Slightly different definition here but I can't find a better name.
 // We _do_ only want those with _children_ specifically here... do we?
