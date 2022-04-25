@@ -14,15 +14,16 @@ import {
   AttrUnquoted,
   AttrSingleQuoted,
   AttrDoubleQuoted,
-} from './preprocess/types';
-import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '../parser/ast';
-import { NodeTypes, Position } from '../types';
-import { assertNever } from '../utils';
-import { printAsParagraph } from './print-as-paragraph';
-import {
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
+  NodeTypes,
+  Position,
+} from '../types';
+import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '../parser/ast';
+import { assertNever } from '../utils';
+import { printAsParagraph } from './print-as-paragraph';
+import {
   bodyLines,
   getSource,
   getWhitespaceTrim,

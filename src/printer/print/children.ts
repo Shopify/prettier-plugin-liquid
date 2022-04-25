@@ -1,11 +1,13 @@
 import { AstPath, doc } from 'prettier';
 import { locStart, locEnd } from '../../utils';
-import { NodeTypes } from '../../types';
-import { LiquidHtmlNode } from '../preprocess';
 import {
+  NodeTypes,
+  LiquidHtmlNode,
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
+} from '../../types';
+import {
   forceBreakChildren,
   forceNextEmptyLine,
   hasPrettierIgnore,

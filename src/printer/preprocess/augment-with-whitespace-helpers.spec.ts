@@ -3,8 +3,7 @@ import { deepGet } from '../../utils';
 import { NodeTypes } from '../../types';
 import { toLiquidHtmlAST } from '../../parser';
 import { preprocess } from '../print-preprocess';
-import { LiquidParserOptions } from '../utils';
-import { DocumentNode, LiquidHtmlNode } from './types';
+import { DocumentNode, LiquidHtmlNode, LiquidParserOptions } from '../../types';
 
 describe('Module: augmentWithWhitespaceHelpers', () => {
   let ast: DocumentNode;

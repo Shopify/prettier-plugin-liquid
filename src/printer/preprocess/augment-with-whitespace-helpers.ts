@@ -12,7 +12,7 @@ import {
   WithParent,
   WithSiblings,
   WithWhitespaceHelpers,
-} from './types';
+} from '../../types';
 import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '../utils';
 
 type RequiredAugmentations = WithParent & WithSiblings & WithCssDisplay;

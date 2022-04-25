@@ -1,6 +1,6 @@
 import * as AST from '../parser/ast';
-import { LiquidParserOptions } from './utils';
-import { AUGMENTATION_PIPELINE, DocumentNode } from './preprocess';
+import { LiquidParserOptions, DocumentNode } from '../types';
+import { AUGMENTATION_PIPELINE } from './preprocess';
 
 // This is super hard to type check so I'll just magically assume
 // everything works.

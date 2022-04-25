@@ -4,7 +4,7 @@ import {
   LiquidHtmlNode,
   WithParent,
   WithSiblings,
-} from './types';
+} from '../../types';
 
 const COLLECTION_KEYS = ['children', 'attributes', 'value'];
 

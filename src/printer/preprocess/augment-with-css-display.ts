@@ -6,10 +6,15 @@ import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
 } from '../../constants.evaluate';
-import { NodeTypes } from '../../types';
+import {
+  NodeTypes,
+  LiquidParserOptions,
+  Augment,
+  AugmentedNode,
+  WithCssDisplay,
+  WithSiblings,
+} from '../../types';
 import { assertNever } from '../../utils';
-import { LiquidParserOptions } from '../utils';
-import { Augment, AugmentedNode, WithCssDisplay, WithSiblings } from './types';
 
 function getCssDisplay(
   node: AugmentedNode<WithSiblings>,

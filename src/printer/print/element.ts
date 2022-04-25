@@ -5,8 +5,6 @@ import {
   shouldPreserveContent,
   countParents,
   forceBreakContent,
-  LiquidParserOptions,
-  LiquidPrinter,
 } from '../utils';
 import {
   printOpeningTagPrefix,
@@ -18,8 +16,13 @@ import {
   getNodeContent,
 } from './tag';
 import { printChildren } from './children';
-import { NodeTypes } from '../../types';
-import { LiquidHtmlNode, HtmlElement } from '../preprocess';
+import {
+  NodeTypes,
+  LiquidParserOptions,
+  LiquidPrinter,
+  LiquidHtmlNode,
+  HtmlElement,
+} from '../../types';
 
 const {
   builders: {

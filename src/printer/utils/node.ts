@@ -1,11 +1,11 @@
 import { AstPath } from 'prettier';
-import { NodeTypes, Position } from '../../types';
 import {
   HtmlSelfClosingElement,
   LiquidHtmlNode,
+  LiquidParserOptions,
+  NodeTypes,
   TextNode,
-} from '../preprocess/types';
-import { LiquidParserOptions } from './types';
+} from '../../types';
 
 // placeholder while I get my shit together
 export function isVueCustomBlock(_node: any, _options: any) {

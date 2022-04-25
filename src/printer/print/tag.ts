@@ -1,22 +1,22 @@
-import { NodeTypes } from '../../types';
-import {
-  isNonEmptyArray,
-  isTextLikeNode,
-  getLastDescendant,
-  isPreLikeNode,
-  hasPrettierIgnore,
-  shouldPreserveContent,
-  LiquidParserOptions,
-  isSelfClosing,
-  LiquidPrinter,
-} from '../utils';
+import { AstPath, Doc, doc } from 'prettier';
 import {
   HtmlElement,
-  HtmlVoidElement,
   HtmlSelfClosingElement,
+  HtmlVoidElement,
   LiquidHtmlNode,
-} from '../preprocess';
-import { AstPath, Doc, doc } from 'prettier';
+  LiquidParserOptions,
+  LiquidPrinter,
+  NodeTypes,
+} from '../../types';
+import {
+  getLastDescendant,
+  hasPrettierIgnore,
+  isNonEmptyArray,
+  isPreLikeNode,
+  isSelfClosing,
+  isTextLikeNode,
+  shouldPreserveContent,
+} from '../utils';
 
 const {
   builders: { indent, join, line, softline, hardline },
