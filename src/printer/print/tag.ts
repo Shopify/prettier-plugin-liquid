@@ -7,7 +7,7 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
   NodeTypes,
-} from '../../types';
+} from '~/types';
 import {
   getLastDescendant,
   hasPrettierIgnore,
@@ -16,7 +16,7 @@ import {
   isSelfClosing,
   isTextLikeNode,
   shouldPreserveContent,
-} from '../utils';
+} from '~/printer/utils';
 
 const {
   builders: { indent, join, line, softline, hardline },

@@ -5,7 +5,7 @@ import {
   CSS_DISPLAY_TAGS,
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
-} from '../../constants.evaluate';
+} from '~/constants.evaluate';
 import {
   NodeTypes,
   LiquidParserOptions,
@@ -13,8 +13,8 @@ import {
   AugmentedNode,
   WithCssProperties,
   WithSiblings,
-} from '../../types';
-import { assertNever } from '../../utils';
+} from '~/types';
+import { assertNever } from '~/utils';
 
 function getCssDisplay(
   node: AugmentedNode<WithSiblings>,

@@ -1,8 +1,4 @@
-import {
-  LiquidAstPath,
-  LiquidHtmlNode,
-  LiquidParserOptions,
-} from '../../types';
+import { LiquidAstPath, LiquidHtmlNode, LiquidParserOptions } from '~/types';
 
 export function isWhitespace(source: string, loc: number): boolean {
   if (loc < 0 || loc >= source.length) return true;

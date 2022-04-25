@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import { toLiquidHtmlAST, LiquidHtmlNode } from './ast';
-import { LiquidHTMLASTParsingError } from './errors';
-import { deepGet } from '../utils';
+import { toLiquidHtmlAST, LiquidHtmlNode } from '~/parser/ast';
+import { LiquidHTMLASTParsingError } from '~/parser/errors';
+import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlAST', () => {
   it('should transform a basic Liquid Drop into a LiquidDrop', () => {

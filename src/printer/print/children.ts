@@ -1,12 +1,12 @@
 import { AstPath, doc } from 'prettier';
-import { locStart, locEnd } from '../../utils';
+import { locStart, locEnd } from '~/utils';
 import {
   NodeTypes,
   LiquidHtmlNode,
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
-} from '../../types';
+} from '~/types';
 import {
   forceBreakChildren,
   forceNextEmptyLine,
@@ -14,7 +14,7 @@ import {
   isTextLikeNode,
   preferHardlineAsLeadingSpaces,
   isSelfClosing,
-} from '../utils';
+} from '~/printer/utils';
 import {
   needsToBorrowNextOpeningTagStartMarker,
   needsToBorrowParentClosingTagStartMarker,
@@ -23,7 +23,7 @@ import {
   printClosingTagSuffix,
   printOpeningTagPrefix,
   printOpeningTagStartMarker,
-} from './tag';
+} from '~/printer/print/tag';
 
 const {
   builders: { breakParent, group, ifBreak, line, softline, hardline },

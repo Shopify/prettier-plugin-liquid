@@ -4,12 +4,12 @@ import {
   LiquidHtmlNode,
   LiquidBranch,
   NodeTypes,
-} from '../../types';
-import { isBranchedTag } from '../../parser';
-import { isWhitespace } from './string';
+} from '~/types';
+import { isBranchedTag } from '~/parser';
+import { isWhitespace } from '~/printer/utils/string';
 
-export * from './string';
-export * from './node';
+export * from '~/printer/utils/string';
+export * from '~/printer/utils/node';
 
 const { builders } = doc;
 const { ifBreak, indent } = builders;

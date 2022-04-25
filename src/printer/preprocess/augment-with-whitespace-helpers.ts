@@ -1,10 +1,10 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { NodeTypes } from '../../types';
+import { NodeTypes } from '~/types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
-} from '../../constants.evaluate';
+} from '~/constants.evaluate';
 import {
   Augment,
   AugmentedNode,
@@ -12,8 +12,8 @@ import {
   WithParent,
   WithSiblings,
   WithWhitespaceHelpers,
-} from '../../types';
-import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '../utils';
+} from '~/types';
+import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '~/printer/utils';
 
 type RequiredAugmentations = WithParent & WithSiblings & WithCssProperties;
 type AugmentedAstNode = AugmentedNode<RequiredAugmentations>;

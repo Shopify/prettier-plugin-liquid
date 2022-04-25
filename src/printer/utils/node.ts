@@ -5,7 +5,7 @@ import {
   LiquidParserOptions,
   NodeTypes,
   TextNode,
-} from '../../types';
+} from '~/types';
 
 // placeholder while I get my shit together
 export function isVueCustomBlock(_node: any, _options: any) {

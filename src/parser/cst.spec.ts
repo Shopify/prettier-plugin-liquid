@@ -1,7 +1,7 @@
 import { expect } from 'chai';
-import { LiquidHtmlCST, toLiquidHtmlCST } from './cst';
-import { BLOCKS, VOID_ELEMENTS } from './grammar';
-import { deepGet } from '../utils';
+import { LiquidHtmlCST, toLiquidHtmlCST } from '~/parser/cst';
+import { BLOCKS, VOID_ELEMENTS } from '~/parser/grammar';
+import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
   describe('Case: HtmlComment', () => {

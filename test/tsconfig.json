@@ -8,14 +8,11 @@
     "isolatedModules": false,
     "strict": false,
     "noImplicitAny": false,
-    "typeRoots" : [
-      "../node_modules/@types"
-    ]
+    "typeRoots": ["../node_modules/@types"],
+    "paths": {
+      "~/*": ["../src/*"]
+    }
   },
-  "exclude": [
-    "../node_modules"
-  ],
-  "include": [
-    "../src/spec.ts"
-  ]
+  "exclude": ["../node_modules"],
+  "include": ["../src/spec.ts"]
 }

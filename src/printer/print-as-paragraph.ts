@@ -1,13 +1,13 @@
 import { Doc, doc } from 'prettier';
-import { assertNever } from '../utils';
-import { FORCE_FLAT_GROUP_ID, intersperse } from './utils';
+import { assertNever } from '~/utils';
+import { FORCE_FLAT_GROUP_ID, intersperse } from '~/printer/utils';
 import {
   NodeTypes,
   LiquidHtmlNode,
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
-} from '../types';
+} from '~/types';
 
 const { builders } = doc;
 const { fill, line, softline } = builders;

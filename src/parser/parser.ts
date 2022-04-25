@@ -1,6 +1,6 @@
 import { Parser, ParserOptions } from 'prettier';
-import { locEnd, locStart } from '../utils';
-import { toLiquidHtmlAST, LiquidHtmlNode } from './ast';
+import { locEnd, locStart } from '~/utils';
+import { toLiquidHtmlAST, LiquidHtmlNode } from '~/parser/ast';
 
 function parse(
   text: string,

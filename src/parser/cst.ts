@@ -1,7 +1,7 @@
 import { Parser } from 'prettier';
 import { toAST } from 'ohm-js/extras';
-import { liquidHtmlGrammar } from './grammar';
-import { LiquidHTMLCSTParsingError } from './errors';
+import { liquidHtmlGrammar } from '~/parser/grammar';
+import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 
 export enum ConcreteNodeTypes {
   HtmlComment = 'HtmlComment',

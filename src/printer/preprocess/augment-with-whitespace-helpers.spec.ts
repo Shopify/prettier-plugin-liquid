@@ -1,9 +1,9 @@
 import { expect } from 'chai';
-import { deepGet } from '../../utils';
-import { NodeTypes } from '../../types';
-import { toLiquidHtmlAST } from '../../parser';
-import { preprocess } from '../print-preprocess';
-import { DocumentNode, LiquidHtmlNode, LiquidParserOptions } from '../../types';
+import { deepGet } from '~/utils';
+import { NodeTypes } from '~/types';
+import { toLiquidHtmlAST } from '~/parser';
+import { preprocess } from '~/printer/print-preprocess';
+import { DocumentNode, LiquidHtmlNode, LiquidParserOptions } from '~/types';
 
 describe('Module: augmentWithWhitespaceHelpers', () => {
   let ast: DocumentNode;

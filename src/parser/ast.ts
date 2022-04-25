@@ -15,10 +15,10 @@ import {
   ConcreteAttrSingleQuoted,
   ConcreteAttrDoubleQuoted,
   ConcreteAttrUnquoted,
-} from './cst';
-import { NodeTypes, Position } from '../types';
-import { assertNever, deepGet, dropLast } from '../utils';
-import { LiquidHTMLASTParsingError } from './errors';
+} from '~/parser/cst';
+import { NodeTypes, Position } from '~/types';
+import { assertNever, deepGet, dropLast } from '~/utils';
+import { LiquidHTMLASTParsingError } from '~/parser/errors';
 
 export type LiquidHtmlNode =
   | DocumentNode

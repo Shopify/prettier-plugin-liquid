@@ -1,6 +1,6 @@
-import * as AST from '../parser/ast';
-import { LiquidParserOptions, DocumentNode } from '../types';
-import { AUGMENTATION_PIPELINE } from './preprocess';
+import * as AST from '~/parser/ast';
+import { LiquidParserOptions, DocumentNode } from '~/types';
+import { AUGMENTATION_PIPELINE } from '~/printer/preprocess';
 
 // This is super hard to type check so I'll just magically assume
 // everything works.

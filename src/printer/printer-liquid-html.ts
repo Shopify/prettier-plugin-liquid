@@ -1,5 +1,4 @@
 import { Printer, AstPath, Doc, doc } from 'prettier';
-import { preprocess } from './print-preprocess';
 import {
   LiquidHtmlNode,
   LiquidTag,
@@ -19,10 +18,12 @@ import {
   LiquidPrinter,
   NodeTypes,
   Position,
-} from '../types';
-import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '../parser/ast';
-import { assertNever } from '../utils';
-import { printAsParagraph } from './print-as-paragraph';
+} from '~/types';
+import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '~/parser/ast';
+import { assertNever } from '~/utils';
+
+import { preprocess } from '~/printer/print-preprocess';
+import { printAsParagraph } from '~/printer/print-as-paragraph';
 import {
   bodyLines,
   getSource,
@@ -38,7 +39,7 @@ import {
   originallyHadLineBreaks,
   reindent,
   trim,
-} from './utils';
+} from '~/printer/utils';
 
 const { builders } = doc;
 const { ifBreak, fill, group, hardline, indent, join, line, softline } =

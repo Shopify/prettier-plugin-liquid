@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { liquidHtmlGrammar } from './grammar';
+import { liquidHtmlGrammar } from '~/parser/grammar';
 
 describe('Unit: liquidHtmlGrammar', () => {
   it('should succeed at parsing valid HTML+Liquid', () => {

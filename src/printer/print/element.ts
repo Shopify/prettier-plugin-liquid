@@ -5,7 +5,7 @@ import {
   shouldPreserveContent,
   countParents,
   forceBreakContent,
-} from '../utils';
+} from '~/printer/utils';
 import {
   printOpeningTagPrefix,
   printOpeningTag,
@@ -14,15 +14,15 @@ import {
   needsToBorrowPrevClosingTagEndMarker,
   needsToBorrowLastChildClosingTagEndMarker,
   getNodeContent,
-} from './tag';
-import { printChildren } from './children';
+} from '~/printer/print/tag';
+import { printChildren } from '~/printer/print/children';
 import {
   NodeTypes,
   LiquidParserOptions,
   LiquidPrinter,
   LiquidHtmlNode,
   HtmlElement,
-} from '../../types';
+} from '~/types';
 
 const {
   builders: {
