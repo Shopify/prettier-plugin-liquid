@@ -25,7 +25,9 @@ export enum NodeTypes {
 }
 
 export type LiquidAstPath = AstPath<LiquidHtmlNode>;
-export type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
+export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
+  singleAttributePerLine: boolean;
+};
 export type LiquidPrinter = (
   path: AstPath<LiquidHtmlNode>,
   parentGroupId?: symbol,

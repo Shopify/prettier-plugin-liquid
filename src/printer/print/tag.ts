@@ -293,16 +293,12 @@ function printAttributes(
       : print(attributePath);
   }, 'attributes');
 
-  const forceNotToBreakAttrContent =
-    node.type === NodeTypes.HtmlElement &&
-    node.name === 'script' &&
-    node.attributes.length === 1 &&
-    (node.attributes[0] as any).name === 'src' &&
-    node.children.length === 0;
+  const forceNotToBreakAttrContent = node.attributes.length === 1;
 
   const attributeLine =
-    // options.singleAttributePerLine &&
-    node.attributes.length > 1 ? hardline : line;
+    options.singleAttributePerLine && node.attributes.length > 1
+      ? hardline
+      : line;
 
   const parts: Doc[] = [
     indent([
