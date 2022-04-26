@@ -107,8 +107,10 @@ export function forceNextEmptyLine(node: LiquidHtmlNode | undefined) {
   // Current implementation: force next empty line when two consecutive
   // lines exist between nodes.
   let tmp: number;
-  tmp = source.indexOf('\n', node.position.end) + 1;
-  tmp = source.indexOf('\n', tmp);
+  tmp = source.indexOf('\n', node.position.end);
+  if (tmp === -1) return false;
+  tmp = source.indexOf('\n', tmp + 1);
+  if (tmp === -1) return false;
   return tmp < node.next.position.start;
 }
 

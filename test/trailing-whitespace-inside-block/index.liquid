@@ -13,5 +13,6 @@ It should not omit the whitespace because of whitespace stripping outside the ta
 {% form %}aaaaaaaaaaaaaaaaaaaaaaaaaaaa {% endform %}{{ value }}
 </p>
 
-It should not omit the whitespace if it is included inline in a paragraph
+It should omit the surrounding whitespace and inner whitespace for block
+rendering contexts
 <p>haha{% form %}space {% endform %}haha</p>

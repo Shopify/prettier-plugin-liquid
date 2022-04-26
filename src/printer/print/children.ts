@@ -136,6 +136,7 @@ export type HasChildren = Extract<
   { children?: LiquidHtmlNode[] }
 >;
 
+// This code is adapted from prettier's language-html plugin.
 export function printChildren(
   path: AstPath<HasChildren>,
   options: LiquidParserOptions,
@@ -188,10 +189,10 @@ export function printChildren(
       return printChild(childPath, options, print);
     }
 
-    const prevParts = [];
+    const leadingHardlines = [];
     const leadingParts = [];
     const trailingParts = [];
-    const nextParts = [];
+    const trailingHardlines = [];
 
     const prevBetweenLine = childNode.prev
       ? printBetweenLine(childNode.prev, childNode)
@@ -203,9 +204,9 @@ export function printChildren(
 
     if (prevBetweenLine) {
       if (forceNextEmptyLine(childNode.prev)) {
-        prevParts.push(hardline, hardline);
+        leadingHardlines.push(hardline, hardline);
       } else if (prevBetweenLine === hardline) {
-        prevParts.push(hardline);
+        leadingHardlines.push(hardline);
       } else {
         if (isTextLikeNode(childNode.prev)) {
           leadingParts.push(prevBetweenLine);
@@ -222,26 +223,75 @@ export function printChildren(
     if (nextBetweenLine) {
       if (forceNextEmptyLine(childNode)) {
         if (isTextLikeNode(childNode.next)) {
-          nextParts.push(hardline, hardline);
+          trailingHardlines.push(hardline, hardline);
         }
       } else if (nextBetweenLine === hardline) {
         if (isTextLikeNode(childNode.next)) {
-          nextParts.push(hardline);
+          trailingHardlines.push(hardline);
         }
       } else {
         trailingParts.push(nextBetweenLine);
       }
     }
 
+    // This double group spread here mimics how `fill` works but without
+    // using `fill` because we might want a mix of `fill` between words
+    // and nodes that are inline nodes and forced linebreaks between nodes.
+    //
+    // What does this mean? Well prettier's `fill` builder methods allows
+    // you to print "paragraphs" and so when something reaches the end of
+    // the line and it would be too long for the line, `fill` will break
+    // the previous linebreak.
+    //
+    // If the thing that goes on the next line ALSO is too long for that
+    // line, then it will break _that_ and the next line.
+    //
+    // Here's an example:
+    // fill(['hello', line, 'world', line, 'yoooooooooo', line, '!!!'])
+    //      printWidth-------|
+    //   => hello world
+    //      yooooooooooooo !!!
+    //
+    // Here's another where the element would also break
+    // fill([
+    //  'hello',
+    //  line,
+    //  group([
+    //    '<div>',
+    //    line,
+    //    'world',
+    //    line,
+    //    '</div>'
+    //  ],
+    //  line,
+    //  '!!!'
+    // ])
+    //     printWidth --|
+    //  => hello
+    //     <div>
+    //       world
+    //     </div>
+    //     !!!
+    //
+    // As you can see, the !!! appears on a new line in the fill because
+    // the div group broke parent.
+    //
+    // So, here's what all the variables are for:
+    //  - leadingHardlines are for hardlines that do not affect the flow
+    //  - leadingParts are for maybe line breaks before the child
+    //    - it will break _first_ if the child doesn't fit the line
+    //  - trailingParts are for maybe line breaks after the child
+    //    - it will break _second_ if the child itself doesn't fit
+    //  - trailingHardlines for hardlines that do not affect the flow
     return [
-      ...prevParts,
+      ...leadingHardlines,
       group([
         ...leadingParts,
         group([printChild(childPath, options, print), ...trailingParts], {
           id: groupIds[childIndex],
         }),
       ]),
-      ...nextParts,
+      ...trailingHardlines,
     ];
   }, 'children');
 }
