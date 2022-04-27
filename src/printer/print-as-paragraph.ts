@@ -178,10 +178,14 @@ export function printAsParagraph(
     } else {
       builder.push({
         type: ChunkTypes.DOC,
-        value: print(
-          path,
-          isWhitespaceSensitive(curr) ? FORCE_FLAT_GROUP_ID : undefined,
-        ),
+        value: print(path, {
+          leadingSpaceGroupId: isWhitespaceSensitive(curr)
+            ? FORCE_FLAT_GROUP_ID
+            : undefined,
+          trailingSpaceGroupId: isWhitespaceSensitive(curr)
+            ? FORCE_FLAT_GROUP_ID
+            : undefined,
+        }),
       });
     }
 

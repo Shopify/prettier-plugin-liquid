@@ -42,9 +42,13 @@ export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
 };
+export type LiquidPrinterArgs = {
+  leadingSpaceGroupId?: symbol;
+  trailingSpaceGroupId?: symbol;
+};
 export type LiquidPrinter = (
   path: AstPath<LiquidHtmlNode>,
-  parentGroupId?: symbol,
+  args?: LiquidPrinterArgs,
 ) => Doc;
 
 // This one warrants a bit of an explanation 'cuz it's definitely next

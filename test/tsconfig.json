@@ -13,6 +13,5 @@
       "~/*": ["../src/*"]
     }
   },
-  "exclude": ["../node_modules"],
-  "include": ["../src/spec.ts"]
+  "exclude": ["../node_modules"]
 }

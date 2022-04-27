@@ -18,6 +18,7 @@ import {
   LiquidPrinter,
   NodeTypes,
   Position,
+  LiquidPrinterArgs,
 } from '~/types';
 import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '~/parser/ast';
 import { assertNever } from '~/utils';
@@ -72,7 +73,7 @@ function mapWithNewLine(
   options: LiquidParserOptions,
   print: LiquidPrinter,
   property: string,
-  parentGroupId?: symbol,
+  args?: LiquidPrinterArgs,
 ): Doc[] {
   const doc: Doc[] = [];
   const source = getSource(path);
@@ -90,7 +91,7 @@ function mapWithNewLine(
         doc.push('');
       }
     }
-    doc.push(printNode(path, options, print, parentGroupId));
+    doc.push(printNode(path, options, print, args));
     prev = curr;
   }, property);
   return doc;
@@ -99,20 +100,20 @@ function mapWithNewLine(
 function printLiquidDrop(
   path: LiquidAstPath,
   { locStart, locEnd }: LiquidParserOptions,
-  parentGroupId?: symbol,
+  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs,
 ) {
   const node: LiquidDrop = path.getValue() as LiquidDrop;
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
     node.source,
     locStart(node) - 1,
-    parentGroupId,
+    leadingSpaceGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
     node.source,
     locEnd(node),
-    parentGroupId,
+    trailingSpaceGroupId,
   );
 
   // This should probably be better than this but it'll do for now.
@@ -268,12 +269,10 @@ function printHtmlElement(
       printHtmlBlockStart(path, options, print),
       maybeIndent(
         softline,
-        printChildren(
-          path as AstPath<HtmlElement>,
-          options,
-          print,
-          htmlElementGroupId,
-        ),
+        printChildren(path as AstPath<HtmlElement>, options, print, {
+          leadingSpaceGroupId: htmlElementGroupId,
+          trailingSpaceGroupId: htmlElementGroupId,
+        }),
       ),
       softline,
       group(['</', printName(node.name, path, print), '>']),
@@ -393,7 +392,7 @@ function printChildren<
   path: AstPath<T>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  parentGroupId?: symbol,
+  args: LiquidPrinterArgs,
 ): Doc {
   const node = path.getValue();
   if (!node.children || isEmpty(node.children)) return '';
@@ -406,7 +405,7 @@ function printChildren<
     ? printAsParagraph(path, options, print, 'children')
     : join(
         hardline,
-        mapWithNewLine(path, options, print, 'children', parentGroupId),
+        mapWithNewLine(path, options, print, 'children', args), // TODO
       );
 }
 
@@ -414,15 +413,23 @@ function printLiquidTag(
   path: AstPath<LiquidTag>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  parentGroupId?: symbol,
+  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
   if (!node.children) {
-    return printLiquidBlockStart(path, parentGroupId, parentGroupId);
+    return printLiquidBlockStart(
+      path,
+      leadingSpaceGroupId,
+      trailingSpaceGroupId,
+    );
   }
   const tagGroupId = Symbol('tag-group');
-  const blockStart = printLiquidBlockStart(path, parentGroupId, tagGroupId); // {% if ... %}
-  const blockEnd = printLiquidBlockEnd(path, tagGroupId, parentGroupId); // {% endif %}
+  const blockStart = printLiquidBlockStart(
+    path,
+    leadingSpaceGroupId,
+    tagGroupId,
+  ); // {% if ... %}
+  const blockEnd = printLiquidBlockEnd(path, tagGroupId, trailingSpaceGroupId); // {% endif %}
 
   let body: Doc = [];
   let trailingWhitespace: Doc[] = [];
@@ -431,7 +438,16 @@ function printLiquidTag(
   }
 
   if (isBranchedTag(node)) {
-    body = cleanDoc(path.map((p) => print(p, tagGroupId), 'children'));
+    body = cleanDoc(
+      path.map(
+        (p) =>
+          print(p, {
+            leadingSpaceGroupId: tagGroupId,
+            trailingSpaceGroupId: tagGroupId,
+          }),
+        'children',
+      ),
+    );
     if (node.name === 'case') body = indent(body);
   } else if (node.children.length > 0) {
     body = indent([
@@ -476,7 +492,7 @@ function printLiquidDefaultBranch(
   path: AstPath<LiquidBranch>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  parentGroupId?: symbol,
+  args: LiquidPrinterArgs,
 ): Doc {
   const branch = path.getValue();
   const parentNode: LiquidTag = path.getParentNode() as any;
@@ -511,7 +527,7 @@ function printLiquidDefaultBranch(
   // {% if A %} content...{% endif %}
   return indent([
     innerLeadingWhitespace(parentNode),
-    printChildren(path, options, print, parentGroupId),
+    printChildren(path, options, print, args),
   ]);
 }
 
@@ -519,13 +535,13 @@ function printLiquidBranch(
   path: AstPath<LiquidBranch>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  parentGroupId?: symbol,
+  args: LiquidPrinterArgs,
 ): Doc {
   const branch = path.getValue();
   const isDefaultBranch = !branch.name;
 
   if (isDefaultBranch) {
-    return printLiquidDefaultBranch(path, options, print, parentGroupId);
+    return printLiquidDefaultBranch(path, options, print, args);
   }
 
   const leftSibling = branch.prev as LiquidBranch | undefined;
@@ -544,19 +560,19 @@ function printLiquidBranch(
     outerLeadingWhitespace,
     printLiquidBlockStart(
       path as AstPath<LiquidBranch>,
-      parentGroupId,
-      parentGroupId,
+      args.leadingSpaceGroupId, // TODO
+      args.trailingSpaceGroupId, // TODO
     ),
     indent([
       innerLeadingWhitespace(branch),
-      printChildren(path, options, print, parentGroupId),
+      printChildren(path, options, print, args),
     ]),
   ];
 }
 
 function printTextNode(
   path: AstPath<TextNode>,
-  _options: LiquidParserOptions,
+  options: LiquidParserOptions,
   _print: LiquidPrinter,
 ) {
   const node = path.getValue();
@@ -592,7 +608,7 @@ function printNode(
   path: LiquidAstPath,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  parentGroupId?: symbol,
+  args: LiquidPrinterArgs = {},
 ) {
   const node = path.getValue();
   switch (node.type) {
@@ -649,7 +665,7 @@ function printNode(
     }
 
     case NodeTypes.LiquidDrop: {
-      return printLiquidDrop(path, options, parentGroupId);
+      return printLiquidDrop(path, options, args);
     }
 
     case NodeTypes.LiquidRawTag: {
@@ -701,12 +717,7 @@ function printNode(
     }
 
     case NodeTypes.LiquidTag: {
-      return printLiquidTag(
-        path as AstPath<LiquidTag>,
-        options,
-        print,
-        parentGroupId,
-      );
+      return printLiquidTag(path as AstPath<LiquidTag>, options, print, args);
     }
 
     case NodeTypes.LiquidBranch: {
@@ -714,7 +725,7 @@ function printNode(
         path as AstPath<LiquidBranch>,
         options,
         print,
-        parentGroupId,
+        args,
       );
     }
 
