@@ -24,10 +24,16 @@ hello {{ name }}!
 </div>
 
 // Should maintain whitespace between inline elements
-<h1>  HELLO <span> WORLD</span> </h1>
+<h1>  HELLO <span>
+    WORLD
+  </span>
+</h1>
 
 // Should avoid breaking between text and nodes
+<p>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (-{{- product.price -}}-)</p>
 <p>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (-{{ product.price }}-)</p>
+
+// Should behave like prettier/language-html
 <p>Ipsum. Praesent scelerisque tortor a justo. Quisque consequat libero erat<em>product.price</em>ok</p>
 
 // Should break parent and add WTC when the child breaks

@@ -1,9 +1,7 @@
 |print-width--------------------------------------------------------------------|
 
 // Should maintain whitespace (or lack of thereof) in flow text.
-<div>
-  hello {{ name }}!
-</div>
+<div>hello {{ name }}!</div>
 
 // Should break child html elements on new lines
 <span>
@@ -33,16 +31,19 @@
 </div>
 
 // Should maintain whitespace between inline elements
-<h1>HELLO <span>WORLD</span></h1>
+<h1>HELLO <span> WORLD </span></h1>
 
 // Should avoid breaking between text and nodes
 <p>
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   (-{{ product.price }}-)
 </p>
+
+// Should behave like prettier/language-html
 <p>
-  Ipsum. Praesent scelerisque tortor a justo. Quisque consequat libero
-  erat<em>product.price</em>ok
+  Ipsum. Praesent scelerisque tortor a justo. Quisque consequat libero erat<em
+    >product.price</em
+  >ok
 </p>
 
 // Should break parent and add WTC when the child breaks
