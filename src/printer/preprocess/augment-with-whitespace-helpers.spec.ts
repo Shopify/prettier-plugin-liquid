@@ -337,6 +337,26 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
     });
   });
 
+  describe('Unit: hasLeadingWhitespace', () => {
+    it('should return true for branched LiquidTag', () => {
+      ast = toAugmentedAst('{% if A %} hello {% endif %}');
+      expectPath(ast, 'children.0.type').to.be.eql(NodeTypes.LiquidTag);
+      expectPath(ast, 'children.0.hasLeadingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
+    });
+  });
+
+  describe('Unit: hasTrailingWhitespace', () => {
+    it('should return true for branched LiquidTag', () => {
+      ast = toAugmentedAst('{% if A %} hello {% endif %}');
+      expectPath(ast, 'children.0.type').to.be.eql(NodeTypes.LiquidTag);
+      expectPath(ast, 'children.0.hasTrailingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.true;
+    });
+  });
+
   function toAugmentedAst(code: string, options: Partial<LiquidParserOptions> = {}) {
     const ast = toLiquidHtmlAST(code);
     options.originalText = ast.source;

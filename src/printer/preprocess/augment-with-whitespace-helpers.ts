@@ -38,8 +38,8 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
     isTrailingWhitespaceSensitive:
       isTrailingWhitespaceSensitiveNode(node) &&
       (!node.next || isLeadingWhitespaceSensitiveNode(node.next)),
-    hasLeadingWhitespace: isWhitespace(node.source, node.position.start - 1),
-    hasTrailingWhitespace: isWhitespace(node.source, node.position.end),
+    hasLeadingWhitespace: hasLeadingWhitespace(node),
+    hasTrailingWhitespace: hasTrailingWhitespace(node),
     hasDanglingWhitespace: hasDanglingWhitespace(node),
   };
 
@@ -293,6 +293,24 @@ function hasDanglingWhitespace(node: AugmentedAstNode): boolean {
     return false;
   }
   return isWhitespace(node.source, node.blockStartPosition.end);
+}
+
+function hasLeadingWhitespace(node: AugmentedAstNode): boolean {
+  if (node.type === NodeTypes.LiquidBranch) {
+    return node.firstChild
+      ? hasLeadingWhitespace(node.firstChild)
+      : hasDanglingWhitespace(node);
+  }
+  return isWhitespace(node.source, node.position.start - 1);
+}
+
+function hasTrailingWhitespace(node: AugmentedAstNode): boolean {
+  if (node.type === NodeTypes.LiquidBranch) {
+    return node.lastChild
+      ? hasTrailingWhitespace(node.lastChild)
+      : hasDanglingWhitespace(node);
+  }
+  return isWhitespace(node.source, node.position.end);
 }
 
 // Slightly different definition here but I can't find a better name.
