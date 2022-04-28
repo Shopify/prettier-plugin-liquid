@@ -1,6 +1,6 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { HtmlNodeTypes, LiquidNodeTypes, NodeTypes } from '~/types';
+import { HtmlNodeTypes, LiquidNodeTypes, NodeTypes, WithFamily } from '~/types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
@@ -13,9 +13,13 @@ import {
   WithSiblings,
   WithWhitespaceHelpers,
 } from '~/types';
+import { isBranchedTag } from '~/parser';
 import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '~/printer/utils';
 
-type RequiredAugmentations = WithParent & WithSiblings & WithCssProperties;
+type RequiredAugmentations = WithParent &
+  WithSiblings &
+  WithFamily &
+  WithCssProperties;
 type AugmentedAstNode = AugmentedNode<RequiredAugmentations>;
 
 export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
@@ -272,12 +276,22 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
  *  - <div> </div>
  *  - {% if A %} {% else %} nope {% endif %}
  */
-function hasDanglingWhitespace(node: AugmentedAstNode) {
-  if (!isParentNode(node)) return false;
-  if (node.type === NodeTypes.Document) {
+function hasDanglingWhitespace(node: AugmentedAstNode): boolean {
+  if (!isParentNode(node)) {
+    return false;
+  } else if (node.type === NodeTypes.Document) {
     return node.children.length === 0 && node.source.length > 0;
+  } else if (!node.children) {
+    return false;
+  } else if (
+    node.type === NodeTypes.LiquidTag &&
+    isBranchedTag(node) &&
+    node.children.length === 1
+  ) {
+    return hasDanglingWhitespace(node.firstChild!);
+  } else if (node.children.length > 0) {
+    return false;
   }
-  if (!node.children || node.children.length > 0) return false;
   return isWhitespace(node.source, node.blockStartPosition.end);
 }
 
@@ -302,7 +316,7 @@ export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
 }
 
 export function isParentNode(node: AugmentedAstNode): node is ParentNode {
-  return (node as any).children;
+  return 'children' in node;
 }
 
 export function isLiquidNode(node: AugmentedAstNode): node is LiquidNode {

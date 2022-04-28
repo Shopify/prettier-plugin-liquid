@@ -242,6 +242,12 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
           expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
         }
       });
+
+      it('should return true for a LiquidBranch that is not stripped', () => {
+        ast = toAugmentedAst(`{% if A %} hello {% else %} world {% endif %}`);
+        expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.true;
+        expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.true;
+      });
     });
 
     it('should return false if the previous node creates a block rendering context that makes the following whitespace irrelevant', () => {
@@ -258,10 +264,10 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
   describe('Unit: hasDanglingWhitespace', () => {
     it('should handle LiquidBranch tags properly', () => {
       ast = toAugmentedAst('{% if true %} {% endif %}');
-      // The if tag itself is not dangling, it has branches
-      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+      // The if tag itself is dangling if it only has one branch and it's empty
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.true;
 
-      // The default branch has dangling whitespace though
+      // The default branch has dangling whitespace
       expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
       expectPath(ast, 'children.0.children.0.hasDanglingWhitespace').to.be.true;
 
