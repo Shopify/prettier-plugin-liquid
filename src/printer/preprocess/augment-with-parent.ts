@@ -6,4 +6,12 @@ export const augmentWithParent: Augment<{}> = (_options, node, parentNode) => {
   };
 
   Object.assign(node, augmentations);
+
+  // Adding lazy property for debugging. Not added to the
+  // types so that we don't use it officially.
+  Object.defineProperty(node, 'rawSource', {
+    get() {
+      return this.source.slice(this.position.start, this.position.end);
+    },
+  });
 };
