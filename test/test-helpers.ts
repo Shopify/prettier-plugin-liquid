@@ -4,42 +4,56 @@ import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
 
+const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|<)/i;
+// const CHUNK_OPTIONS = /(\w+): ([^\s]*)/g
+
 export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   const source = readFile(dirname, 'index.liquid');
-  const formatted = format(source, options);
-  const expected = readFile(dirname, 'fixed.liquid');
-  if (expected !== formatted) {
-    writeFile(dirname, 'actual.liquid', formatted);
-  } else {
-    fs.rmSync(path.join(dirname, 'actual.liquid'), { force: true });
-  }
-  try {
-    return expect(formatted).to.eql(expected);
-  } catch (e) {
-    // Improve the stack trace so that it points to the fixed file instead
-    // of this test-helper file. Might make navigation smoother.
-    if ((e as any).stack as any) {
-      (e as any).stack = ((e as any).stack as string).replace(
-        /^(\s+)at assertFormattedEqualsFixed \(.*:\d+:\d+\)/im,
-        [
-          `$1at expected.liquid (${path.join(
-            dirname,
-            'fixed.liquid',
-          )}:${diffLoc(expected, formatted).join(':')})`,
-          `$1at actual.liquid (${path.join(dirname, 'actual.liquid')}:${diffLoc(
-            formatted,
-            expected,
-          ).join(':')})`,
-          `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
-        ].join('\n'),
-      );
-    }
+  const expectedResults = readFile(dirname, 'fixed.liquid');
 
-    throw e;
+  const chunks = source.split(PARAGRAPH_SPLITTER);
+  const expectedChunks = expectedResults.split(PARAGRAPH_SPLITTER);
+  for (let i = 0; i < chunks.length; i++) {
+    const src = chunks[i];
+    const expected = expectedChunks[i].trimEnd();
+    const actual = format(src, options).trimEnd();
+    try {
+      expect(
+        actual,
+        '\n      ########## INPUT\n      ' +
+          src.replace(/\n/g, '\n      ').trimEnd() +
+          '\n      ##########\n',
+      ).to.eql(expected);
+    } catch (e) {
+      // Improve the stack trace so that it points to the fixed file instead
+      // of this test-helper file. Might make navigation smoother.
+      if ((e as any).stack as any) {
+        (e as any).stack = ((e as any).stack as string).replace(
+          /^(\s+)at assertFormattedEqualsFixed \(.*:\d+:\d+\)/im,
+          [
+            `$1at expected.liquid (${path.join(
+              dirname,
+              'fixed.liquid',
+            )}:${diffLoc(
+              expected,
+              actual,
+              lineOffset(expectedResults, expected),
+            ).join(':')})`,
+            `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
+          ].join('\n'),
+        );
+      }
+
+      throw e;
+    }
   }
 }
 
-function diffLoc(expected: string, actual: string) {
+function lineOffset(source: string, needle: string): number {
+  return (source.slice(0, source.indexOf(needle)).match(/\n/g) || []).length;
+}
+
+function diffLoc(expected: string, actual: string, offset: number) {
   // assumes there's a diff.
   let line = 1;
   let col = 0;
@@ -51,7 +65,7 @@ function diffLoc(expected: string, actual: string) {
     col += 1;
     if (expected[i] !== actual[i]) break;
   }
-  return [line, col];
+  return [offset + line, col];
 }
 
 export function readFile(dirname: string, filename: string) {
