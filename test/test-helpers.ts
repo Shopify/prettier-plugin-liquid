@@ -107,7 +107,10 @@ export function format(content: string, options: any) {
  *
  * And it will be as though function() was at indent 0 and foo was indent 1.
  */
-export function reindent(strs: TemplateStringsArray, ...keys: any[]): string {
+export function reindent(
+  strs: TemplateStringsArray,
+  ...keys: any[] | undefined
+): string {
   const s = strs.reduce((acc, next, i) => {
     if (keys[i] !== undefined) {
       return acc + next + keys[i];
