@@ -1,4 +1,4 @@
-// should break on html tags that always break
+it should break on html tags that always break
 <html>
   <head>
     <link href="hello world">
@@ -8,16 +8,15 @@
   </body>
 </html>
 
-// should break if original had line breaks
+it should break if original had line breaks
 <div x="1" y="2" z="3"></div>
 <div
   x="1"
   y="2"
   z="3"
->
-</div>
+></div>
 
-// should indent child
+it should indent child
 <div x="1" y="2">Child</div>
 <div
   x="1"
@@ -27,10 +26,10 @@
   Child
 </div>
 
-// should not break when it fits on a line
+it should not break when it fits on a line
 <div x="1" y="2"><div>Hello</div></div>
 
-// should break if there's more than one child on a line
+it should break if there's more than one child on a line
 <div x="1" y="2">
   <div>Hello</div>
   <div>World</div>

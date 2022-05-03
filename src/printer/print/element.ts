@@ -5,6 +5,7 @@ import {
   shouldPreserveContent,
   countParents,
   forceBreakContent,
+  isLiquidNode,
 } from '~/printer/utils';
 import {
   printOpeningTagPrefix,
@@ -78,6 +79,7 @@ export function printElement(
   const shouldHugContent =
     node.children.length === 1 &&
     // node.firstChild.type === 'interpolation' &&
+    !isLiquidNode(node.firstChild!) &&
     node.firstChild!.isLeadingWhitespaceSensitive &&
     !node.firstChild!.hasLeadingWhitespace &&
     node.lastChild!.isTrailingWhitespaceSensitive &&

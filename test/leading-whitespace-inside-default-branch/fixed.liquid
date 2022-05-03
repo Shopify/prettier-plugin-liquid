@@ -16,10 +16,14 @@ When not leadingSpaceSensitive, the leading whitespace can be omitted
 </div>
 
 When leadingSpaceSensitive, the leading space can be omitted if it exists outside the tag
-<span> {% if a %}space{% endif %}</span>
+<span>
+  {% if a %}space{% endif -%}
+</span>
 
 When leadingSpaceSensitive, the leading space cannot be omitted if it is absent outside the tag
-<span>{% if a %} space{% endif %}</span>
+<span>
+  {%- if a %} space{% endif -%}
+</span>
 
 It should not omit the whitespace because of whitespace stripping outside the tag
 <p>

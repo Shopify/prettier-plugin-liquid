@@ -212,6 +212,7 @@ export function needsToBorrowParentClosingTagStartMarker(node: LiquidHtmlNode) {
     !node.next &&
     !node.hasTrailingWhitespace &&
     node.isTrailingWhitespaceSensitive &&
+    !isLiquidNode(node) &&
     isTextLikeNode(getLastDescendant(node))
   );
 }

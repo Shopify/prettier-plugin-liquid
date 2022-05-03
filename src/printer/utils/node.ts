@@ -153,6 +153,14 @@ export function preferHardlineAsSurroundingSpaces(node: LiquidHtmlNode) {
         typeof node.name === 'string' &&
         ['script', 'select'].includes(node.name)
       );
+    case NodeTypes.LiquidTag:
+      if (
+        (node.prev && isTextLikeNode(node.prev)) ||
+        (node.next && isTextLikeNode(node.next))
+      ) {
+        return false;
+      }
+      return node.children && node.children.length > 0;
   }
 
   return false;
@@ -212,7 +220,8 @@ function hasTrailingLineBreak(node: LiquidHtmlNode) {
 }
 
 function hasLineBreakInRange(source: string, start: number, end: number) {
-  return source.indexOf('\n', start) < end;
+  const index = source.indexOf('\n', start);
+  return index !== -1 && index < end;
 }
 
 export function getLastDescendant(node: LiquidHtmlNode): LiquidHtmlNode {
