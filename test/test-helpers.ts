@@ -7,6 +7,8 @@ import * as plugin from '../src';
 const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|<)/i;
 // const CHUNK_OPTIONS = /(\w+): ([^\s]*)/g
 
+const TEST_MESSAGE = /^(\/\/|It|When|If)[^<{]*/i;
+
 export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   const source = readFile(dirname, 'index.liquid');
   const expectedResults = readFile(dirname, 'fixed.liquid');
@@ -17,35 +19,44 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
     const src = chunks[i];
     const expected = expectedChunks[i].trimEnd();
     const actual = format(src, options).trimEnd();
-    try {
-      expect(
-        actual,
-        '\n      ########## INPUT\n      ' +
-          src.replace(/\n/g, '\n      ').trimEnd() +
-          '\n      ##########\n',
-      ).to.eql(expected);
-    } catch (e) {
-      // Improve the stack trace so that it points to the fixed file instead
-      // of this test-helper file. Might make navigation smoother.
-      if ((e as any).stack as any) {
-        (e as any).stack = ((e as any).stack as string).replace(
-          /^(\s+)at assertFormattedEqualsFixed \(.*:\d+:\d+\)/im,
-          [
-            `$1at expected.liquid (${path.join(
-              dirname,
-              'fixed.liquid',
-            )}:${diffLoc(
-              expected,
-              actual,
-              lineOffset(expectedResults, expected),
-            ).join(':')})`,
-            `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
-          ].join('\n'),
-        );
-      }
+    const testMessage = TEST_MESSAGE.exec(expected) || [
+      `it should format as expected (chunk ${i})`,
+    ];
+    it(testMessage[0].replace(/^\/\/\s*/, '').replace(/\r?\n/g, ' '), () => {
+      try {
+        expect(
+          actual.replace(TEST_MESSAGE, ''),
+          '\n      ########## INPUT\n      ' +
+            src.replace(TEST_MESSAGE, '').replace(/\n/g, '\n      ').trimEnd() +
+            '\n      ##########\n',
+        ).to.eql(expected.replace(TEST_MESSAGE, ''));
+      } catch (e) {
+        // Improve the stack trace so that it points to the fixed file instead
+        // of this test-helper file. Might make navigation smoother.
+        if ((e as any).stack as any) {
+          (e as any).stack = ((e as any).stack as string).replace(
+            /^(\s+)at Context.<anonymous> \(.*:\d+:\d+\)/im,
+            [
+              `$1at expected.liquid (${path.join(
+                dirname,
+                'fixed.liquid',
+              )}:${diffLoc(
+                expected,
+                actual,
+                lineOffset(expectedResults, expected),
+              ).join(':')})`,
+              `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
+              `$1at assertFormattedEqualsFixed (${path.join(
+                dirname,
+                'index.spec.ts',
+              )}:5:6)`,
+            ].join('\n'),
+          );
+        }
 
-      throw e;
-    }
+        throw e;
+      }
+    });
   }
 }
 
