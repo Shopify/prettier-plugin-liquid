@@ -4,10 +4,10 @@ import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
 
-const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|<)/i;
+const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|<)/i;
 // const CHUNK_OPTIONS = /(\w+): ([^\s]*)/g
 
-const TEST_MESSAGE = /^(\/\/|It|When|If)[^<{]*/i;
+const TEST_MESSAGE = /^(\/\/|It|When|If|focus)[^<{]*/i;
 
 export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   const source = readFile(dirname, 'index.liquid');
@@ -15,59 +15,79 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
 
   const chunks = source.split(PARAGRAPH_SPLITTER);
   const expectedChunks = expectedResults.split(PARAGRAPH_SPLITTER);
+
   for (let i = 0; i < chunks.length; i++) {
     const src = chunks[i];
     const expected = expectedChunks[i].trimEnd();
     const actual = format(src, options).trimEnd();
-    const testMessage = TEST_MESSAGE.exec(expected) || [
-      `it should format as expected (chunk ${i})`,
-    ];
-    it(
-      testMessage[0]
-        .replace(/^\/\/\s*/, '')
-        .replace(/\r?\n/g, ' ')
-        .trimEnd()
-        .replace(/\.$/, ''),
-      () => {
-        try {
-          expect(
-            actual.replace(TEST_MESSAGE, ''),
-            '\n      ########## INPUT\n      ' +
-              src
-                .replace(TEST_MESSAGE, '')
-                .replace(/\n/g, '\n      ')
-                .trimEnd() +
-              '\n      ##########\n',
-          ).to.eql(expected.replace(TEST_MESSAGE, ''));
-        } catch (e) {
-          // Improve the stack trace so that it points to the fixed file instead
-          // of this test-helper file. Might make navigation smoother.
-          if ((e as any).stack as any) {
-            (e as any).stack = ((e as any).stack as string).replace(
-              /^(\s+)at Context.<anonymous> \(.*:\d+:\d+\)/im,
-              [
-                `$1at expected.liquid (${path.join(
-                  dirname,
-                  'fixed.liquid',
-                )}:${diffLoc(
-                  expected,
-                  actual,
-                  lineOffset(expectedResults, expected),
-                ).join(':')})`,
-                `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
-                `$1at assertFormattedEqualsFixed (${path.join(
-                  dirname,
-                  'index.spec.ts',
-                )}:5:6)`,
-              ].join('\n'),
-            );
-          }
-
-          throw e;
+    const testConfig = getTestSetup(src, i);
+    const test = () => {
+      try {
+        expect(
+          actual.replace(TEST_MESSAGE, ''),
+          '\n      ########## INPUT\n      ' +
+            src.replace(TEST_MESSAGE, '').replace(/\n/g, '\n      ').trimEnd() +
+            '\n      ##########\n',
+        ).to.eql(expected.replace(TEST_MESSAGE, ''));
+      } catch (e) {
+        // Improve the stack trace so that it points to the fixed file instead
+        // of this test-helper file. Might make navigation smoother.
+        if ((e as any).stack as any) {
+          (e as any).stack = ((e as any).stack as string).replace(
+            /^(\s+)at Context.test \(.*:\d+:\d+\)/im,
+            [
+              `$1at fixed.liquid (${path.join(
+                dirname,
+                'fixed.liquid',
+              )}:${diffLoc(
+                expected,
+                actual,
+                lineOffset(expectedResults, expected),
+              ).join(':')})`,
+              `$1at input.liquid (${path.join(dirname, 'index.liquid')}:${
+                lineOffset(source, src) + 1
+              }:0)`,
+              `$1at assertFormattedEqualsFixed (${path.join(
+                dirname,
+                'index.spec.ts',
+              )}:5:6)`,
+            ].join('\n'),
+          );
         }
-      },
-    );
+
+        throw e;
+      }
+    };
+
+    if (testConfig.focus) {
+      it.only(testConfig.message, test);
+    } else {
+      it(testConfig.message, test);
+    }
   }
+}
+
+// prefix your tests with `focus` so that only this test runs.
+function getTestSetup(paragraph: string, index: number) {
+  let testMessage = TEST_MESSAGE.exec(paragraph) || [
+    `it should format as expected (chunk ${index})`,
+  ];
+
+  const message = testMessage[0]
+    .replace(/^\/\/\s*/, '')
+    .replace(/\r?\n/g, ' ')
+    .trimEnd()
+    .replace(/\.$/, '');
+
+  const focus = /^focus/i.test(message);
+
+  // TODO
+  const prettierOptions = {};
+  return {
+    message: message,
+    prettierOptions,
+    focus,
+  };
 }
 
 function lineOffset(source: string, needle: string): number {
