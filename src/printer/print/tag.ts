@@ -21,7 +21,7 @@ import {
 } from '~/printer/utils';
 
 const {
-  builders: { indent, join, line, softline, hardline },
+  builders: { breakParent, indent, join, line, softline, hardline },
 } = doc;
 const { replaceTextEndOfLine } = doc.utils as any;
 
@@ -306,6 +306,11 @@ function printAttributes(
 
   const forceNotToBreakAttrContent = node.attributes.length === 1;
 
+  const forceBreakAttrContent =
+    node.source
+      .slice(node.blockStartPosition.start, node.blockStartPosition.end)
+      .indexOf('\n') !== -1;
+
   const attributeLine =
     options.singleAttributePerLine && node.attributes.length > 1
       ? hardline
@@ -314,6 +319,7 @@ function printAttributes(
   const parts: Doc[] = [
     indent([
       forceNotToBreakAttrContent ? ' ' : line,
+      forceBreakAttrContent ? breakParent : '',
       join(attributeLine, printedAttributes),
     ]),
   ];
