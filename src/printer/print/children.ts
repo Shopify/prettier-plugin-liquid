@@ -60,19 +60,6 @@ function printChild(
 }
 
 function printBetweenLine(prevNode: LiquidHtmlNode, nextNode: LiquidHtmlNode) {
-  // space between text-like nodes
-  if (isTextLikeNode(prevNode) && isTextLikeNode(nextNode)) {
-    if (prevNode.isTrailingWhitespaceSensitive) {
-      return prevNode.hasTrailingWhitespace
-        ? preferHardlineAsLeadingSpaces(nextNode)
-          ? hardline
-          : line
-        : '';
-    }
-
-    return preferHardlineAsLeadingSpaces(nextNode) ? hardline : softline;
-  }
-
   const spaceBetweenLinesIsHandledSomewhereElse =
     (needsToBorrowNextOpeningTagStartMarker(prevNode) &&
       (hasPrettierIgnore(nextNode) ||
