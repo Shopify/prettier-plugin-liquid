@@ -2,13 +2,16 @@
 
 In HTMLElement children array,
 
-it should not add Whitespace Trim Characters (WTC) if the liquid drop does not
-break on a new line
-<div>{% if condition %}hello{% endif %}</div>
-
-it should add wtc if the liquid drop breaks on a new line and the previous/next
-characters were not spaces.
+it should not add wtc if the liquid tag breaks on a new line, the node is not
+leading/trailing space sensitive, and there was no leading/trailing whitespace.
+Also, the leading/trailing whitespace sensitivity should be propagated inward
+for inline liquid tags.
 <div>{% if condition %}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}</div>
+
+it should add wtc if the liquid tag breaks on a new line, the node is
+leading/trailing space sensitive, and there was no leading/trailing whitespace
+<span>{% if condition %}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}</span>
+
 <div><img>{% if condition %}aaaaaa{% endif %}</div>
 
 it should not add wtc if the liquid drop breaks on a new line and the
@@ -19,11 +22,9 @@ previous/next characters were spaces
 
 In LiquidTag children array,
 
-when it does break and there was a whitespace, it should not change anything
+when it does break, there was a whitespace, and the parent is not
+leading/trailing space sensitive, it should not change anything
 {% form %} aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {% endform %}
-
-when it does break and there wasn't whitespace, it should add WTCs
-{% form %}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endform %}
 
 --------------------------------------------------------------------------------
 

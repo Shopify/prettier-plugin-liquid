@@ -3,15 +3,22 @@ When it doesn't break, it should conditionally omit the leading space
 It should omit the leading space if it is stripped anyway
 {% form -%} space{% endform %}
 
-It should not omit the leading space if there's leading whitespace
+It should not omit the leading space if there's leading whitespace and the
+tag is leading whitespace sensitive
+{% capture %} space{% endcapture %}
+{%- capture %} space{% endcapture -%}
+{% capture %} space{% endcapture %}
+
+It should omit the leading space if there's leading whitespace and the
+tag is not leading whitespace sensitive
 {% form %} space{% endform %}
 {%- form %} space{% endform -%}
 {% form %} space{% endform %}
 
-It should not omit the whitespace because of whitespace stripping outside the tag
-<p>
-{{ value }}{% form %} aaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endform %}
-</p>
+It should not omit the whitespace if it is included in a tag that creates an
+inline formatting context
+<p>haha{% capture %} space{% endcapture %}</p>
 
-It should not omit the whitespace if it is included inline in a paragraph
+It should omit the whitespace if it is included in a tag that creates a block
+formatting context.
 <p>haha{% form %} space{% endform %}</p>

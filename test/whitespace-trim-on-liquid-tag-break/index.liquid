@@ -6,10 +6,13 @@ it should not add Whitespace Trim Characters (WTC) if the liquid tag does not
 break on a new line
 <div>{% echo 'hello' %}</div>
 
-it should add wtc if the liquid tag breaks on a new line and the previous/next
-characters were not spaces.
+it should not add wtc if the liquid tag breaks on a new line, is not leading
+space sensitive and there was no leading space.
 <div>{% echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' %}</div>
-<div>{% echo 'aaa' %}{% echo 'bbb' %} {% echo 'ccc' %} </div>
+
+it should add wtc if the liquid tag breaks on a new line and is leading space
+sensitive
+<span>{% echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' %}</span>
 
 it should not add wtc if the liquid tag breaks on a new line and the
 previous/next characters were spaces
