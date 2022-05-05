@@ -70,24 +70,25 @@ export function getWhitespaceTrim(
   currWhitespaceTrim: string,
   source: string,
   loc: number,
-  parentGroupId: symbol | undefined,
-  ...groupIds: (symbol | undefined)[]
+  groupIds?: symbol | symbol[],
 ): Doc {
   return ifBreakChain(
     !isWhitespace(source, loc) ? '-' : currWhitespaceTrim,
     currWhitespaceTrim,
-    parentGroupId,
-    ...groupIds,
+    Array.isArray(groupIds) ? groupIds : [groupIds],
   );
 }
 
 // Threads ifBreak into multiple sources of breakage (paragraph or self, etc.)
 export const FORCE_FLAT_GROUP_ID = Symbol('force-no-break');
+export const FORCE_BREAK_GROUP_ID = Symbol('force-break');
+
 export function ifBreakChain(
   breaksContent: Doc,
   flatContent: Doc,
-  ...groupIds: (symbol | undefined)[]
+  groupIds: (symbol | undefined)[],
 ) {
+  if (groupIds.includes(FORCE_BREAK_GROUP_ID)) return breaksContent;
   if (groupIds.includes(FORCE_FLAT_GROUP_ID)) return flatContent;
   return groupIds.reduce(
     (currFlatContent, groupId) =>

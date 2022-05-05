@@ -43,8 +43,8 @@ export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
 };
 export type LiquidPrinterArgs = {
-  leadingSpaceGroupId?: symbol;
-  trailingSpaceGroupId?: symbol;
+  leadingSpaceGroupId?: symbol[] | symbol;
+  trailingSpaceGroupId?: symbol[] | symbol;
 };
 export type LiquidPrinter = (
   path: AstPath<LiquidHtmlNode>,
