@@ -7,6 +7,7 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
   NodeTypes,
+  TextNode,
 } from '~/types';
 import {
   getLastDescendant,
@@ -229,6 +230,30 @@ export function needsToBorrowNextOpeningTagStartMarker(node: LiquidHtmlNode) {
     isTextLikeNode(node) &&
     node.isTrailingWhitespaceSensitive &&
     !node.hasTrailingWhitespace
+  );
+}
+
+export function needsToBorrowLastWord(
+  node: LiquidHtmlNode | undefined,
+): node is TextNode {
+  return (
+    !!node &&
+    node.type === NodeTypes.TextNode &&
+    isLiquidNode(node.next) &&
+    !node.hasTrailingWhitespace &&
+    node.isTrailingWhitespaceSensitive
+  );
+}
+
+export function needsToBorrowFirstWord(
+  node: LiquidHtmlNode | undefined,
+): node is TextNode {
+  return (
+    !!node &&
+    node.type === NodeTypes.TextNode &&
+    isLiquidNode(node.prev) &&
+    !node.hasLeadingWhitespace &&
+    node.isLeadingWhitespaceSensitive
   );
 }
 
