@@ -304,7 +304,8 @@ function printAttributes(
       : print(attributePath);
   }, 'attributes');
 
-  const forceNotToBreakAttrContent = node.attributes.length === 1;
+  const forceNotToBreakAttrContent =
+    isSelfClosing(node) && node.attributes.length === 1;
 
   const forceBreakAttrContent =
     node.source
