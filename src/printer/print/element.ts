@@ -57,13 +57,17 @@ export function printElement(
   }
 
   const attrGroupId = Symbol('element-attr-group-id');
+  const elementGroupId = Symbol('element-group-id');
 
   const printTag = (doc: Doc) =>
-    group([
-      group(printOpeningTag(path, options, print), { id: attrGroupId }),
-      doc,
-      printClosingTag(node, options),
-    ]);
+    group(
+      [
+        group(printOpeningTag(path, options, print), { id: attrGroupId }),
+        doc,
+        printClosingTag(node, options),
+      ],
+      { id: elementGroupId },
+    );
 
   const printChildrenDoc = (childrenDoc: Doc) => {
     // if (
@@ -140,7 +144,10 @@ export function printElement(
     forceBreakContent(node) ? breakParent : '',
     printChildrenDoc([
       printLineBeforeChildren(),
-      printChildren(path, options, print),
+      printChildren(path, options, print, {
+        leadingSpaceGroupId: elementGroupId,
+        trailingSpaceGroupId: elementGroupId,
+      }),
     ]),
     printLineAfterChildren(),
   ]);
