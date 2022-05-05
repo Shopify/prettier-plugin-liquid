@@ -17,7 +17,9 @@
     height="240"
     loading="lazy"
     {{ block.shopify_attributes }}
-    {% if A %}disabled{% endif %}
+    {% if A -%}
+      disabled
+    {%- endif %}
   >
   <a width="320" disabled>Click me</a>
   <a disabled width="320">Click me</a>
@@ -57,7 +59,10 @@
   alt="{{ media.preview_image.alt | escape }}"
 >
 
-If there's only one attribute, don't break when the line is too long.
+If there's only one attribute and self-closing, don't break when the line is too long.
 <img class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
-<div class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
-</div>
+
+If there's only one attribute and not self-closing, break the attr and close the tag on a different line.
+<div
+  class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet"
+></div>

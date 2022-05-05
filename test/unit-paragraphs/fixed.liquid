@@ -1,9 +1,9 @@
 |print-width--------------------------------------------------------------------|
 
-// Should maintain whitespace (or lack of thereof) in flow text.
+it should maintain whitespace (or lack of thereof) in flow text.
 <div>hello {{ name }}!</div>
 
-// Should break child html elements liquid prettier would for html
+it should break child html elements liquid prettier would for html
 <span>
   Some&nbsp;<b>freeform</b>&nbsp;text
   <em
@@ -13,13 +13,15 @@
   We can definitely deal with that.
 </span>
 
-// Should flow liquid inline when it fits
+it should break liquid tags on new lines when it has leading and trailing
+whitespace because it prefers newlines
 <div>
-  More freeform text {%- if liquid -%}But with liquid instead.{%- endif -%} I
-  wonder what this will look like {{ punctuation }}.
+  More freeform text
+  {%- if liquid -%}But with liquid instead.{%- endif -%}
+  I wonder what this will look like {{ punctuation }}.
 </div>
 
-// Should break child liquid tags on new lines
+it should break child liquid tags on new lines
 <div>
   If a child breaks, it breaks on a new line.
   {%- if liquid -%}
@@ -30,23 +32,25 @@
   <em>never open in the middle of a line and end on another</em>
 </div>
 
-// Should maintain whitespace between inline elements
+it should maintain whitespace between inline elements
 <h1>HELLO <span> WORLD </span></h1>
 
-// Should avoid breaking between text and nodes
+if there arent whitespace on either side of the text, when it breaks it should
+break on both sides
 <p>
-  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-  (-{{ product.price }}-)
+  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (-
+  {{- product.price -}}
+  -)
 </p>
 
-// Should behave like prettier/language-html
+it should behave like prettier/language-html
 <p>
   Ipsum. Praesent scelerisque tortor a justo. Quisque consequat libero erat<em
     >product.price</em
   >ok
 </p>
 
-// Should break parent and add WTC when the child breaks
+it should break parent and add WTC when the child breaks
 <p>
   (-
   {%- if liquid -%}

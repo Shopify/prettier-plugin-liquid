@@ -10,14 +10,14 @@ It should not omit the leading space if there's leading whitespace
 {%- if a %} space{% endif -%}
 {% if a %} space{% endif %}
 
-When not leadingSpaceSensitive, the leading whitespace can be omitted
+It should not omit the leading space if there's leading whitespace (even if the parent is not sensitive)
 <div>
-  {% if a %}space{% endif %}
+  {% if a %} space{% endif %}
 </div>
 
-When leadingSpaceSensitive, the leading space can be omitted if it exists outside the tag
+It should not omit the leading space if there's leading whitespace (even if the parent has it)
 <span>
-  {% if a %}space{% endif -%}
+  {% if a %} space{% endif -%}
 </span>
 
 When leadingSpaceSensitive, the leading space cannot be omitted if it is absent outside the tag

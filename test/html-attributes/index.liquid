@@ -48,7 +48,9 @@ height="{{ 973 | divided_by: media.preview_image.aspect_ratio | ceil }}"
 alt="{{ media.preview_image.alt | escape }}"
 >
 
-If there's only one attribute, don't break when the line is too long.
+If there's only one attribute and self-closing, don't break when the line is too long.
 <img class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
+
+If there's only one attribute and not self-closing, break the attr and close the tag on a different line.
 <div class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
 </div>

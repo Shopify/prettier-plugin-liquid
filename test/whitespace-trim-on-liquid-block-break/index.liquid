@@ -2,10 +2,7 @@
 
 In HTMLElement children array,
 
-it should not add wtc if the liquid tag breaks on a new line, the node is not
-leading/trailing space sensitive, and there was no leading/trailing whitespace.
-Also, the leading/trailing whitespace sensitivity should be propagated inward
-for inline liquid tags.
+it should add wtc if the liquid tag breaks on a new line and its children are whitespace sensitive and there wasn't whitespace to begin with
 <div>{% if condition %}aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa{% endif %}</div>
 
 it should add wtc if the liquid tag breaks on a new line, the node is
