@@ -4,10 +4,10 @@ import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
 
-const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|<)/i;
+const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|skip|<)/i;
 // const CHUNK_OPTIONS = /(\w+): ([^\s]*)/g
 
-const TEST_MESSAGE = /^(\/\/|It|When|If|focus)[^<{]*/i;
+const TEST_MESSAGE = /^(\/\/|It|When|If|focus|skip)[^<{]*/i;
 
 export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   const source = readFile(dirname, 'index.liquid');
@@ -19,15 +19,24 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   for (let i = 0; i < chunks.length; i++) {
     const src = chunks[i];
     const expected = expectedChunks[i].trimEnd();
-    const actual = format(src, options).trimEnd();
     const testConfig = getTestSetup(src, i);
     const test = () => {
+      const actual = format(src, options).trimEnd();
       try {
         expect(
           actual.replace(TEST_MESSAGE, ''),
-          '\n      ########## INPUT\n      ' +
-            src.replace(TEST_MESSAGE, '').replace(/\n/g, '\n      ').trimEnd() +
-            '\n      ##########\n',
+          [
+            '',
+            '########## INPUT',
+            src.replace(TEST_MESSAGE, '').replace(/\n/g, '\n      ').trimEnd(),
+            '########## ACTUAL',
+            actual
+              .replace(TEST_MESSAGE, '')
+              .replace(/\n/g, '\n      ')
+              .trimEnd(),
+            '##########',
+            '',
+          ].join('\n      '),
         ).to.eql(expected.replace(TEST_MESSAGE, ''));
       } catch (e) {
         // Improve the stack trace so that it points to the fixed file instead
@@ -61,6 +70,8 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
 
     if (testConfig.focus) {
       it.only(testConfig.message, test);
+    } else if (testConfig.skip) {
+      it.skip(testConfig.message, test);
     } else {
       it(testConfig.message, test);
     }
@@ -68,6 +79,7 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
 }
 
 // prefix your tests with `focus` so that only this test runs.
+// prefix your tests with `skip` so that it shows up as skipped.
 function getTestSetup(paragraph: string, index: number) {
   let testMessage = TEST_MESSAGE.exec(paragraph) || [
     `it should format as expected (chunk ${index})`,
@@ -79,14 +91,13 @@ function getTestSetup(paragraph: string, index: number) {
     .trimEnd()
     .replace(/\.$/, '');
 
-  const focus = /^focus/i.test(message);
-
   // TODO
   const prettierOptions = {};
   return {
     message: message,
     prettierOptions,
-    focus,
+    focus: /^focus/i.test(message),
+    skip: /^skip/i.test(message),
   };
 }
 
