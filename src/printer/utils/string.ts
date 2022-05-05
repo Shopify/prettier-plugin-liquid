@@ -1,4 +1,10 @@
-import { LiquidAstPath, LiquidHtmlNode, LiquidParserOptions } from '~/types';
+import {
+  LiquidAstPath,
+  LiquidHtmlNode,
+  LiquidParserOptions,
+  TextNode,
+} from '~/types';
+import { first, last } from './array';
 
 export function isWhitespace(source: string, loc: number): boolean {
   if (loc < 0 || loc >= source.length) return false;
@@ -7,6 +13,22 @@ export function isWhitespace(source: string, loc: number): boolean {
 
 export const trim = (x: string) => x.trim();
 export const trimEnd = (x: string) => x.trimEnd();
+
+export function words(node: TextNode) {
+  return node.value.trim().split(/\s+/).filter(Boolean);
+}
+
+export function hasOnlyOneWord(node: TextNode) {
+  return words(node).length === 1;
+}
+
+export function firstWord(node: TextNode) {
+  return first(words(node));
+}
+
+export function lastWord(node: TextNode) {
+  return last(words(node));
+}
 
 export function bodyLines(str: string): string[] {
   return str

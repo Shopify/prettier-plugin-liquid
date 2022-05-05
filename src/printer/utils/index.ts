@@ -6,24 +6,17 @@ import {
   NodeTypes,
 } from '~/types';
 import { isBranchedTag } from '~/parser';
-import { isWhitespace } from '~/printer/utils/string';
+import { isEmpty } from '~/printer/utils/array';
 
+export * from '~/printer/utils/array';
 export * from '~/printer/utils/string';
 export * from '~/printer/utils/node';
 
 const { builders } = doc;
 const { ifBreak, indent } = builders;
 
-export function intersperse<T>(array: T[], delim: T): T[] {
-  return array.flatMap((val) => [delim, val]).slice(1);
-}
-
 export function getSource(path: LiquidAstPath) {
   return path.getValue().source;
-}
-
-export function isEmpty(col: any[]): boolean {
-  return col.length === 0;
 }
 
 export function isDeeplyNested(
