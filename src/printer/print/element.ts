@@ -56,35 +56,6 @@ export function printElement(
     ];
   }
 
-  /**
-   * do not break:
-   *
-   *     <div>{{
-   *         ~
-   *       interpolation
-   *     }}</div>
-   *            ~
-   *
-   * exception: break if the opening tag breaks
-   *
-   *     <div
-   *       long
-   *           ~
-   *       >{{
-   *         interpolation
-   *       }}</div
-   *              ~
-   *     >
-   */
-  const shouldHugContent =
-    node.children.length === 1 &&
-    // node.firstChild.type === 'interpolation' &&
-    !isLiquidNode(node.firstChild!) &&
-    node.firstChild!.isLeadingWhitespaceSensitive &&
-    !node.firstChild!.hasLeadingWhitespace &&
-    node.lastChild!.isTrailingWhitespaceSensitive &&
-    !node.lastChild!.hasTrailingWhitespace;
-
   const attrGroupId = Symbol('element-attr-group-id');
 
   const printTag = (doc: Doc) =>
@@ -95,9 +66,6 @@ export function printElement(
     ]);
 
   const printChildrenDoc = (childrenDoc: Doc) => {
-    if (shouldHugContent) {
-      return indentIfBreak(childrenDoc, { groupId: attrGroupId });
-    }
     // if (
     //   (isScriptLikeTag(node) || isVueCustomBlock(node, options)) &&
     //   node.parentNode.type === NodeTypes.Document &&
@@ -110,15 +78,13 @@ export function printElement(
   };
 
   const printLineBeforeChildren = () => {
-    if (shouldHugContent) {
-      return ifBreak(softline, '', { groupId: attrGroupId });
-    }
     if (
       node.firstChild!.hasLeadingWhitespace &&
       node.firstChild!.isLeadingWhitespaceSensitive
     ) {
       return line;
     }
+
     if (
       node.firstChild!.type === NodeTypes.TextNode &&
       node.isWhitespaceSensitive &&
@@ -141,9 +107,6 @@ export function printElement(
         return ' ';
       }
       return '';
-    }
-    if (shouldHugContent) {
-      return ifBreak(softline, '', { groupId: attrGroupId });
     }
     if (
       node.lastChild!.hasTrailingWhitespace &&
