@@ -68,12 +68,11 @@ export function isTrimmingInnerRight(
 // Optionally converts a '' into '-' if any of the parent group breaks and source[loc] is non space.
 export function getWhitespaceTrim(
   currWhitespaceTrim: string,
-  source: string,
-  loc: number,
+  needsWhitespaceStrippingOnBreak: boolean | undefined,
   groupIds?: symbol | symbol[],
 ): Doc {
   return ifBreakChain(
-    !isWhitespace(source, loc) ? '-' : currWhitespaceTrim,
+    needsWhitespaceStrippingOnBreak ? '-' : currWhitespaceTrim,
     currWhitespaceTrim,
     Array.isArray(groupIds) ? groupIds : [groupIds],
   );

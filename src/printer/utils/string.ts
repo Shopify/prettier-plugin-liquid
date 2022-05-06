@@ -4,7 +4,7 @@ import {
   LiquidParserOptions,
   TextNode,
 } from '~/types';
-import { first, last } from './array';
+import { first, last } from '~/printer/utils/array';
 
 export function isWhitespace(source: string, loc: number): boolean {
   if (loc < 0 || loc >= source.length) return false;

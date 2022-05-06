@@ -24,7 +24,6 @@ import { AttributeNodeBase, isBranchedTag, HtmlNodeBase } from '~/parser/ast';
 import { assertNever } from '~/utils';
 
 import { preprocess } from '~/printer/print-preprocess';
-import { printAsParagraph } from '~/printer/print-as-paragraph';
 import {
   bodyLines,
   getSource,
@@ -32,32 +31,32 @@ import {
   hasLineBreakInRange,
   isDeeplyNested,
   isEmpty,
-  isTrimmingInnerLeft,
-  isTrimmingInnerRight,
   isWhitespace,
   markupLines,
-  maybeIndent,
   originallyHadLineBreaks,
   reindent,
   trim,
 } from '~/printer/utils';
-import { printClosingTagSuffix, printOpeningTagPrefix } from './print/tag';
+import { printElement } from '~/printer/print/element';
+import * as children from '~/printer/print/children';
+import {
+  printClosingTagSuffix,
+  printOpeningTagPrefix,
+} from '~/printer/print/tag';
 
 const { builders } = doc;
-const { ifBreak, fill, group, hardline, indent, join, line, softline } =
-  builders;
+const {
+  dedentToRoot,
+  fill,
+  group,
+  hardline,
+  ifBreak,
+  indent,
+  join,
+  line,
+  softline,
+} = builders;
 
-const HTML_TAGS_THAT_ALWAYS_BREAK = [
-  'html',
-  'body',
-  'head',
-  'main',
-  'section',
-  'header',
-  'footer',
-  'ul',
-  'ol',
-];
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 function cleanDoc(doc: Doc[]): Doc[] {
@@ -99,20 +98,19 @@ function mapWithNewLine(
 
 function printLiquidDrop(
   path: LiquidAstPath,
-  { locStart, locEnd }: LiquidParserOptions,
+  _options: LiquidParserOptions,
+  _print: LiquidPrinter,
   { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs,
 ) {
   const node: LiquidDrop = path.getValue() as LiquidDrop;
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    node.source,
-    locStart(node) - 1,
+    node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace,
     leadingSpaceGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    node.source,
-    locEnd(node),
+    node.isTrailingWhitespaceSensitive && !node.hasTrailingWhitespace,
     trailingSpaceGroupId,
   );
 
@@ -142,30 +140,23 @@ function printLiquidDrop(
 
 function printLiquidBlockStart(
   path: AstPath<LiquidTag | LiquidBranch>,
-  leftParentGroupId: symbol | undefined,
-  rightParentGroupId: symbol | undefined,
+  leadingSpaceGroupId: symbol | symbol[] | undefined,
+  trailingSpaceGroupId: symbol | symbol[] | undefined,
 ): Doc {
   const node = path.getValue();
   if (!node.name) return '';
 
   const lines = markupLines(node);
-  const positionStart =
-    (node as LiquidTag).blockStartPosition?.start ?? node.position.start;
-  const positionEnd =
-    (node as LiquidTag).blockStartPosition?.end ?? node.position.end;
 
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    node.source,
-    positionStart - 1,
-    leftParentGroupId,
-    rightParentGroupId,
+    needsBlockStartLeadingWhitespaceStrippingOnBreak(node),
+    leadingSpaceGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    node.source,
-    positionEnd,
-    rightParentGroupId,
+    needsBlockStartTrailingWhitespaceStrippingOnBreak(node),
+    trailingSpaceGroupId,
   );
 
   if (node.name === 'liquid') {
@@ -179,7 +170,9 @@ function printLiquidBlockStart(
       whitespaceEnd,
       '%}',
     ]);
-  } else if (lines.length > 1) {
+  }
+
+  if (lines.length > 1) {
     return group([
       '{%',
       whitespaceStart,
@@ -203,25 +196,96 @@ function printLiquidBlockStart(
   ]);
 }
 
+function isExtremelyLeadingWhitespaceSensitive(node: LiquidHtmlNode): boolean {
+  return node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace;
+}
+
+function isExtremelyTrailingWhitespaceSensitive(node: LiquidHtmlNode): boolean {
+  return node.isTrailingWhitespaceSensitive && !node.hasTrailingWhitespace;
+}
+
+function isExtremelyDanglingSpaceSensitive(node: LiquidHtmlNode): boolean {
+  return node.isDanglingWhitespaceSensitive && !node.hasDanglingWhitespace;
+}
+
+function needsBlockStartLeadingWhitespaceStrippingOnBreak(
+  node: LiquidTag | LiquidBranch,
+): boolean {
+  switch (node.type) {
+    case NodeTypes.LiquidTag: {
+      return isExtremelyLeadingWhitespaceSensitive(node);
+    }
+    case NodeTypes.LiquidBranch: {
+      return isExtremelyLeadingWhitespaceSensitive(node);
+    }
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
+function needsBlockStartTrailingWhitespaceStrippingOnBreak(
+  node: LiquidTag | LiquidBranch,
+): boolean {
+  switch (node.type) {
+    case NodeTypes.LiquidTag: {
+      if (isBranchedTag(node)) {
+        return needsBlockStartLeadingWhitespaceStrippingOnBreak(
+          node.firstChild! as LiquidBranch,
+        );
+      }
+
+      if (!node.children) {
+        return isExtremelyTrailingWhitespaceSensitive(node);
+      }
+
+      return isEmpty(node.children)
+        ? isExtremelyDanglingSpaceSensitive(node)
+        : isExtremelyLeadingWhitespaceSensitive(node.firstChild!);
+    }
+
+    case NodeTypes.LiquidBranch: {
+      return node.firstChild
+        ? isExtremelyLeadingWhitespaceSensitive(node.firstChild)
+        : isExtremelyDanglingSpaceSensitive(node);
+    }
+
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
+function needsBlockEndLeadingWhitespaceStrippingOnBreak(node: LiquidTag) {
+  if (!node.children) {
+    throw new Error(
+      'Should only call needsBlockEndLeadingWhitespaceStrippingOnBreak for tags that have closing tags',
+    );
+  } else if (isBranchedTag(node)) {
+    return isExtremelyTrailingWhitespaceSensitive(node.lastChild!);
+  } else if (isEmpty(node.children)) {
+    return isExtremelyDanglingSpaceSensitive(node);
+  } else {
+    return isExtremelyTrailingWhitespaceSensitive(node.lastChild!);
+  }
+}
+
 function printLiquidBlockEnd(
   path: AstPath<LiquidTag>,
-  leftParentGroupId: symbol | undefined,
-  rightParentGroupId: symbol | undefined,
+  leadingSpaceGroupId: symbol | symbol[] | undefined,
+  trailingSpaceGroupId: symbol | symbol[] | undefined,
 ): Doc {
   const node = path.getValue();
   if (!node.children || !node.blockEndPosition) return '';
   const whitespaceStart = getWhitespaceTrim(
     node.delimiterWhitespaceStart ?? '',
-    node.source,
-    node.blockEndPosition.start - 1,
-    leftParentGroupId,
+    needsBlockEndLeadingWhitespaceStrippingOnBreak(node),
+    leadingSpaceGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.delimiterWhitespaceEnd ?? '',
-    node.source,
-    node.blockEndPosition.end,
-    leftParentGroupId,
-    rightParentGroupId,
+    node.isTrailingWhitespaceSensitive,
+    trailingSpaceGroupId,
   );
   return group([
     '{%',
@@ -255,36 +319,6 @@ function printHtmlBlockStart(
     printAttributes(path as AstPath<HtmlElement>, options, print),
     '>',
   ]);
-}
-
-function printHtmlElement(
-  path: AstPath<HtmlElement>,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-): Doc {
-  const node = path.getValue();
-  const htmlElementGroupId = Symbol('html-element-id');
-  return group(
-    [
-      printHtmlBlockStart(path, options, print),
-      maybeIndent(
-        softline,
-        printChildren(path as AstPath<HtmlElement>, options, print, {
-          leadingSpaceGroupId: htmlElementGroupId,
-          trailingSpaceGroupId: htmlElementGroupId,
-        }),
-      ),
-      softline,
-      group(['</', printName(node.name, path, print), '>']),
-    ],
-    {
-      shouldBreak:
-        (typeof node.name === 'string' &&
-          HTML_TAGS_THAT_ALWAYS_BREAK.includes(node.name)) ||
-        originallyHadLineBreaks(path, options),
-      id: htmlElementGroupId,
-    },
-  );
 }
 
 function printAttributes<
@@ -386,29 +420,6 @@ function printName(
   return path.call(print, 'name');
 }
 
-function printChildren<
-  T extends LiquidHtmlNode & { children?: LiquidHtmlNode[] },
->(
-  path: AstPath<T>,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  args: LiquidPrinterArgs,
-): Doc {
-  const node = path.getValue();
-  if (!node.children || isEmpty(node.children)) return '';
-
-  const hasNonEmptyTextNode = !!node.children.find(
-    (child) => child.type === NodeTypes.TextNode,
-  );
-
-  return hasNonEmptyTextNode
-    ? printAsParagraph(path, options, print, 'children')
-    : join(
-        hardline,
-        mapWithNewLine(path, options, print, 'children', args), // TODO
-      );
-}
-
 function printLiquidTag(
   path: AstPath<LiquidTag>,
   options: LiquidParserOptions,
@@ -452,7 +463,10 @@ function printLiquidTag(
   } else if (node.children.length > 0) {
     body = indent([
       innerLeadingWhitespace(node),
-      join(softline, mapWithNewLine(path, options, print, 'children')),
+      children.printChildren(path, options, print, {
+        leadingSpaceGroupId: tagGroupId,
+        trailingSpaceGroupId: tagGroupId,
+      }),
     ]);
   }
 
@@ -466,26 +480,40 @@ function printLiquidTag(
 }
 
 function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {
-  if (
-    !isWhitespace(node.source, node.blockStartPosition.end) ||
-    isTrimmingInnerLeft(node)
-  ) {
-    return softline;
+  if (!node.firstChild) {
+    if (node.isDanglingWhitespaceSensitive && node.hasDanglingWhitespace) {
+      return line;
+    } else {
+      return '';
+    }
   }
 
-  return line;
+  if (
+    node.firstChild.hasLeadingWhitespace &&
+    node.firstChild.isLeadingWhitespaceSensitive
+  ) {
+    return line;
+  }
+  if (
+    node.firstChild.type === NodeTypes.TextNode &&
+    node.isWhitespaceSensitive &&
+    node.isIndentationSensitive
+  ) {
+    return dedentToRoot(softline);
+  }
+
+  return softline;
 }
 
 function innerTrailingWhitespace(node: LiquidTag | LiquidBranch) {
   if (node.type === NodeTypes.LiquidBranch || !node.blockEndPosition) return '';
   if (
-    !isWhitespace(node.source, node.blockEndPosition.start - 1) ||
-    isTrimmingInnerRight(node)
+    node.lastChild!.hasTrailingWhitespace &&
+    node.lastChild!.isTrailingWhitespaceSensitive
   ) {
-    return softline;
+    return line;
   }
-
-  return line;
+  return softline;
 }
 
 function printLiquidDefaultBranch(
@@ -527,7 +555,7 @@ function printLiquidDefaultBranch(
   // {% if A %} content...{% endif %}
   return indent([
     innerLeadingWhitespace(parentNode),
-    printChildren(path, options, print, args),
+    children.printChildren(path, options, print, args),
   ]);
 }
 
@@ -565,7 +593,7 @@ function printLiquidBranch(
     ),
     indent([
       innerLeadingWhitespace(branch),
-      printChildren(path, options, print, args),
+      children.printChildren(path, options, print, args),
     ]),
   ];
 }
@@ -586,7 +614,8 @@ function printTextNode(
       let doc = [];
       const words = curr.trim().split(/\s+/g);
       let isFirst = true;
-      for (const word of words) {
+      for (let j = 0; j < words.length; j++) {
+        const word = words[j];
         if (isFirst) {
           isFirst = false;
         } else {
@@ -620,7 +649,7 @@ function printNode(
     }
 
     case NodeTypes.HtmlElement: {
-      return printHtmlElement(path as AstPath<HtmlElement>, options, print);
+      return printElement(path as AstPath<HtmlElement>, options, print);
     }
 
     case NodeTypes.HtmlVoidElement: {
@@ -665,7 +694,7 @@ function printNode(
     }
 
     case NodeTypes.LiquidDrop: {
-      return printLiquidDrop(path, options, args);
+      return printLiquidDrop(path as AstPath<LiquidDrop>, options, print, args);
     }
 
     case NodeTypes.LiquidRawTag: {
