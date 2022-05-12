@@ -78,7 +78,10 @@ function isDanglingWhitespaceSensitiveNode(node: AugmentedAstNode) {
  *   - indentation-sensitive tags (e.g. <pre></pre>)
  */
 function isWhitespaceSensitiveNode(node: AugmentedAstNode) {
-  return isScriptLikeTag(node) || isIndentationSensitiveNode(node);
+  return (
+    // isScriptLikeTag(node) ||
+    isIndentationSensitiveNode(node)
+  );
 }
 
 /**
@@ -122,6 +125,11 @@ function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // whitespace sensitive.
   if (isPreLikeNode(node.parentNode)) {
     return true;
+  }
+
+  // TODO I added this as a short term fix for HtmlRawNode printing.
+  if (isScriptLikeTag(node)) {
+    return false;
   }
 
   // The first child of a node is NOT leading whitespace sensitive if one of
@@ -213,6 +221,10 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // node's parent is pre-like, this node is whitespace sensitive to the right.
   if (isPreLikeNode(node.parentNode)) {
     return true;
+  }
+
+  if (isScriptLikeTag(node)) {
+    return false;
   }
 
   // Adapted from prettier/language-html. This branch is for the last
