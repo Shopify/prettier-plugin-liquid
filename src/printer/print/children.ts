@@ -15,6 +15,7 @@ import {
   forceNextEmptyLine,
   hasPrettierIgnore,
   isEmpty,
+  isLiquidNode,
   isSelfClosing,
   isTextLikeNode,
   preferHardlineAsLeadingSpaces,
@@ -136,6 +137,7 @@ type Softline =
 interface WhitespaceBetweenNode {
   leadingHardlines: typeof hardline[];
   leadingSoftlines: Softline[];
+  leadingGroupedSoftlines: doc.builders.Softline[];
   trailingSoftlines: Softline[];
   trailingHardlines: typeof hardline[];
 }
@@ -263,6 +265,7 @@ export function printChildren(
 
       const leadingHardlines: typeof hardline[] = [];
       const leadingSoftlines: Softline[] = [];
+      const leadingGroupedSoftlines: doc.builders.Softline[] = [];
       const trailingSoftlines: Softline[] = [];
       const trailingHardlines: typeof hardline[] = [];
 
@@ -278,6 +281,7 @@ export function printChildren(
         return {
           leadingHardlines,
           leadingSoftlines,
+          leadingGroupedSoftlines,
           trailingSoftlines,
           trailingHardlines,
         };
@@ -293,7 +297,11 @@ export function printChildren(
           leadingHardlines.push(hardline);
         } else {
           if (isTextLikeNode(childNode.prev)) {
-            leadingSoftlines.push(prevBetweenLine as doc.builders.Line);
+            if (isLiquidNode(childNode) && prevBetweenLine === softline) {
+              leadingGroupedSoftlines.push(prevBetweenLine as typeof softline);
+            } else {
+              leadingSoftlines.push(prevBetweenLine as doc.builders.Line);
+            }
           } else {
             leadingSoftlines.push(
               ifBreak('', softline, {
@@ -324,6 +332,7 @@ export function printChildren(
       return {
         leadingHardlines,
         leadingSoftlines,
+        leadingGroupedSoftlines,
         trailingSoftlines,
         trailingHardlines,
       } as WhitespaceBetweenNode;
@@ -377,6 +386,8 @@ export function printChildren(
   //  - leadingHardlines are for hardlines that do not affect the flow
   //  - leadingSoftlines are for maybe line breaks before the child
   //    - it will break _first_ if the child doesn't fit the line
+  //  - leadingGroupedSoftlines are for softlines that should break with the trailing line (e.g. a group)
+  //    - happens for liquid surrounded by text
   //  - trailingSoftlines are for maybe line breaks after the child
   //    - it will break _second_ if the child itself doesn't fit
   //  - trailingHardlines for hardlines that do not affect the flow
@@ -384,9 +395,11 @@ export function printChildren(
     const {
       leadingHardlines,
       leadingSoftlines,
+      leadingGroupedSoftlines,
       trailingSoftlines,
       trailingHardlines,
     } = whitespaceBetweenNode[childIndex];
+    // What are the actual possibities? a lot actually...
     return [
       ...leadingHardlines,
       group(
@@ -394,6 +407,7 @@ export function printChildren(
           ...leadingSoftlines,
           group(
             [
+              ...leadingGroupedSoftlines,
               printChild(childPath, options, print, {
                 leadingSpaceGroupId: leadingSpaceGroupId(
                   whitespaceBetweenNode,
@@ -441,6 +455,10 @@ export function printChildren(
 
     if (!isEmpty(curr.leadingSoftlines)) {
       groupIds.push(leadingSpaceGroupIds[index]);
+    }
+
+    if (!isEmpty(curr.leadingGroupedSoftlines)) {
+      groupIds.push(trailingSpaceGroupIds[index]);
     }
 
     if (isEmpty(groupIds)) {
