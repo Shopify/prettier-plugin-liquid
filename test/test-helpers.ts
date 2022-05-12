@@ -5,7 +5,6 @@ import * as prettier from 'prettier';
 import * as plugin from '../src';
 
 const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|skip|<)/i;
-// const CHUNK_OPTIONS = /(\w+): ([^\s]*)/g
 
 const TEST_MESSAGE = /^(\/\/|It|When|If|focus|skip)[^<{]*/i;
 
@@ -21,7 +20,10 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
     const expected = expectedChunks[i].trimEnd();
     const testConfig = getTestSetup(src, i);
     const test = () => {
-      const actual = format(src, options).trimEnd();
+      const actual = format(
+        src,
+        Object.assign({}, options, testConfig.prettierOptions),
+      ).trimEnd();
       try {
         expect(
           actual.replace(TEST_MESSAGE, ''),
@@ -90,11 +92,15 @@ function getTestSetup(paragraph: string, index: number) {
     .replace(/\r?\n/g, ' ')
     .trimEnd()
     .replace(/\.$/, '');
+  const prettierOptions: any = {};
+  const optionsParser = /(?<name>\w+): (?<value>[^\s]*)/g;
+  let match: RegExpExecArray;
+  while ((match = optionsParser.exec(message)) !== null) {
+    prettierOptions[match.groups.name] = match.groups.value;
+  }
 
-  // TODO
-  const prettierOptions = {};
   return {
-    message: message,
+    message: message.replace(optionsParser, ''),
     prettierOptions,
     focus: /^focus/i.test(message),
     skip: /^skip/i.test(message),

@@ -16,7 +16,7 @@ import {
   hasPrettierIgnore,
   isEmpty,
   isLiquidNode,
-  isSelfClosing,
+  hasNoCloseMarker,
   isTextLikeNode,
   preferHardlineAsLeadingSpaces,
 } from '~/printer/utils';
@@ -80,7 +80,7 @@ function printBetweenLine(prevNode: LiquidHtmlNode, nextNode: LiquidHtmlNode) {
          *            ~
          *     -->
          */
-        isSelfClosing(nextNode) ||
+        hasNoCloseMarker(nextNode) ||
         /**
          *     123<span
          *             ~
@@ -95,7 +95,7 @@ function printBetweenLine(prevNode: LiquidHtmlNode, nextNode: LiquidHtmlNode) {
      *     />123
      */
     (prevNode.type === NodeTypes.HtmlElement &&
-      isSelfClosing(prevNode) &&
+      hasNoCloseMarker(prevNode) &&
       needsToBorrowPrevClosingTagEndMarker(nextNode));
 
   if (spaceBetweenLinesIsHandledSomewhereElse) {

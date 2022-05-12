@@ -137,6 +137,7 @@ export type LiquidTag = Augmented<AST.LiquidTag, AllAugmentations>;
 export type LiquidBranch = Augmented<AST.LiquidBranch, AllAugmentations>;
 export type LiquidDrop = Augmented<AST.LiquidDrop, AllAugmentations>;
 export type HtmlNode = Augmented<AST.HtmlNode, AllAugmentations>;
+export type HtmlTag = Exclude<HtmlNode, HtmlComment>;
 export type HtmlElement = Augmented<AST.HtmlElement, AllAugmentations>;
 export type HtmlVoidElement = Augmented<AST.HtmlVoidElement, AllAugmentations>;
 export type HtmlSelfClosingElement = Augmented<

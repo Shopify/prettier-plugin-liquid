@@ -257,11 +257,7 @@ function printNode(
     }
 
     case NodeTypes.HtmlVoidElement: {
-      return printHtmlBlockStart(
-        path as AstPath<HtmlVoidElement>,
-        options,
-        print,
-      );
+      return printElement(path as AstPath<HtmlVoidElement>, options, print);
     }
 
     case NodeTypes.HtmlSelfClosingElement: {

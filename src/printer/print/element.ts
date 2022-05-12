@@ -5,7 +5,7 @@ import {
   shouldPreserveContent,
   countParents,
   forceBreakContent,
-  isLiquidNode,
+  hasNoCloseMarker,
 } from '~/printer/utils';
 import {
   printOpeningTagPrefix,
@@ -22,31 +22,33 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
   LiquidHtmlNode,
-  HtmlElement,
+  HtmlNode,
 } from '~/types';
 
 const {
-  builders: {
-    breakParent,
-    dedentToRoot,
-    group,
-    ifBreak,
-    indentIfBreak,
-    indent,
-    line,
-    softline,
-  },
+  builders: { breakParent, dedentToRoot, group, indent, line, softline },
 } = doc;
 const { replaceTextEndOfLine } = doc.utils as any;
 
 export function printElement(
-  path: AstPath<HtmlElement>,
+  path: AstPath<HtmlNode>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
 ) {
   const node = path.getValue();
 
-  if (shouldPreserveContent(node, options)) {
+  if (hasNoCloseMarker(node)) {
+    return [
+      group(printOpeningTag(path, options, print)),
+      ...printClosingTag(node, options),
+      printClosingTagSuffix(node, options),
+    ];
+  }
+
+  if (
+    shouldPreserveContent(node, options) ||
+    node.type === NodeTypes.HtmlRawNode
+  ) {
     return [
       printOpeningTagPrefix(node, options),
       group(printOpeningTag(path, options, print)),
@@ -144,7 +146,7 @@ export function printElement(
     forceBreakContent(node) ? breakParent : '',
     printChildrenDoc([
       printLineBeforeChildren(),
-      printChildren(path, options, print, {
+      printChildren(path as AstPath<typeof node>, options, print, {
         leadingSpaceGroupId: elementGroupId,
         trailingSpaceGroupId: elementGroupId,
       }),

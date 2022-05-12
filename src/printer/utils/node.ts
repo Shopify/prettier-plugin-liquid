@@ -9,6 +9,8 @@ import {
   LiquidNodeTypes,
   HtmlNodeTypes,
   HtmlNode,
+  HtmlVoidElement,
+  HtmlComment,
 } from '~/types';
 
 // placeholder while I get my shit together
@@ -24,10 +26,26 @@ export function isPreLikeNode(node: { cssWhitespace: string }) {
   return node.cssWhitespace.startsWith('pre');
 }
 
+// A bit like self-closing except we distinguish between them.
+// Comments are also considered self-closing.
+export function hasNoCloseMarker(
+  node: LiquidHtmlNode,
+): node is HtmlComment | HtmlVoidElement | HtmlSelfClosingElement {
+  return isSelfClosing(node) || isVoidElement(node) || isHtmlComment(node);
+}
+
+export function isHtmlComment(node: LiquidHtmlNode): node is HtmlComment {
+  return node.type === NodeTypes.HtmlComment;
+}
+
 export function isSelfClosing(
   node: LiquidHtmlNode,
 ): node is HtmlSelfClosingElement {
   return node.type === NodeTypes.HtmlSelfClosingElement;
+}
+
+export function isVoidElement(node: LiquidHtmlNode): node is HtmlVoidElement {
+  return node.type === NodeTypes.HtmlVoidElement;
 }
 
 export function isTextLikeNode(
