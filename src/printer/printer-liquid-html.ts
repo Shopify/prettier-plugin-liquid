@@ -261,17 +261,11 @@ function printNode(
     }
 
     case NodeTypes.HtmlSelfClosingElement: {
-      return group([
-        '<',
-        printName(node.name, path, print),
-        printAttributes(
-          path as AstPath<HtmlSelfClosingElement>,
-          options,
-          print,
-        ),
-        line,
-        '/>',
-      ]);
+      return printElement(
+        path as AstPath<HtmlSelfClosingElement>,
+        options,
+        print,
+      );
     }
 
     case NodeTypes.HtmlRawNode: {
