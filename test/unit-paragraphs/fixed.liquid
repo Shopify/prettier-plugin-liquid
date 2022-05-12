@@ -35,6 +35,13 @@ it should break child liquid tags on new lines
 it should maintain whitespace between inline elements
 <h1>HELLO <span> WORLD </span></h1>
 
+it should not maintain whitespace between inline elements with htmlWhitespaceSensitivity set to ignore
+htmlWhitespaceSensitivity: ignore
+<h1>
+  HELLO
+  <span>WORLD</span>
+</h1>
+
 if there arent whitespace on either side of the text, when it breaks it should
 break on both sides
 <p>
