@@ -96,7 +96,7 @@ function getTestSetup(paragraph: string, index: number) {
   const optionsParser = /(?<name>\w+): (?<value>[^\s]*)/g;
   let match: RegExpExecArray;
   while ((match = optionsParser.exec(message)) !== null) {
-    prettierOptions[match.groups.name] = match.groups.value;
+    prettierOptions[match.groups.name] = JSON.parse(match.groups.value);
   }
 
   return {

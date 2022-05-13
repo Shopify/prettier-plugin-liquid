@@ -20,7 +20,7 @@ import {
   Position,
   LiquidPrinterArgs,
 } from '~/types';
-import { AttributeNodeBase, HtmlNodeBase } from '~/parser/ast';
+import { AttributeNodeBase } from '~/parser/ast';
 import { assertNever } from '~/utils';
 
 import { preprocess } from '~/printer/print-preprocess';
@@ -78,31 +78,6 @@ function mapWithNewLine(
   return doc;
 }
 
-function printHtmlBlockStart(
-  path: AstPath<Extract<LiquidHtmlNode, HtmlNodeBase<any>>>,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-): Doc {
-  const node = path.getValue();
-
-  if (node.attributes.length === 1) {
-    return [
-      '<',
-      printName(node.name, path, print),
-      ' ',
-      path.map((p) => print(p), 'attributes'),
-      '>',
-    ];
-  }
-
-  return group([
-    '<',
-    printName(node.name, path, print),
-    printAttributes(path as AstPath<HtmlElement>, options, print),
-    '>',
-  ]);
-}
-
 function printAttributes<
   T extends LiquidHtmlNode & {
     attributes: AttributeNode[];
@@ -134,7 +109,7 @@ function printAttributes<
 
 function printAttribute<T extends AttributeNodeBase<any>>(
   path: AstPath<T>,
-  _options: LiquidParserOptions,
+  options: LiquidParserOptions,
   _print: LiquidPrinter,
 ) {
   const node = path.getValue();
@@ -169,10 +144,11 @@ function printAttribute<T extends AttributeNodeBase<any>>(
     node.attributePosition.start,
     node.attributePosition.end,
   );
+  const quote = options.singleQuote ? `'` : `"`;
   return [
     node.name,
     '=',
-    '"',
+    quote,
     hasLineBreakInRange(
       node.source,
       node.attributePosition.start,
@@ -189,17 +165,8 @@ function printAttribute<T extends AttributeNodeBase<any>>(
           { id: attrGroupId },
         )
       : value,
-    '"',
+    quote,
   ];
-}
-
-function printName(
-  name: string | LiquidDrop,
-  path: LiquidAstPath,
-  print: LiquidPrinter,
-): Doc {
-  if (typeof name === 'string') return name;
-  return path.call(print, 'name');
 }
 
 function printTextNode(

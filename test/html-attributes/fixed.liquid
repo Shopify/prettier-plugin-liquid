@@ -1,31 +1,33 @@
+It should use double quotes for all attributes, unless boolean attribute
 <div
   id="1234"
-  class="long string of class names"
-  style="width: 100px; height: auto;"
+  class="long string of classes"
+  style="color: blue;"
   content=""
->
-  <img
-    src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
-    width="320"
-    height="240"
-    loading="lazy"
+  disabled
+></div>
+
+It should use single quotes for all attributes, unless boolean attribute when singleQuote is true
+singleQuote: true
+<div
+  id='1234'
+  class='long string of classes'
+  style='color: blue;'
+  content=''
+  disabled
+></div>
+
+It should break LiquidTags?
+<div
+  src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
+  width="320"
+  height="240"
+  loading="lazy"
+  {{ block.shopify_attributes }}
+  {% if A -%}
     disabled
-  >
-  <img
-    src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
-    width="320"
-    height="240"
-    loading="lazy"
-    {{ block.shopify_attributes }}
-    {% if A -%}
-      disabled
-    {%- endif %}
-  >
-  <a width="320" disabled>Click me</a>
-  <a disabled width="320">Click me</a>
-  <a width="320" height="320">Click me</a>
-</div>
-<span>Hi, muffin!</span>
+  {%- endif %}
+></div>
 
 <img
   class="image {% if sticky %}image--sticky{% endif %} {% if wrapped %}image--wrapped{% endif %}"

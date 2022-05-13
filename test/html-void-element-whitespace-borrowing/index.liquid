@@ -2,12 +2,12 @@ It should borrow parent and close tag parameters
 <span><img src="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></span>
 
 It should not borrow parent and close tag parameters when htmlWhitespaceSensitivity is set to ignore
-htmlWhitespaceSensitivity: ignore
+htmlWhitespaceSensitivity: "ignore"
 <span><img src="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></span>
 
 It should borrow prev and next tag parameters
 <span><img><img src="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"><img></span>
 
 It should not borrow prev and next tag parameters when htmlWhitespaceSensitivity is set to ignore
-htmlWhitespaceSensitivity: ignore
+htmlWhitespaceSensitivity: "ignore"
 <span><img><img src="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"><img></span>
