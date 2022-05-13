@@ -18,6 +18,7 @@ import {
   getWhitespaceTrim,
   isDeeplyNested,
   isEmpty,
+  isHtmlNode,
   isWhitespace,
   markupLines,
   originallyHadLineBreaks,
@@ -213,8 +214,16 @@ export function printLiquidTag(
     shouldBreak:
       LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
       originallyHadLineBreaks(path, options) ||
+      isAttributeNode(node) ||
       isDeeplyNested(node),
   });
+}
+
+function isAttributeNode(node: LiquidTag) {
+  return (
+    isHtmlNode(node.parentNode) &&
+    node.parentNode.attributes.indexOf(node) !== -1
+  );
 }
 
 function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {

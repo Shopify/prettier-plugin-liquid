@@ -5,12 +5,14 @@ It should use single quotes for all attributes, unless boolean attribute when si
 singleQuote: true
 <div id=1234 class='long string of classes' style="color: blue;" content="" disabled></div>
 
-It should break LiquidTags?
+It should break LiquidTags attribute nodes
 <div src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
 width="320" height="240" loading="lazy" {{ block.shopify_attributes }} {% if A %}disabled{% endif %}></div>
 
+It should not try to format HTML attributes (yet) (1)
 <img class="image {% if sticky %}image--sticky{% endif %} {% if wrapped %}image--wrapped{% endif %}" id="img--{{ product.id }}" src="{{ product.featured_image }}" width="{{ product.featured_image.width }}" height="{{ product.featured_image.height }}" loading="lazy">
 
+It should break and indent attributes that are long af
 <img
 srcset="{% if media.preview_image.width >= 493 %}{{ media.preview_image | image_url: width: 493 }} 493w,{% endif %}
 {% if media.preview_image.width >= 600 %}{{ media.preview_image | image_url: width: 600 }} 600w,{% endif %}
