@@ -360,10 +360,10 @@ function printAttributes(
   } else {
     parts.push(
       options.bracketSameLine
-        ? hasNoCloseMarker(node)
+        ? isSelfClosing(node)
           ? ' '
           : ''
-        : hasNoCloseMarker(node)
+        : isSelfClosing(node)
         ? line
         : softline,
     );
