@@ -11,6 +11,7 @@ import {
   HtmlNode,
   HtmlVoidElement,
   HtmlComment,
+  HtmlElement,
 } from '~/types';
 
 // placeholder while I get my shit together
@@ -46,6 +47,10 @@ export function isSelfClosing(
 
 export function isVoidElement(node: LiquidHtmlNode): node is HtmlVoidElement {
   return node.type === NodeTypes.HtmlVoidElement;
+}
+
+export function isHtmlElement(node: LiquidHtmlNode): node is HtmlElement {
+  return node.type === NodeTypes.HtmlElement;
 }
 
 export function isTextLikeNode(

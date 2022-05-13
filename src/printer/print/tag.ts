@@ -14,6 +14,7 @@ import {
   hasPrettierIgnore,
   isHtmlNode,
   isVoidElement,
+  isHtmlElement,
   isLiquidNode,
   isNonEmptyArray,
   isPreLikeNode,
@@ -315,7 +316,9 @@ function printAttributes(
   }, 'attributes');
 
   const forceNotToBreakAttrContent =
-    (isSelfClosing(node) || isVoidElement(node)) &&
+    (isSelfClosing(node) ||
+      isVoidElement(node) ||
+      (isHtmlElement(node) && node.children.length > 0)) &&
     node.attributes &&
     node.attributes.length === 1;
 
