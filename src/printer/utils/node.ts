@@ -192,6 +192,7 @@ export function preferHardlineAsSurroundingSpaces(node: LiquidHtmlNode) {
 export function preferHardlineAsLeadingSpaces(node: LiquidHtmlNode) {
   return (
     preferHardlineAsSurroundingSpaces(node) ||
+    (isLiquidNode(node) && node.prev && isLiquidNode(node.prev)) ||
     (node.prev && preferHardlineAsTrailingSpaces(node.prev)) ||
     hasSurroundingLineBreak(node)
   );
@@ -200,6 +201,7 @@ export function preferHardlineAsLeadingSpaces(node: LiquidHtmlNode) {
 export function preferHardlineAsTrailingSpaces(node: LiquidHtmlNode) {
   return (
     preferHardlineAsSurroundingSpaces(node) ||
+    (isLiquidNode(node) && node.next && isLiquidNode(node.next)) ||
     (node.type === NodeTypes.HtmlElement && node.name === 'br') ||
     hasSurroundingLineBreak(node)
   );

@@ -34,3 +34,10 @@ it should break next to a character, so there should be wtc
   {% echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' -%}
   , how are you doing?
 </div>
+
+it should add wtc when it adds hardlines in places there wasn't whitespace before
+<span>
+  {%- render 'icon-error' -%}
+  {{- 'blogs.article.email' | t }}
+  {{ form.errors.messages['email'] }}.</span
+>
