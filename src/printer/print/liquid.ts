@@ -362,10 +362,15 @@ function needsBlockStartLeadingWhitespaceStrippingOnBreak(
 ): boolean {
   switch (node.type) {
     case NodeTypes.LiquidTag: {
-      return isExtremelyLeadingWhitespaceSensitive(node);
+      return (
+        !isAttributeNode(node) && isExtremelyLeadingWhitespaceSensitive(node)
+      );
     }
     case NodeTypes.LiquidBranch: {
-      return isExtremelyLeadingWhitespaceSensitive(node);
+      return (
+        !isAttributeNode(node.parentNode! as LiquidTag) &&
+        isExtremelyLeadingWhitespaceSensitive(node)
+      );
     }
     default: {
       return assertNever(node);
@@ -394,6 +399,10 @@ function needsBlockStartTrailingWhitespaceStrippingOnBreak(
     }
 
     case NodeTypes.LiquidBranch: {
+      if (isAttributeNode(node.parentNode! as LiquidTag)) {
+        return false;
+      }
+
       return node.firstChild
         ? isExtremelyLeadingWhitespaceSensitive(node.firstChild)
         : isExtremelyDanglingSpaceSensitive(node);
@@ -410,6 +419,8 @@ function needsBlockEndLeadingWhitespaceStrippingOnBreak(node: LiquidTag) {
     throw new Error(
       'Should only call needsBlockEndLeadingWhitespaceStrippingOnBreak for tags that have closing tags',
     );
+  } else if (isAttributeNode(node)) {
+    return false;
   } else if (isBranchedTag(node)) {
     return isExtremelyTrailingWhitespaceSensitive(node.lastChild!);
   } else if (isEmpty(node.children)) {

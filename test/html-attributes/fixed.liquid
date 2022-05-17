@@ -17,16 +17,18 @@ singleQuote: true
   disabled
 ></div>
 
-It should break LiquidTags attribute nodes
+It should break LiquidTags attribute nodes and consider the insides _not_ whitespace sensitive
 <div
   src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
   width="320"
   height="240"
   loading="lazy"
   {{ block.shopify_attributes }}
-  {% if A -%}
+  {% if A %}
     disabled
-  {%- endif %}
+  {% else %}
+    checked
+  {% endif %}
 ></div>
 
 It should not try to format HTML attributes (yet) (1)
@@ -57,9 +59,9 @@ It should break and indent attributes that are long af
   "
   src="{{ media | image_url: width: 1946 }}"
   sizes="(min-width: {{ settings.page_width }}px) {{ settings.page_width | minus: 100 | times: media_width | round }}px, (min-width: 990px) calc({{ media_width | times: 100 }}vw - 10rem), (min-width: 750px) calc((100vw - 11.5rem) / 2), calc(100vw - 4rem)"
-  {% unless lazy_load == false -%}
+  {% unless lazy_load == false %}
     loading="lazy"
-  {%- endunless %}
+  {% endunless %}
   width="973"
   height="{{ 973 | divided_by: media.preview_image.aspect_ratio | ceil }}"
   alt="{{ media.preview_image.alt | escape }}"
