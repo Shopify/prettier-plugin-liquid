@@ -4,9 +4,10 @@ import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
 
-const PARAGRAPH_SPLITTER = /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|skip|<)/i;
+const PARAGRAPH_SPLITTER =
+  /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|debug|skip|<)/i;
 
-const TEST_MESSAGE = /^(\/\/|It|When|If|focus|skip)[^<{]*/i;
+const TEST_MESSAGE = /^(\/\/|It|When|If|focus|debug|skip)[^<{]*/i;
 
 export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   const source = readFile(dirname, 'index.liquid');
@@ -20,22 +21,23 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
     const expected = expectedChunks[i].trimEnd();
     const testConfig = getTestSetup(src, i);
     const test = () => {
-      const actual = format(
-        src,
-        Object.assign({}, options, testConfig.prettierOptions),
-      ).trimEnd();
+      const testOptions = Object.assign(
+        {},
+        options,
+        testConfig.prettierOptions,
+      );
+      const input = src.replace(TEST_MESSAGE, '');
+      if (testConfig.debug) debug(input, testOptions);
+      const actual = format(input, testOptions).trimEnd();
       try {
         expect(
           actual.replace(TEST_MESSAGE, ''),
           [
             '',
             '########## INPUT',
-            src.replace(TEST_MESSAGE, '').replace(/\n/g, '\n      ').trimEnd(),
+            input.replace(/\n/g, '\n      ').trimEnd(),
             '########## ACTUAL',
-            actual
-              .replace(TEST_MESSAGE, '')
-              .replace(/\n/g, '\n      ')
-              .trimEnd(),
+            actual.replace(/\n/g, '\n      ').trimEnd(),
             '##########',
             '',
           ].join('\n      '),
@@ -70,7 +72,7 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
       }
     };
 
-    if (testConfig.focus) {
+    if (testConfig.focus || testConfig.debug) {
       it.only(testConfig.message, test);
     } else if (testConfig.skip) {
       it.skip(testConfig.message, test);
@@ -80,6 +82,7 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
   }
 }
 
+// prefix your tests with `debug` so that only this test runs and starts a debugging session
 // prefix your tests with `focus` so that only this test runs.
 // prefix your tests with `skip` so that it shows up as skipped.
 function getTestSetup(paragraph: string, index: number) {
@@ -103,6 +106,7 @@ function getTestSetup(paragraph: string, index: number) {
     message: message.replace(optionsParser, ''),
     prettierOptions,
     focus: /^focus/i.test(message),
+    debug: /^debug/i.test(message),
     skip: /^skip/i.test(message),
   };
 }
@@ -140,6 +144,20 @@ export function format(content: string, options: any) {
     parser: 'liquid-html',
     plugins: [plugin],
   });
+}
+
+export function printToDoc(content: string, options: any = {}) {
+  return (prettier as any).__debug.printToDoc(content, {
+    ...options,
+    parser: 'liquid-html',
+    plugins: [plugin],
+  });
+}
+
+export function debug(content: string, options: any = {}) {
+  const printed = format(content, options);
+  const doc = printToDoc(content, options);
+  debugger;
 }
 
 /**
