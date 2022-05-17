@@ -41,42 +41,11 @@ import {
   printLiquidDrop,
   printLiquidTag,
 } from '~/printer/print/liquid';
+import { printChildren } from '~/printer/print/children';
 
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
 
-/**
- * This one is a bit like path.map except that it tries to maintain new
- * lines in between nodes. And it will shrink multiple new lines into one.
- */
-function mapWithNewLine(
-  path: LiquidAstPath,
-  options: LiquidParserOptions,
-  print: LiquidPrinter,
-  property: string,
-  args?: LiquidPrinterArgs,
-): Doc[] {
-  const doc: Doc[] = [];
-  const source = getSource(path);
-  const { locStart, locEnd } = options;
-  let curr: LiquidHtmlNode | null = null;
-  let prev: LiquidHtmlNode | null = null;
-  path.each((path) => {
-    curr = path.getValue();
-    if (curr && prev && locEnd(prev) < locStart(curr)) {
-      const gap = source.slice(locEnd(prev), locStart(curr));
-      // if we have more than one new line between nodes, insert an empty
-      // node in between the result of the `map`. This way we can join with
-      // hardline or softline and maintain 'em.
-      if (gap.replace(/ |\t|\r/g, '').length > 1) {
-        doc.push('');
-      }
-    }
-    doc.push(printNode(path, options, print, args));
-    prev = curr;
-  }, property);
-  return doc;
-}
 
 function printAttributes<
   T extends LiquidHtmlNode & {
@@ -214,7 +183,7 @@ function printNode(
   switch (node.type) {
     case NodeTypes.Document: {
       return [
-        join(hardline, mapWithNewLine(path, options, print, 'children')),
+        printChildren(path as AstPath<DocumentNode>, options, print, args),
         hardline,
       ];
     }
