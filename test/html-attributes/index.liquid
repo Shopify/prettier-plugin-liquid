@@ -45,3 +45,23 @@ If there's only one attribute and not self-closing, but with children, do not br
 <div class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
 Hello
 </div>
+
+If there's only one attribute, not self-closing, with children, do not break the LiquidTag attr and close the tag on a different line.
+printWidth: 30
+<div {% echo 'disabled' %}>
+  Hello
+</div>
+
+If there's only one attribute, not self-closing, with children, do not break the LiquidNode attr and close the tag on a different line.
+printWidth: 30
+<div {{ block_attributes }}>
+  Hello
+</div>
+
+If there's only one attribute, not self closing, with children, but the attribute is a liquid tag that has children, break it normally.
+printWidth: 40
+<div {% if some_condition %} attribute=value {% endif %}>hello world</div>
+
+If there's only one attribute, not self closing, without children, but the attribute is a liquid tag that has children, break it normally.
+printWidth: 40
+<div {% if some_condition %} attribute=value {% endif %}></div>

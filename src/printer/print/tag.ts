@@ -23,6 +23,7 @@ import {
   shouldPreserveContent,
   isSelfClosing,
   isHtmlComment,
+  isMultilineLiquidTag,
 } from '~/printer/utils';
 
 const {
@@ -320,7 +321,8 @@ function printAttributes(
       isVoidElement(node) ||
       (isHtmlElement(node) && node.children.length > 0)) &&
     node.attributes &&
-    node.attributes.length === 1;
+    node.attributes.length === 1 &&
+    !isMultilineLiquidTag(node.attributes[0]);
 
   const forceBreakAttrContent =
     node.source

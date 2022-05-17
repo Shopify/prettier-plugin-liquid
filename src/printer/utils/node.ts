@@ -12,7 +12,9 @@ import {
   HtmlVoidElement,
   HtmlComment,
   HtmlElement,
+  LiquidTag,
 } from '~/types';
+import { isEmpty } from './array';
 
 // placeholder while I get my shit together
 export function isVueCustomBlock(_node: any, _options: any) {
@@ -63,6 +65,17 @@ export function isLiquidNode(
   node: LiquidHtmlNode | undefined,
 ): node is LiquidNode {
   return !!node && LiquidNodeTypes.includes(node.type as any);
+}
+
+export function isMultilineLiquidTag(
+  node: LiquidHtmlNode | undefined,
+): node is LiquidTag {
+  return (
+    !!node &&
+    node.type === NodeTypes.LiquidTag &&
+    !!node.children &&
+    !isEmpty(node.children)
+  );
 }
 
 export function isHtmlNode(node: LiquidHtmlNode | undefined): node is HtmlNode {
