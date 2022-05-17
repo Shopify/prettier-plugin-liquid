@@ -14,7 +14,7 @@ import {
   HtmlElement,
   LiquidTag,
 } from '~/types';
-import { isEmpty } from './array';
+import { isEmpty } from '~/printer/utils/array';
 
 // placeholder while I get my shit together
 export function isVueCustomBlock(_node: any, _options: any) {
