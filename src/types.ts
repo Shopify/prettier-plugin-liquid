@@ -41,6 +41,7 @@ export const LiquidNodeTypes = [
 export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
+  singleLineLinkTags: boolean;
 };
 export type LiquidPrinterArgs = {
   leadingSpaceGroupId?: symbol[] | symbol;

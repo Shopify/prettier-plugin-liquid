@@ -317,22 +317,26 @@ function printAttributes(
   }, 'attributes');
 
   const forceNotToBreakAttrContent =
-    (isSelfClosing(node) ||
+    (options.singleLineLinkTags &&
+      typeof node.name === 'string' &&
+      node.name === 'link') ||
+    ((isSelfClosing(node) ||
       isVoidElement(node) ||
       (isHtmlElement(node) && node.children.length > 0)) &&
-    node.attributes &&
-    node.attributes.length === 1 &&
-    !isMultilineLiquidTag(node.attributes[0]);
+      node.attributes &&
+      node.attributes.length === 1 &&
+      !isMultilineLiquidTag(node.attributes[0]));
 
   const forceBreakAttrContent =
     node.source
       .slice(node.blockStartPosition.start, node.blockStartPosition.end)
       .indexOf('\n') !== -1;
 
-  const attributeLine =
-    options.singleAttributePerLine && node.attributes.length > 1
-      ? hardline
-      : line;
+  const attributeLine = forceNotToBreakAttrContent
+    ? ' '
+    : options.singleAttributePerLine && node.attributes.length > 1
+    ? hardline
+    : line;
 
   const parts: Doc[] = [
     indent([

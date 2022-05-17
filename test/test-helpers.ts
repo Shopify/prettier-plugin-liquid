@@ -103,7 +103,7 @@ function getTestSetup(paragraph: string, index: number) {
   }
 
   return {
-    message: message.replace(optionsParser, ''),
+    message: message.replace(optionsParser, '').trimEnd(),
     prettierOptions,
     focus: /^focus/i.test(message),
     debug: /^debug/i.test(message),
