@@ -4,7 +4,6 @@ import { NodeTypes } from '~/types';
 import { toLiquidHtmlAST } from '~/parser';
 import { preprocess } from '~/printer/print-preprocess';
 import { DocumentNode, LiquidHtmlNode, LiquidParserOptions } from '~/types';
-import { reindent } from '~/../test/test-helpers';
 
 describe('Module: augmentWithWhitespaceHelpers', () => {
   let ast: DocumentNode;
