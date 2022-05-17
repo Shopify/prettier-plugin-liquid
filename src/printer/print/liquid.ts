@@ -147,7 +147,7 @@ export function printLiquidBlockEnd(
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.delimiterWhitespaceEnd ?? '',
-    node.isTrailingWhitespaceSensitive,
+    isExtremelyTrailingWhitespaceSensitive(node),
     trailingSpaceGroupId,
   );
   return group([

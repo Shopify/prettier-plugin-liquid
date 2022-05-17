@@ -214,7 +214,9 @@ export function preferHardlineAsLeadingSpaces(node: LiquidHtmlNode) {
 export function preferHardlineAsTrailingSpaces(node: LiquidHtmlNode) {
   return (
     preferHardlineAsSurroundingSpaces(node) ||
-    (isLiquidNode(node) && node.next && isLiquidNode(node.next)) ||
+    (isLiquidNode(node) &&
+      node.next &&
+      (isLiquidNode(node.next) || isHtmlNode(node.next))) ||
     (node.type === NodeTypes.HtmlElement && node.name === 'br') ||
     hasSurroundingLineBreak(node)
   );

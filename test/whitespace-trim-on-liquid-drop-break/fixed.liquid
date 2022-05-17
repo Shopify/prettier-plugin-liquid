@@ -19,6 +19,14 @@ previous/next characters were spaces
   {{ 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }}
 </div>
 
+It should add wtc to the left of a br, but not to the right (as per prettier/language-html)
+printWidth: 20
+<span>
+  {{- some_drop -}}
+  <br>
+  {{ some_drop -}}
+</span>
+
 --------------------------------------------------------------------------------
 
 In paragraphs,

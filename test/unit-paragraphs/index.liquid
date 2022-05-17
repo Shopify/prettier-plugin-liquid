@@ -50,3 +50,9 @@ it should break parent and add WTC when the child breaks
 <p>
   (-{% if liquid %}<span>aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span>{% endif %}-)
 </p>
+
+it should add wtc between liquid drop and span if the ifbreak breaks.
+printWidth: 20
+<p>
+  {{ drop }}<span>Lorem Ipsum</span>
+</p>

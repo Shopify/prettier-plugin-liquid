@@ -15,6 +15,10 @@ it should not add wtc if the liquid drop breaks on a new line and the
 previous/next characters were spaces
 <div> {{ 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }} </div>
 
+It should add wtc to the left of a br, but not to the right (as per prettier/language-html)
+printWidth: 30
+<span>{{ some_drop }}<br>{{ some_drop }}</span>
+
 --------------------------------------------------------------------------------
 
 In paragraphs,

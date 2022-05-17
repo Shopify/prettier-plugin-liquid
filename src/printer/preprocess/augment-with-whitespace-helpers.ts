@@ -223,7 +223,14 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
     return true;
   }
 
+  // We do it slightly differently than prettier/prettier.
   if (isScriptLikeTag(node)) {
+    return false;
+  }
+
+  // BRs are not trailing whitespace sensitive, it's an exception as per prettier/language-html
+  // https://github.com/prettier/prettier/blob/c36d89712a24fdef753c056f4c82bc87ebe07865/src/language-html/utils/index.js#L290-L296
+  if (isHtmlNode(node) && typeof node.name === 'string' && node.name === 'br') {
     return false;
   }
 

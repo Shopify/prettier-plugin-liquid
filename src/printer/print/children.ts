@@ -488,10 +488,6 @@ export function printChildren(
       groupIds.push(trailingSpaceGroupIds[index]);
     }
 
-    if (!isEmpty(next.leadingSoftlines)) {
-      groupIds.push(leadingSpaceGroupIds[index + 1]);
-    }
-
     if (isEmpty(groupIds)) {
       groupIds.push(FORCE_FLAT_GROUP_ID);
     }
