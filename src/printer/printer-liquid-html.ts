@@ -19,6 +19,7 @@ import {
   NodeTypes,
   Position,
   LiquidPrinterArgs,
+  DocumentNode,
 } from '~/types';
 import { AttributeNodeBase } from '~/parser/ast';
 import { assertNever } from '~/utils';
@@ -45,7 +46,15 @@ import { printChildren } from '~/printer/print/children';
 
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
+const { replaceTextEndOfLine } = doc.utils as any;
 
+function getSchema(contents: string, options: LiquidParserOptions) {
+  try {
+    return JSON.stringify(JSON.parse(contents), null, options.tabWidth);
+  } catch (e) {
+    return contents;
+  }
+}
 
 function printAttributes<
   T extends LiquidHtmlNode & {
@@ -249,6 +258,17 @@ function printNode(
         node.whitespaceEnd,
         '%}',
       ];
+
+      if (node.name === 'schema') {
+        const schema = getSchema(node.body, options);
+        const body = [hardline, ...replaceTextEndOfLine(schema, hardline)];
+        return [
+          blockStart,
+          options.indentSchema ? indent(body) : body,
+          hardline,
+          blockEnd,
+        ];
+      }
 
       if (
         !hasLineBreakInRange(
