@@ -57,6 +57,23 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPosition(ast, 'children.0.attributes.2');
   });
 
+  it('should parse HTML attributes inside tags', () => {
+    const ast = toLiquidHtmlAST(
+      `<img {% if cond %}src="https://1234" loading='lazy'{% else %}disabled{% endif %}>`,
+    );
+    expectPath(ast, 'children.0').to.exist;
+    expectPath(ast, 'children.0.type').to.eql('HtmlVoidElement');
+    expectPath(ast, 'children.0.name').to.eql('img');
+    expectPath(ast, 'children.0.attributes.0.name').to.eql('if');
+    expectPath(ast, 'children.0.attributes.0.children.0.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.attributes.0.children.0.children.0.type').to.eql(
+      'AttrDoubleQuoted',
+    );
+    expectPath(ast, 'children.0.attributes.0.children.0.children.1.type').to.eql(
+      'AttrSingleQuoted',
+    );
+  });
+
   it('should parse HTML tags with Liquid Drop names', () => {
     [
       `<{{ node_type }} src="https://1234" loading='lazy' disabled></{{node_type}}>`,

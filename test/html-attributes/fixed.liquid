@@ -107,3 +107,27 @@ printWidth: 30
     attribute="value"
   {% endif %}
 ></div>
+
+If there's multiple attributes inside an if tag attribute node, print until print width
+<div
+  {% if some_condition %}
+    attribute="abstractNode" ok="value"
+  {% endif %}
+></div>
+
+If there's multiple attributes inside an if tag attribute node, print until print width
+printWidth: 1
+<div
+  {% if some_condition %}
+    attribute="abstractNode"
+    ok="value"
+  {% endif %}
+></div>
+
+If there's multiple attributes inside an if tag attribute node with a newline, maintain newline
+<div
+  {% if some_condition %}
+    attribute="abstractNode"
+    ok="value"
+  {% endif %}
+></div>
