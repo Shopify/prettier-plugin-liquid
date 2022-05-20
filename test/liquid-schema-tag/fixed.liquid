@@ -10,3 +10,9 @@
     }
   {%- endschema -%}
 </div>
+
+it should not try to format invalid json, but should reindent
+{% schema %}
+{ "invalid":
+  'json' }
+{% endschema %}

@@ -27,7 +27,6 @@ import { assertNever } from '~/utils';
 import { preprocess } from '~/printer/print-preprocess';
 import {
   bodyLines,
-  getSource,
   hasLineBreakInRange,
   isEmpty,
   reindent,
@@ -50,9 +49,9 @@ const { replaceTextEndOfLine } = doc.utils as any;
 
 function getSchema(contents: string, options: LiquidParserOptions) {
   try {
-    return JSON.stringify(JSON.parse(contents), null, options.tabWidth);
+    return [JSON.stringify(JSON.parse(contents), null, options.tabWidth), true];
   } catch (e) {
-    return contents;
+    return [contents, false];
   }
 }
 
@@ -260,7 +259,15 @@ function printNode(
       ];
 
       if (node.name === 'schema') {
-        const schema = getSchema(node.body, options);
+        const [schema, isValid] = getSchema(node.body, options);
+        if (!isValid) {
+          return [
+            blockStart,
+            ...replaceTextEndOfLine(schema, hardline),
+            blockEnd,
+          ];
+        }
+
         const body = [hardline, ...replaceTextEndOfLine(schema, hardline)];
         return [
           blockStart,
