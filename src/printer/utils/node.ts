@@ -1,4 +1,3 @@
-import { AstPath } from 'prettier';
 import {
   HtmlSelfClosingElement,
   LiquidHtmlNode,
@@ -15,11 +14,6 @@ import {
   LiquidTag,
 } from '~/types';
 import { isEmpty } from '~/printer/utils/array';
-
-// placeholder while I get my shit together
-export function isVueCustomBlock(_node: any, _options: any) {
-  return false;
-}
 
 export function isScriptLikeTag(node: { type: NodeTypes }) {
   return node.type === NodeTypes.HtmlRawNode;
@@ -266,23 +260,4 @@ function hasLineBreakInRange(source: string, start: number, end: number) {
 
 export function getLastDescendant(node: LiquidHtmlNode): LiquidHtmlNode {
   return node.lastChild ? getLastDescendant(node.lastChild) : node;
-}
-
-export function countParents(
-  path: AstPath<LiquidHtmlNode>,
-  predicate: (x: any) => boolean,
-) {
-  let counter = 0;
-  for (let i = path.stack.length - 1; i >= 0; i--) {
-    const value = path.stack[i];
-    if (
-      value &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      predicate(value)
-    ) {
-      counter++;
-    }
-  }
-  return counter;
 }

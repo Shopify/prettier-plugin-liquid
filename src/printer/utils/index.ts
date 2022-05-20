@@ -1,10 +1,5 @@
 import { Doc, doc } from 'prettier';
-import {
-  LiquidAstPath,
-  LiquidHtmlNode,
-  LiquidBranch,
-  NodeTypes,
-} from '~/types';
+import { LiquidAstPath, LiquidHtmlNode, LiquidBranch } from '~/types';
 import { isBranchedTag } from '~/parser';
 import { isEmpty } from '~/printer/utils/array';
 
@@ -31,38 +26,6 @@ export function isDeeplyNested(
   return !!node.children.find(
     (child) => !isEmpty((child as any).children || []),
   );
-}
-
-export function isTrimmingInnerLeft(node: LiquidHtmlNode | undefined): boolean {
-  if (!node) return false;
-  switch (node.type) {
-    case NodeTypes.LiquidRawTag:
-    case NodeTypes.LiquidTag: // {% if a -%}{% endif %}
-      if (node.delimiterWhitespaceEnd === undefined) return false;
-      return node.whitespaceEnd === '-';
-    case NodeTypes.LiquidBranch: // {% else -%}
-      if (node.name === null) return false;
-      return node.whitespaceEnd === '-';
-    case NodeTypes.LiquidDrop:
-    default:
-      return false;
-  }
-}
-
-export function isTrimmingInnerRight(
-  node: LiquidHtmlNode | undefined,
-): boolean {
-  if (!node) return false;
-  switch (node.type) {
-    case NodeTypes.LiquidRawTag:
-    case NodeTypes.LiquidTag: // {% if a %}{%- endif %}
-      if (node.delimiterWhitespaceStart === undefined) return false;
-      return node.delimiterWhitespaceStart === '-';
-    case NodeTypes.LiquidBranch:
-    case NodeTypes.LiquidDrop:
-    default:
-      return false;
-  }
 }
 
 // Optionally converts a '' into '-' if any of the parent group breaks and source[loc] is non space.
@@ -94,11 +57,6 @@ export function ifBreakChain(
       ifBreak(breaksContent, currFlatContent, { groupId }),
     flatContent,
   );
-}
-
-export function maybeIndent(whitespace: Doc, doc: Doc): Doc {
-  if (!doc) return '';
-  return indent([whitespace, doc]);
 }
 
 export function isNonEmptyArray(object: any): object is any[] {

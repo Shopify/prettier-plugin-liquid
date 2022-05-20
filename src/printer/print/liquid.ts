@@ -335,8 +335,8 @@ export function printLiquidBranch(
     outerLeadingWhitespace,
     printLiquidBlockStart(
       path as AstPath<LiquidBranch>,
-      args.leadingSpaceGroupId, // TODO
-      args.trailingSpaceGroupId, // TODO
+      args.leadingSpaceGroupId,
+      args.trailingSpaceGroupId,
     ),
     indent([
       innerLeadingWhitespace(branch),

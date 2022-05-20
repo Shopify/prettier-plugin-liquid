@@ -3,7 +3,6 @@
 import { AstPath, doc, Doc } from 'prettier';
 import {
   shouldPreserveContent,
-  countParents,
   forceBreakContent,
   hasNoCloseMarker,
 } from '~/printer/utils';
@@ -21,7 +20,6 @@ import {
   NodeTypes,
   LiquidParserOptions,
   LiquidPrinter,
-  LiquidHtmlNode,
   HtmlNode,
 } from '~/types';
 
@@ -71,18 +69,6 @@ export function printElement(
       { id: elementGroupId },
     );
 
-  const printChildrenDoc = (childrenDoc: Doc) => {
-    // if (
-    //   (isScriptLikeTag(node) || isVueCustomBlock(node, options)) &&
-    //   node.parentNode.type === NodeTypes.Document &&
-    //   options.parser === 'vue' &&
-    //   !options.vueIndentScriptAndStyle
-    // ) {
-    //   return childrenDoc;
-    // }
-    return indent(childrenDoc);
-  };
-
   const printLineBeforeChildren = () => {
     if (
       node.firstChild!.hasLeadingWhitespace &&
@@ -120,17 +106,6 @@ export function printElement(
     ) {
       return line;
     }
-    const lastChild = node.lastChild!;
-    if (
-      (lastChild!.type === NodeTypes.HtmlComment &&
-        endsInProperlyIndentedEmptyLine(path, lastChild.body, options)) ||
-      (lastChild!.type === NodeTypes.TextNode &&
-        node.isWhitespaceSensitive &&
-        node.isIndentationSensitive &&
-        endsInProperlyIndentedEmptyLine(path, lastChild.value, options))
-    ) {
-      return '';
-    }
     return softline;
   };
 
@@ -144,7 +119,7 @@ export function printElement(
 
   return printTag([
     forceBreakContent(node) ? breakParent : '',
-    printChildrenDoc([
+    indent([
       printLineBeforeChildren(),
       printChildren(path as AstPath<typeof node>, options, print, {
         leadingSpaceGroupId: elementGroupId,
@@ -153,23 +128,4 @@ export function printElement(
     ]),
     printLineAfterChildren(),
   ]);
-}
-
-// TODO: Not sure the name is correct, this is code we got from prettier and I'm
-// not 100% sure why we need it.
-function endsInProperlyIndentedEmptyLine(
-  path: AstPath<any>,
-  value: string,
-  options: LiquidParserOptions,
-) {
-  return new RegExp(
-    `\\n[\\t ]{${
-      options.tabWidth *
-      countParents(
-        path,
-        (node: LiquidHtmlNode) =>
-          !!node.parentNode && node.parentNode.type !== NodeTypes.Document,
-      )
-    }}$`,
-  ).test(value);
 }
