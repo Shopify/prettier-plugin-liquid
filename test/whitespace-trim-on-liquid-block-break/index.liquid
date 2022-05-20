@@ -19,7 +19,22 @@ previous/next characters were spaces
 
 In LiquidTag children array,
 
-when it does break, there was a whitespace, and the parent is not
+If it breaks and the htmlWhitespaceSensitivity is 'strict', then add whitespace stripping
+htmlWhitespaceSensitivity: "strict"
+printWidth: 30
+{% form %}aaaaaaaaaaaa{% endform %}
+
+If it breaks and the htmlWhitespaceSensitivity is 'ignore', then omit whitespace stripping
+htmlWhitespaceSensitivity: "ignore"
+printWidth: 30
+{% if A %}aaaaaaaaaaaa{% endif %}
+
+If it breaks and the node display is inline add whitespace stripping
+printWidth: 30
+<!-- display: inline -->
+{% form %}aaaaaaaaaaaa{% endform %}
+
+When it does break, there was a whitespace, and the parent is not
 leading/trailing space sensitive, it should not change anything
 {% form %} aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa {% endform %}
 
