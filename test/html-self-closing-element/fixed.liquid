@@ -1,3 +1,16 @@
+It should format self closing tags as expected
+printWidth: 40
+<self-closing />
+<self-closing />
+<self-closing with="attributes" />
+<self-closing
+  with="attributes"
+  that="would"
+  span="on"
+  multiple
+  lines
+/>
+
 It should borrow parent and close tag parameters
 <span
   ><sc src="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
