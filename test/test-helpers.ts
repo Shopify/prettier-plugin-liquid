@@ -3,13 +3,36 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
+import { LiquidParserOptions } from '../src/types';
 
 const PARAGRAPH_SPLITTER =
   /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|debug|skip|<)/i;
 
 const TEST_MESSAGE = /^(\/\/|It|When|If|focus|debug|skip)[^<{]*/i;
 
-export function assertFormattedEqualsFixed(dirname: string, options = {}) {
+function testMessage(input: string, actual: string) {
+  return [
+    '',
+    '########## INPUT',
+    input.trimEnd(),
+    '########## ACTUAL',
+    actual.trimEnd(),
+    '##########',
+    '',
+  ]
+    .join('\n')
+    .replace(/\n/g, '\n      ')
+    .trimEnd();
+}
+
+function merge<T, U>(a: T, b: U): T & U {
+  return Object.assign({}, a, b);
+}
+
+export function assertFormattedEqualsFixed(
+  dirname: string,
+  options: Partial<LiquidParserOptions> = {},
+) {
   const source = readFile(dirname, 'index.liquid');
   const expectedResults = readFile(dirname, 'fixed.liquid');
 
@@ -21,49 +44,30 @@ export function assertFormattedEqualsFixed(dirname: string, options = {}) {
     const expected = expectedChunks[i].trimEnd();
     const testConfig = getTestSetup(src, i);
     const test = () => {
-      const testOptions = Object.assign(
-        {},
-        options,
-        testConfig.prettierOptions,
-      );
+      const testOptions = merge(options, testConfig.prettierOptions);
       const input = src.replace(TEST_MESSAGE, '');
       if (testConfig.debug) debug(input, testOptions);
       const actual = format(input, testOptions).trimEnd();
       try {
-        expect(
-          actual.replace(TEST_MESSAGE, ''),
-          [
-            '',
-            '########## INPUT',
-            input.replace(/\n/g, '\n      ').trimEnd(),
-            '########## ACTUAL',
-            actual.replace(/\n/g, '\n      ').trimEnd(),
-            '##########',
-            '',
-          ].join('\n      '),
-        ).to.eql(expected.replace(TEST_MESSAGE, ''));
+        expect(actual, testMessage(input, actual)).to.eql(
+          expected.replace(TEST_MESSAGE, ''),
+        );
       } catch (e) {
         // Improve the stack trace so that it points to the fixed file instead
         // of this test-helper file. Might make navigation smoother.
         if ((e as any).stack as any) {
+          const fixedUrl = path.join(dirname, 'fixed.liquid');
+          const inputUrl = path.join(dirname, 'index.liquid');
+          const testUrl = path.join(dirname, 'index.spec.ts');
+          const fixedOffset = lineOffset(expectedResults, expected);
+          const fixedLoc = diffLoc(expected, actual, fixedOffset).join(':');
+          const inputLine = lineOffset(source, src) + 1;
           (e as any).stack = ((e as any).stack as string).replace(
             /^(\s+)at Context.test \(.*:\d+:\d+\)/im,
             [
-              `$1at fixed.liquid (${path.join(
-                dirname,
-                'fixed.liquid',
-              )}:${diffLoc(
-                expected,
-                actual,
-                lineOffset(expectedResults, expected),
-              ).join(':')})`,
-              `$1at input.liquid (${path.join(dirname, 'index.liquid')}:${
-                lineOffset(source, src) + 1
-              }:0)`,
-              `$1at assertFormattedEqualsFixed (${path.join(
-                dirname,
-                'index.spec.ts',
-              )}:5:6)`,
+              `$1at fixed.liquid (${fixedUrl}:${fixedLoc})`,
+              `$1at input.liquid (${inputUrl}:${inputLine}:0)`,
+              `$1at assertFormattedEqualsFixed (${testUrl}:5:6)`,
             ].join('\n'),
           );
         }
@@ -95,7 +99,7 @@ function getTestSetup(paragraph: string, index: number) {
     .replace(/\r?\n/g, ' ')
     .trimEnd()
     .replace(/\.$/, '');
-  const prettierOptions: any = {};
+  const prettierOptions: Partial<LiquidParserOptions> = {};
   const optionsParser = /(?<name>\w+): (?<value>[^\s]*)/g;
   let match: RegExpExecArray;
   while ((match = optionsParser.exec(message)) !== null) {
