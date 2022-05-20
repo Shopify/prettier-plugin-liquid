@@ -36,3 +36,6 @@ jobs:
 
       - name: Run the unit tests
         run: yarn test
+
+      - name: Run the idempotence tests
+        run: yarn test:idempotence

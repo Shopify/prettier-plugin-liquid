@@ -29,6 +29,10 @@ function merge<T, U>(a: T, b: U): T & U {
   return Object.assign({}, a, b);
 }
 
+const TEST_IDEMPOTENCE = !!(
+  process.env.TEST_IDEMPOTENCE && JSON.parse(process.env.TEST_IDEMPOTENCE)
+);
+
 export function assertFormattedEqualsFixed(
   dirname: string,
   options: Partial<LiquidParserOptions> = {},
@@ -41,17 +45,21 @@ export function assertFormattedEqualsFixed(
 
   for (let i = 0; i < chunks.length; i++) {
     const src = chunks[i];
-    const expected = expectedChunks[i].trimEnd();
     const testConfig = getTestSetup(src, i);
     const test = () => {
       const testOptions = merge(options, testConfig.prettierOptions);
       const input = src.replace(TEST_MESSAGE, '');
       if (testConfig.debug) debug(input, testOptions);
-      const actual = format(input, testOptions).trimEnd();
+      let actual = format(input, testOptions).trimEnd();
+      let expected = expectedChunks[i].replace(TEST_MESSAGE, '').trimEnd();
+
+      if (TEST_IDEMPOTENCE) {
+        expected = actual;
+        actual = format(expected, testOptions).trimEnd();
+      }
+
       try {
-        expect(actual, testMessage(input, actual)).to.eql(
-          expected.replace(TEST_MESSAGE, ''),
-        );
+        expect(actual, testMessage(input, actual)).to.eql(expected);
       } catch (e) {
         // Improve the stack trace so that it points to the fixed file instead
         // of this test-helper file. Might make navigation smoother.

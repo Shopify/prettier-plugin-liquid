@@ -29,6 +29,7 @@
     "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
     "prettier": "prettier --plugin . --parser=liquid-html",
     "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'",
+    "test:idempotence": "TEST_IDEMPOTENCE=true node_modules/.bin/mocha 'test/**/*.spec.ts'",
     "prepare": "husky install"
   },
   "peerDependencies": {
