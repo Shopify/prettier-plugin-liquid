@@ -109,7 +109,13 @@ describe('Unit: toLiquidHtmlAST', () => {
       '<{{ node_type }}></{{ wrong_end_node }}>',
     ];
     for (const testCase of testCases) {
-      expect(() => toLiquidHtmlAST(testCase)).to.throw(LiquidHTMLASTParsingError);
+      try {
+        toLiquidHtmlAST(testCase);
+        expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
+      } catch (e) {
+        expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
+      }
     }
   });
 
