@@ -30,8 +30,7 @@ import { printChildren } from '~/printer/print/children';
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 const { builders } = doc;
-const { dedentToRoot, group, hardline, ifBreak, indent, join, line, softline } =
-  builders;
+const { group, hardline, ifBreak, indent, join, line, softline } = builders;
 
 export function printLiquidDrop(
   path: LiquidAstPath,
@@ -236,13 +235,6 @@ function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {
     node.firstChild.isLeadingWhitespaceSensitive
   ) {
     return line;
-  }
-  if (
-    node.firstChild.type === NodeTypes.TextNode &&
-    node.isWhitespaceSensitive &&
-    node.isIndentationSensitive
-  ) {
-    return dedentToRoot(softline);
   }
 
   return softline;
