@@ -315,7 +315,8 @@ function hasDanglingWhitespace(node: AugmentedAstNode): boolean {
 }
 
 function hasLeadingWhitespace(node: AugmentedAstNode): boolean {
-  if (node.type === NodeTypes.LiquidBranch) {
+  // Edge case for default branch.
+  if (node.type === NodeTypes.LiquidBranch && !node.prev) {
     return node.firstChild
       ? hasLeadingWhitespace(node.firstChild)
       : hasDanglingWhitespace(node);

@@ -14,12 +14,10 @@ import { isBranchedTag } from '~/parser/ast';
 import { assertNever } from '~/utils';
 
 import {
-  getSource,
   getWhitespaceTrim,
   isDeeplyNested,
   isEmpty,
   isHtmlNode,
-  isWhitespace,
   markupLines,
   originallyHadLineBreaks,
   reindent,
@@ -267,7 +265,6 @@ function printLiquidDefaultBranch(
 ): Doc {
   const branch = path.getValue();
   const parentNode: LiquidTag = path.getParentNode() as any;
-  const source = getSource(path);
 
   // When the node is empty and the parent is empty. The space will come
   // from the trailingWhitespace of the parent. When this happens, we don't
@@ -282,15 +279,14 @@ function printLiquidDefaultBranch(
   // e.g. {% if A %}{% endif %}
   // e.g. {% if A %}{% else %}...{% endif %}
   const isBranchEmptyWithoutSpace =
-    isEmpty(branch.children) &&
-    !isWhitespace(source, parentNode.blockStartPosition.end);
+    isEmpty(branch.children) && !branch.hasDanglingWhitespace;
   if (isBranchEmptyWithoutSpace) return '';
 
   // If the branch does not break, is empty and had whitespace, we might
   // want a space in there. We don't collapse those because the trailing
   // whitespace does not come from the parent.
   // {% if A %} {% else %}...{% endif %}
-  if (isEmpty(branch.children)) {
+  if (branch.hasDanglingWhitespace) {
     return ifBreak('', ' ');
   }
 
@@ -320,12 +316,8 @@ export function printLiquidBranch(
   // When the left sibling is empty, its trailing whitespace is its leading
   // whitespace. So we should collapse it here and ignore it.
   const shouldCollapseSpace = leftSibling && isEmpty(leftSibling.children);
-  const hasWhitespaceToTheLeft = isWhitespace(
-    branch.source,
-    branch.blockStartPosition.start - 1,
-  );
   const outerLeadingWhitespace =
-    hasWhitespaceToTheLeft && !shouldCollapseSpace ? line : softline;
+    branch.hasLeadingWhitespace && !shouldCollapseSpace ? line : softline;
 
   return [
     outerLeadingWhitespace,

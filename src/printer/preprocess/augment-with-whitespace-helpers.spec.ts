@@ -345,6 +345,18 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
       expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
       expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
     });
+
+    it('should return the correct value for LiquidBranches', () => {
+      ast = toAugmentedAst('{% if A %} hello{% else %} ok{% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.hasLeadingWhitespace').to.be.false;
+
+      ast = toAugmentedAst('{% if A %} {% else %}ok{% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.hasLeadingWhitespace').to.be.true;
+    });
   });
 
   describe('Unit: hasTrailingWhitespace', () => {
@@ -354,6 +366,18 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
       expectPath(ast, 'children.0.hasTrailingWhitespace').to.be.false;
       expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
       expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.true;
+    });
+
+    it('should return the correct value for LiquidBranches', () => {
+      ast = toAugmentedAst('{% if A %} hello{% else %}ok {% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.1.hasTrailingWhitespace').to.be.true;
+
+      ast = toAugmentedAst('{% if A %} {% else %}ok{% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.hasTrailingWhitespace').to.be.false;
     });
   });
 
