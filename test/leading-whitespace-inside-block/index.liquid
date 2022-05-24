@@ -5,9 +5,10 @@ It should omit the leading space if it is stripped anyway
 
 It should not omit the leading space if there's leading whitespace and the
 tag is leading whitespace sensitive
-{% capture %} space{% endcapture %}
-{%- capture %} space{% endcapture -%}
-{% capture %} space{% endcapture %}
+htmlWhitespaceSensitivity: "strict"
+{% form %} space{% endform %}
+{%- form %} space{% endform -%}
+{% form %} space{% endform %}
 
 It should omit the leading space if there's leading whitespace and the
 tag is not leading whitespace sensitive
@@ -17,7 +18,8 @@ tag is not leading whitespace sensitive
 
 It should not omit the whitespace if it is included in a tag that creates an
 inline formatting context
-<p>haha{% capture %} space{% endcapture %}</p>
+htmlWhitespaceSensitivity: "strict"
+<p>haha{% form %} space{% endform %}</p>
 
 It should omit the whitespace if it is included in a tag that creates a block
 formatting context.
