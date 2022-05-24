@@ -42,12 +42,12 @@ export function printLiquidDrop(
   const node: LiquidDrop = path.getValue() as LiquidDrop;
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace,
+    isExtremelyLeadingWhitespaceSensitive(node),
     leadingSpaceGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    node.isTrailingWhitespaceSensitive && !node.hasTrailingWhitespace,
+    isExtremelyTrailingWhitespaceSensitive(node),
     trailingSpaceGroupId,
   );
 
@@ -166,7 +166,7 @@ export function printLiquidTag(
   { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
-  if (!node.children) {
+  if (!node.children || !node.blockEndPosition) {
     return printLiquidBlockStart(
       path,
       leadingSpaceGroupId,
@@ -182,10 +182,6 @@ export function printLiquidTag(
   const blockEnd = printLiquidBlockEnd(path, tagGroupId, trailingSpaceGroupId); // {% endif %}
 
   let body: Doc = [];
-  let trailingWhitespace: Doc[] = [];
-  if (node.blockEndPosition) {
-    trailingWhitespace.push(innerTrailingWhitespace(node));
-  }
 
   if (isBranchedTag(node)) {
     body = cleanDoc(
@@ -209,7 +205,7 @@ export function printLiquidTag(
     ]);
   }
 
-  return group([blockStart, body, ...trailingWhitespace, blockEnd], {
+  return group([blockStart, body, innerTrailingWhitespace(node), blockEnd], {
     id: tagGroupId,
     shouldBreak:
       LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
