@@ -1,6 +1,6 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { HtmlNodeTypes, LiquidNodeTypes, NodeTypes, WithFamily } from '~/types';
+import { HtmlNodeTypes, NodeTypes, WithFamily } from '~/types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
@@ -341,27 +341,12 @@ type HtmlNode = Extract<
   { type: typeof HtmlNodeTypes[number] }
 >;
 
-type LiquidNode = Extract<
-  AugmentedAstNode,
-  { type: typeof LiquidNodeTypes[number] }
->;
-
-type TextNode = Extract<AugmentedAstNode, { type: NodeTypes.TextNode }>;
-
 export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
   return HtmlNodeTypes.includes(node.type as any);
 }
 
 export function isParentNode(node: AugmentedAstNode): node is ParentNode {
   return 'children' in node;
-}
-
-export function isLiquidNode(node: AugmentedAstNode): node is LiquidNode {
-  return LiquidNodeTypes.includes(node.type as any);
-}
-
-export function isTextNode(node: AugmentedAstNode): node is TextNode {
-  return node.type === NodeTypes.TextNode;
 }
 
 export function isTrimmingOuterRight(
