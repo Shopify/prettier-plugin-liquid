@@ -241,13 +241,21 @@ function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {
 }
 
 function innerTrailingWhitespace(node: LiquidTag | LiquidBranch) {
-  if (node.type === NodeTypes.LiquidBranch || !node.blockEndPosition) return '';
   if (
-    node.lastChild!.hasTrailingWhitespace &&
-    node.lastChild!.isTrailingWhitespaceSensitive
+    node.type === NodeTypes.LiquidBranch ||
+    !node.blockEndPosition ||
+    !node.lastChild
+  ) {
+    return '';
+  }
+
+  if (
+    node.lastChild.hasTrailingWhitespace &&
+    node.lastChild.isTrailingWhitespaceSensitive
   ) {
     return line;
   }
+
   return softline;
 }
 
