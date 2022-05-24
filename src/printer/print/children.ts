@@ -65,7 +65,12 @@ function printChild(
   return print(childPath, args);
 }
 
-function printBetweenLine(prevNode: LiquidHtmlNode, nextNode: LiquidHtmlNode) {
+function printBetweenLine(
+  prevNode: LiquidHtmlNode | undefined,
+  nextNode: LiquidHtmlNode | undefined,
+) {
+  if (!prevNode || !nextNode) return '';
+
   const spaceBetweenLinesIsHandledSomewhereElse =
     (needsToBorrowNextOpeningTagStartMarker(prevNode) &&
       (hasPrettierIgnore(nextNode) ||
@@ -129,16 +134,35 @@ export type HasChildren = Extract<
   { children?: LiquidHtmlNode[] }
 >;
 
-type Softline =
+type Whitespace =
   | doc.builders.Line
   | doc.builders.Softline
   | doc.builders.IfBreak;
 
 interface WhitespaceBetweenNode {
+  /**
+   * @doc Leading, doesn't break content
+   */
   leadingHardlines: typeof hardline[];
-  leadingSoftlines: Softline[];
-  leadingGroupedSoftlines: doc.builders.Softline[];
-  trailingSoftlines: Softline[];
+
+  /**
+   * @doc Leading, breaks first if content doesn't fit.
+   */
+  leadingWhitespace: Whitespace[];
+
+  /**
+   * @doc Leading, breaks first and trailing whitespace if content doesn't fit.
+   */
+  leadingDependentWhitespace: doc.builders.Softline[];
+
+  /**
+   * @doc Trailing, breaks when content breaks.
+   */
+  trailingWhitespace: Whitespace[];
+
+  /**
+   * @doc Trailing, doesn't break content
+   */
   trailingHardlines: typeof hardline[];
 }
 
@@ -163,9 +187,7 @@ export function printChildren(
 
       ...path.map((childPath) => {
         const childNode = childPath.getValue();
-        const prevBetweenLine = !childNode.prev
-          ? ''
-          : printBetweenLine(childNode.prev, childNode);
+        const prevBetweenLine = printBetweenLine(childNode.prev, childNode);
         return [
           !prevBetweenLine
             ? ''
@@ -189,73 +211,23 @@ export function printChildren(
     Symbol(`trailing-${i}`),
   );
 
-  // This is kind of complicated.
-  //
-  // Most of this code is whitespace handling. It's an adapted version of
-  // prettier/prettier which doesn't entirely suit our usecase. Mainly
-  // because all our liquid nodes need to know if the surrounding
-  // whitespace breaks in order to _maybe_ convert the leading/trailing
-  // whitespace stripping characters into '-' when the following conditions
-  // are true:
-  //   - whitespace breaks
-  //   - there was no whitespace in input
-  //   - node is whitespace sensitive
-  //
-  // We do that by passing the {leading,trailing}SpaceGroupId to the print method.
-  //
-  // In order to mimic both fill and join(hardline, path.map(children, print)) this
-  // method would output something like this for an array of four children [a, b, c, d]:
-  // [
-  //   [
-  //     maybeHardline_a_leading,
-  //     group_leading([
-  //       maybeSoftline_a_leading,
-  //       group_trailing([
-  //         printChild(a),
-  //         maybeSofline_a_trailing,
-  //       ]),
-  //     ]),
-  //     maybeHardline_a_trailing,
-  //   ],
-  //   ...
-  //   [
-  //     maybeHardline_d_leading,
-  //     group_leading([
-  //       maybeSoftline_d_leading,
-  //       group_trailing([
-  //         printChild(d),
-  //         maybeSofline_d_trailing,
-  //       ]),
-  //     ]),
-  //     maybeHardline_d_trailing,
-  //   ],
-  // ]
-  //
-  // So, you see, the _actual_ leading or trailing whitespace of a node is
-  // actually four "maybe" nodes that collapse into one (there's only ever
-  // one).
-  //
-  // e.g.
-  //
-  // the leading whitespace of node b is the following:
-  // [
-  //   maybeSoftline_a_trailing,
-  //   maybeHardline_a_trailing,
-  //   maybeHardline_b_leading,
-  //   maybeSoftline_b_leading,
-  // ]
-  //
-  // In order to have the correct {leading,trailing}SpaceGroupId for the
-  // print method, we first map all the nodes into four arrays:
-  // {
-  //   leadingHardlines,
-  //   leadingSoftlines,
-  //   trailingSoftlines,
-  //   trailingHardlines,
-  // }
-  //
-  // And then figure out which one of those array isn't empty to finally
-  // map that to the correct groupId.
+  /**
+   * Whitespace handling. My favourite topic.
+   *
+   * TL;DR we sort the output of printBetweenLine into buckets.
+   *
+   * What we want:
+   * - Hardlines should go in as is and not break unrelated content
+   * - When we want the content to flow as a paragraph, we'll immitate
+   *   prettier's `fill` builder with this:
+   *     group([whitespace, group(content, whitespace)])
+   * - When we want the content to break surrounding whitespace in pairs,
+   *   we'll do this:
+   *     group([whitespace, content, whitespace])
+   * - We want to know the whitespace beforehand because conditional whitespace
+   *   stripping depends on the groupId of the already printed group that
+   *   breaks.
+   */
   const whitespaceBetweenNode = path.map(
     (
       childPath: AstPath<LiquidHtmlNode>,
@@ -264,32 +236,24 @@ export function printChildren(
       const childNode = childPath.getValue();
 
       const leadingHardlines: typeof hardline[] = [];
-      const leadingSoftlines: Softline[] = [];
-      const leadingGroupedSoftlines: doc.builders.Softline[] = [];
-      const trailingSoftlines: Softline[] = [];
+      const leadingWhitespace: Whitespace[] = [];
+      const leadingDependentWhitespace: doc.builders.Softline[] = [];
+      const trailingWhitespace: Whitespace[] = [];
       const trailingHardlines: typeof hardline[] = [];
 
-      const prevBetweenLine = childNode.prev
-        ? printBetweenLine(childNode.prev, childNode)
-        : '';
-
-      const nextBetweenLine = childNode.next
-        ? printBetweenLine(childNode, childNode.next)
-        : '';
+      const prevBetweenLine = printBetweenLine(childNode.prev, childNode);
+      const nextBetweenLine = printBetweenLine(childNode, childNode.next);
 
       if (isTextLikeNode(childNode)) {
         return {
           leadingHardlines,
-          leadingSoftlines,
-          leadingGroupedSoftlines,
-          trailingSoftlines,
+          leadingWhitespace,
+          leadingDependentWhitespace,
+          trailingWhitespace,
           trailingHardlines,
         };
       }
 
-      // Never took the time to understand this. And I think now it's biting
-      // me in the ass? Why? What are you trying to accomplish? Not sure. I'm
-      // lost.
       if (prevBetweenLine) {
         if (forceNextEmptyLine(childNode.prev)) {
           leadingHardlines.push(hardline, hardline);
@@ -298,12 +262,18 @@ export function printChildren(
         } else {
           if (isTextLikeNode(childNode.prev)) {
             if (isLiquidNode(childNode) && prevBetweenLine === softline) {
-              leadingGroupedSoftlines.push(prevBetweenLine as typeof softline);
+              leadingDependentWhitespace.push(
+                prevBetweenLine as typeof softline,
+              );
             } else {
-              leadingSoftlines.push(prevBetweenLine as doc.builders.Line);
+              leadingWhitespace.push(prevBetweenLine as doc.builders.Line);
             }
           } else {
-            leadingSoftlines.push(
+            // We're collapsing nextBetweenLine and prevBetweenLine of
+            // adjacent nodes here. When the previous node breaks content,
+            // then we want to print nothing here. If it doesn't, then add
+            // a softline and give a chance to _this_ node to break.
+            leadingWhitespace.push(
               ifBreak('', softline, {
                 groupId: trailingSpaceGroupIds[childIndex - 1],
               }),
@@ -321,93 +291,42 @@ export function printChildren(
           if (isTextLikeNode(childNode.next)) {
             trailingHardlines.push(hardline);
           }
-          // there's a hole here!
+          // there's a hole here, it's intentional!
         } else {
           // We know it's not a typeof hardline here because we do the
           // check on the previous condition.
-          trailingSoftlines.push(nextBetweenLine as doc.builders.Line);
+          trailingWhitespace.push(nextBetweenLine as doc.builders.Line);
         }
       }
 
       return {
         leadingHardlines,
-        leadingSoftlines,
-        leadingGroupedSoftlines,
-        trailingSoftlines,
+        leadingWhitespace,
+        leadingDependentWhitespace,
+        trailingWhitespace,
         trailingHardlines,
       } as WhitespaceBetweenNode;
     },
     'children',
   );
 
-  // This double group spread here mimics how `fill` works but without
-  // using `fill` because we might want a mix of `fill` between words
-  // and nodes that are inline nodes and forced linebreaks between nodes.
-  //
-  // What does this mean? Well prettier's `fill` builder methods allows
-  // you to print "paragraphs" and so when something reaches the end of
-  // the line and it would be too long for the line, `fill` will break
-  // the previous linebreak.
-  //
-  // If the thing that goes on the next line ALSO is too long for that
-  // line, then it will break _that_ and the next line.
-  //
-  // Here's an example:
-  // fill(['hello', line, 'world', line, 'yoooooooooo', line, '!!!'])
-  //      printWidth-------|
-  //   => hello world
-  //      yooooooooooooo !!!
-  //
-  // Here's another where the element would also break
-  // fill([
-  //  'hello',
-  //  line,
-  //  group([
-  //    '<div>',
-  //    line,
-  //    'world',
-  //    line,
-  //    '</div>'
-  //  ],
-  //  line,
-  //  '!!!'
-  // ])
-  //     printWidth --|
-  //  => hello
-  //     <div>
-  //       world
-  //     </div>
-  //     !!!
-  //
-  // As you can see, the !!! appears on a new line in the fill because
-  // the div group broke parent.
-  //
-  // So, here's what all the variables are for:
-  //  - leadingHardlines are for hardlines that do not affect the flow
-  //  - leadingSoftlines are for maybe line breaks before the child
-  //    - it will break _first_ if the child doesn't fit the line
-  //  - leadingGroupedSoftlines are for softlines that should break with the trailing line (e.g. a group)
-  //    - happens for liquid surrounded by text
-  //  - trailingSoftlines are for maybe line breaks after the child
-  //    - it will break _second_ if the child itself doesn't fit
-  //  - trailingHardlines for hardlines that do not affect the flow
   return path.map((childPath, childIndex) => {
     const {
       leadingHardlines,
-      leadingSoftlines,
-      leadingGroupedSoftlines,
-      trailingSoftlines,
+      leadingWhitespace,
+      leadingDependentWhitespace,
+      trailingWhitespace,
       trailingHardlines,
     } = whitespaceBetweenNode[childIndex];
-    // What are the actual possibities? a lot actually...
+
     return [
-      ...leadingHardlines,
+      ...leadingHardlines, // independent
       group(
         [
-          ...leadingSoftlines,
+          ...leadingWhitespace, // breaks first
           group(
             [
-              ...leadingGroupedSoftlines,
+              ...leadingDependentWhitespace, // breaks with trailing
               printChild(childPath, options, print, {
                 leadingSpaceGroupId: leadingSpaceGroupId(
                   whitespaceBetweenNode,
@@ -418,7 +337,7 @@ export function printChildren(
                   childIndex,
                 ),
               }),
-              ...trailingSoftlines,
+              ...trailingWhitespace, // breaks second, if content breaks
             ],
             {
               id: trailingSpaceGroupIds[childIndex],
@@ -429,7 +348,7 @@ export function printChildren(
           id: leadingSpaceGroupIds[childIndex],
         },
       ),
-      ...trailingHardlines,
+      ...trailingHardlines, // independent
     ];
   }, 'children');
 
@@ -449,15 +368,15 @@ export function printChildren(
       return FORCE_BREAK_GROUP_ID;
     }
 
-    if (!isEmpty(prev.trailingSoftlines)) {
+    if (!isEmpty(prev.trailingWhitespace)) {
       groupIds.push(trailingSpaceGroupIds[index - 1]);
     }
 
-    if (!isEmpty(curr.leadingSoftlines)) {
+    if (!isEmpty(curr.leadingWhitespace)) {
       groupIds.push(leadingSpaceGroupIds[index]);
     }
 
-    if (!isEmpty(curr.leadingGroupedSoftlines)) {
+    if (!isEmpty(curr.leadingDependentWhitespace)) {
       groupIds.push(trailingSpaceGroupIds[index]);
     }
 
@@ -484,7 +403,7 @@ export function printChildren(
       return FORCE_BREAK_GROUP_ID;
     }
 
-    if (!isEmpty(curr.trailingSoftlines)) {
+    if (!isEmpty(curr.trailingWhitespace)) {
       groupIds.push(trailingSpaceGroupIds[index]);
     }
 
