@@ -21,6 +21,7 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
   HtmlNode,
+  HtmlComment,
 } from '~/types';
 
 const {
@@ -29,13 +30,14 @@ const {
 const { replaceTextEndOfLine } = doc.utils as any;
 
 export function printElement(
-  path: AstPath<HtmlNode>,
+  path: AstPath<Exclude<HtmlNode, HtmlComment>>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
 ) {
   const node = path.getValue();
 
   if (hasNoCloseMarker(node)) {
+    // TODO, broken for HtmlComment but this code path is not used (so far).
     return [
       group(printOpeningTag(path, options, print)),
       ...printClosingTag(node, options),
