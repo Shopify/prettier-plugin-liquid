@@ -8,6 +8,7 @@ module.exports = {
   output: {
     filename: 'standalone.js',
     path: __dirname,
+    globalObject: 'this',
     library: {
       name: 'prettierPluginLiquid',
       type: 'umd',
@@ -15,8 +16,8 @@ module.exports = {
   },
   externals: {
     prettier: {
-      commonjs: 'prettier/standalone',
-      commonjs2: 'prettier/standalone',
+      commonjs: 'prettier',
+      commonjs2: 'prettier',
       amd: 'prettier/standalone',
       root: 'prettier',
     },
@@ -32,5 +33,7 @@ module.exports = {
   optimization: {
     minimize: PRODUCTION ? true : false,
   },
-  node: false,
+  node: {
+    __dirname: true,
+  },
 };
