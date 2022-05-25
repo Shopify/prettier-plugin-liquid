@@ -194,6 +194,7 @@ export function isBranchedTag(node: LiquidHtmlNode) {
   );
 }
 
+// Not exported because you can use node.type === NodeTypes.LiquidBranch.
 function isBranchTag(node: LiquidHtmlNode) {
   return (
     node.type === NodeTypes.LiquidTag &&
@@ -294,6 +295,7 @@ class ASTBuilder {
     nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
     if (this.parent?.type === NodeTypes.LiquidBranch) {
+      this.parent.position.end = node.locStart;
       this.cursor.pop();
       this.cursor.pop();
     }

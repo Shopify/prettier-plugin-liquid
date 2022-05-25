@@ -1,30 +1,37 @@
+It should use double quotes for all attributes, unless boolean attribute
 <div
   id="1234"
-  class="long string of class names"
-  style="width: 100px; height: auto;"
+  class="long string of classes"
+  style="color: blue;"
   content=""
->
-  <img
-    src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
-    width="320"
-    height="240"
-    loading="lazy"
-    disabled
-  >
-  <img
-    src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
-    width="320"
-    height="240"
-    loading="lazy"
-    {{ block.shopify_attributes }}
-    {% if A %}disabled{% endif %}
-  >
-  <a width="320" disabled>Click me</a>
-  <a disabled width="320">Click me</a>
-  <a width="320" height="320">Click me</a>
-</div>
-<span>Hi, muffin!</span>
+  disabled
+></div>
 
+It should use single quotes for all attributes, unless boolean attribute when singleQuote is true
+singleQuote: true
+<div
+  id='1234'
+  class='long string of classes'
+  style='color: blue;'
+  content=''
+  disabled
+></div>
+
+It should break LiquidTags attribute nodes and consider the insides _not_ whitespace sensitive
+<div
+  src="https://content.instructables.com/ORIG/F23/YMO0/FPIUQOJF/F23YMO0FPIUQOJF.jpg"
+  width="320"
+  height="240"
+  loading="lazy"
+  {{ block.shopify_attributes }}
+  {% if A %}
+    disabled
+  {% else %}
+    checked
+  {% endif %}
+></div>
+
+It should not try to format HTML attributes (yet) (1)
 <img
   class="image {% if sticky %}image--sticky{% endif %} {% if wrapped %}image--wrapped{% endif %}"
   id="img--{{ product.id }}"
@@ -34,6 +41,7 @@
   loading="lazy"
 >
 
+It should break and indent attributes that are long af
 <img
   srcset="
     {% if media.preview_image.width >= 493 %}{{ media.preview_image | image_url: width: 493 }} 493w,{% endif %}
@@ -51,15 +59,75 @@
   "
   src="{{ media | image_url: width: 1946 }}"
   sizes="(min-width: {{ settings.page_width }}px) {{ settings.page_width | minus: 100 | times: media_width | round }}px, (min-width: 990px) calc({{ media_width | times: 100 }}vw - 10rem), (min-width: 750px) calc((100vw - 11.5rem) / 2), calc(100vw - 4rem)"
-  {% unless lazy_load == false %}loading="lazy"{% endunless %}
+  {% unless lazy_load == false %}
+    loading="lazy"
+  {% endunless %}
   width="973"
   height="{{ 973 | divided_by: media.preview_image.aspect_ratio | ceil }}"
   alt="{{ media.preview_image.alt | escape }}"
 >
 
-If there's only one attribute, don't break when the line is too long. You're not
-really helping. You're probably only moving the thing 3 characters to the left
-and adding two new lines to the file. Not worth it.
+If there's only one attribute and self-closing, don't break when the line is too long.
 <img class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
+
+If there's only one attribute and not self-closing, break the attr and close the tag on a different line.
+<div
+  class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet"
+></div>
+
+If there's only one attribute and not self-closing, but with children, do not break the attr and close the tag on a different line.
 <div class="Lorem ipsum dolor sit amet consectetur adipiscing elit Sed feugiat semper sem eu ultrices nisl interdum sit amet">
+  Hello
 </div>
+
+If there's only one attribute, not self-closing, with children, do not break the LiquidTag attr and close the tag on a different line.
+<div {% echo 'disabled' %}>
+  Hello
+</div>
+
+If there's only one attribute, not self-closing, with children, do not break the LiquidNode attr and close the tag on a different line.
+<div {{ block_attributes }}>
+  Hello
+</div>
+
+If there's only one attribute, not self closing, with children, but the attribute is a liquid tag that has children, break it normally.
+printWidth: 30
+<div
+  {% if some_condition %}
+    attribute="value"
+  {% endif %}
+>
+  hello world
+</div>
+
+If there's only one attribute, not self closing, without children, but the attribute is a liquid tag that has children, break it normally.
+printWidth: 30
+<div
+  {% if some_condition %}
+    attribute="value"
+  {% endif %}
+></div>
+
+If there's multiple attributes inside an if tag attribute node, print until print width
+<div
+  {% if some_condition %}
+    attribute="abstractNode" ok="value"
+  {% endif %}
+></div>
+
+If there's multiple attributes inside an if tag attribute node, print until print width
+printWidth: 1
+<div
+  {% if some_condition %}
+    attribute="abstractNode"
+    ok="value"
+  {% endif %}
+></div>
+
+If there's multiple attributes inside an if tag attribute node with a newline, maintain newline
+<div
+  {% if some_condition %}
+    attribute="abstractNode"
+    ok="value"
+  {% endif %}
+></div>

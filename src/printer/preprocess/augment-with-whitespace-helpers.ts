@@ -1,6 +1,6 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { NodeTypes } from '~/types';
+import { HtmlNodeTypes, NodeTypes, WithFamily } from '~/types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
   CSS_WHITE_SPACE_TAGS,
@@ -13,9 +13,13 @@ import {
   WithSiblings,
   WithWhitespaceHelpers,
 } from '~/types';
+import { isBranchedTag } from '~/parser';
 import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '~/printer/utils';
 
-type RequiredAugmentations = WithParent & WithSiblings & WithCssProperties;
+type RequiredAugmentations = WithParent &
+  WithSiblings &
+  WithFamily &
+  WithCssProperties;
 type AugmentedAstNode = AugmentedNode<RequiredAugmentations>;
 
 export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
@@ -34,8 +38,8 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
     isTrailingWhitespaceSensitive:
       isTrailingWhitespaceSensitiveNode(node) &&
       (!node.next || isLeadingWhitespaceSensitiveNode(node.next)),
-    hasLeadingWhitespace: isWhitespace(node.source, node.position.start - 1),
-    hasTrailingWhitespace: isWhitespace(node.source, node.position.end),
+    hasLeadingWhitespace: hasLeadingWhitespace(node),
+    hasTrailingWhitespace: hasTrailingWhitespace(node),
     hasDanglingWhitespace: hasDanglingWhitespace(node),
   };
 
@@ -74,7 +78,10 @@ function isDanglingWhitespaceSensitiveNode(node: AugmentedAstNode) {
  *   - indentation-sensitive tags (e.g. <pre></pre>)
  */
 function isWhitespaceSensitiveNode(node: AugmentedAstNode) {
-  return isScriptLikeTag(node) || isIndentationSensitiveNode(node);
+  return (
+    // isScriptLikeTag(node) ||
+    isIndentationSensitiveNode(node)
+  );
 }
 
 /**
@@ -118,6 +125,11 @@ function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // whitespace sensitive.
   if (isPreLikeNode(node.parentNode)) {
     return true;
+  }
+
+  // TODO I added this as a short term fix for HtmlRawNode printing.
+  if (isScriptLikeTag(node)) {
+    return false;
   }
 
   // The first child of a node is NOT leading whitespace sensitive if one of
@@ -211,6 +223,17 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
     return true;
   }
 
+  // We do it slightly differently than prettier/prettier.
+  if (isScriptLikeTag(node)) {
+    return false;
+  }
+
+  // BRs are not trailing whitespace sensitive, it's an exception as per prettier/language-html
+  // https://github.com/prettier/prettier/blob/c36d89712a24fdef753c056f4c82bc87ebe07865/src/language-html/utils/index.js#L290-L296
+  if (isHtmlNode(node) && typeof node.name === 'string' && node.name === 'br') {
+    return false;
+  }
+
   // Adapted from prettier/language-html. This branch is for the last
   // children of an array.
   //
@@ -272,28 +295,43 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
  *  - <div> </div>
  *  - {% if A %} {% else %} nope {% endif %}
  */
-function hasDanglingWhitespace(node: AugmentedAstNode) {
-  if (!isParentNode(node)) return false;
-  if (node.type === NodeTypes.Document) {
+function hasDanglingWhitespace(node: AugmentedAstNode): boolean {
+  if (!isParentNode(node)) {
+    return false;
+  } else if (node.type === NodeTypes.Document) {
     return node.children.length === 0 && node.source.length > 0;
+  } else if (!node.children) {
+    return false;
+  } else if (
+    node.type === NodeTypes.LiquidTag &&
+    isBranchedTag(node) &&
+    node.children.length === 1
+  ) {
+    return hasDanglingWhitespace(node.firstChild!);
+  } else if (node.children.length > 0) {
+    return false;
   }
-  if (!node.children || node.children.length > 0) return false;
   return isWhitespace(node.source, node.blockStartPosition.end);
 }
 
-const HtmlNodeTypes = [
-  NodeTypes.HtmlElement,
-  NodeTypes.HtmlRawNode,
-  NodeTypes.HtmlVoidElement,
-  NodeTypes.HtmlSelfClosingElement,
-] as const;
+function hasLeadingWhitespace(node: AugmentedAstNode): boolean {
+  // Edge case for default branch.
+  if (node.type === NodeTypes.LiquidBranch && !node.prev) {
+    return node.firstChild
+      ? hasLeadingWhitespace(node.firstChild)
+      : hasDanglingWhitespace(node);
+  }
+  return isWhitespace(node.source, node.position.start - 1);
+}
 
-const LiquidNodeTypes = [
-  NodeTypes.LiquidTag,
-  NodeTypes.LiquidDrop,
-  NodeTypes.LiquidBranch,
-  NodeTypes.LiquidRawTag,
-] as const;
+function hasTrailingWhitespace(node: AugmentedAstNode): boolean {
+  if (node.type === NodeTypes.LiquidBranch) {
+    return node.lastChild
+      ? hasTrailingWhitespace(node.lastChild)
+      : hasDanglingWhitespace(node);
+  }
+  return isWhitespace(node.source, node.position.end);
+}
 
 // Slightly different definition here but I can't find a better name.
 // We _do_ only want those with _children_ specifically here... do we?
@@ -304,27 +342,12 @@ type HtmlNode = Extract<
   { type: typeof HtmlNodeTypes[number] }
 >;
 
-type LiquidNode = Extract<
-  AugmentedAstNode,
-  { type: typeof LiquidNodeTypes[number] }
->;
-
-type TextNode = Extract<AugmentedAstNode, { type: NodeTypes.TextNode }>;
-
 export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
   return HtmlNodeTypes.includes(node.type as any);
 }
 
 export function isParentNode(node: AugmentedAstNode): node is ParentNode {
-  return (node as any).children;
-}
-
-export function isLiquidNode(node: AugmentedAstNode): node is LiquidNode {
-  return LiquidNodeTypes.includes(node.type as any);
-}
-
-export function isTextNode(node: AugmentedAstNode): node is TextNode {
-  return node.type === NodeTypes.TextNode;
+  return 'children' in node;
 }
 
 export function isTrimmingOuterRight(

@@ -3,8 +3,8 @@
 import { AstPath, doc, Doc } from 'prettier';
 import {
   shouldPreserveContent,
-  countParents,
   forceBreakContent,
+  hasNoCloseMarker,
 } from '~/printer/utils';
 import {
   printOpeningTagPrefix,
@@ -20,32 +20,35 @@ import {
   NodeTypes,
   LiquidParserOptions,
   LiquidPrinter,
-  LiquidHtmlNode,
-  HtmlElement,
+  HtmlNode,
+  HtmlComment,
 } from '~/types';
 
 const {
-  builders: {
-    breakParent,
-    dedentToRoot,
-    group,
-    ifBreak,
-    indentIfBreak,
-    indent,
-    line,
-    softline,
-  },
+  builders: { breakParent, dedentToRoot, group, indent, line, softline },
 } = doc;
 const { replaceTextEndOfLine } = doc.utils as any;
 
 export function printElement(
-  path: AstPath<HtmlElement>,
+  path: AstPath<Exclude<HtmlNode, HtmlComment>>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
 ) {
   const node = path.getValue();
 
-  if (shouldPreserveContent(node, options)) {
+  if (hasNoCloseMarker(node)) {
+    // TODO, broken for HtmlComment but this code path is not used (so far).
+    return [
+      group(printOpeningTag(path, options, print)),
+      ...printClosingTag(node, options),
+      printClosingTagSuffix(node, options),
+    ];
+  }
+
+  if (
+    shouldPreserveContent(node, options) ||
+    node.type === NodeTypes.HtmlRawNode
+  ) {
     return [
       printOpeningTagPrefix(node, options),
       group(printOpeningTag(path, options, print)),
@@ -55,68 +58,27 @@ export function printElement(
     ];
   }
 
-  /**
-   * do not break:
-   *
-   *     <div>{{
-   *         ~
-   *       interpolation
-   *     }}</div>
-   *            ~
-   *
-   * exception: break if the opening tag breaks
-   *
-   *     <div
-   *       long
-   *           ~
-   *       >{{
-   *         interpolation
-   *       }}</div
-   *              ~
-   *     >
-   */
-  const shouldHugContent =
-    node.children.length === 1 &&
-    // node.firstChild.type === 'interpolation' &&
-    node.firstChild!.isLeadingWhitespaceSensitive &&
-    !node.firstChild!.hasLeadingWhitespace &&
-    node.lastChild!.isTrailingWhitespaceSensitive &&
-    !node.lastChild!.hasTrailingWhitespace;
-
   const attrGroupId = Symbol('element-attr-group-id');
+  const elementGroupId = Symbol('element-group-id');
 
   const printTag = (doc: Doc) =>
-    group([
-      group(printOpeningTag(path, options, print), { id: attrGroupId }),
-      doc,
-      printClosingTag(node, options),
-    ]);
-
-  const printChildrenDoc = (childrenDoc: Doc) => {
-    if (shouldHugContent) {
-      return indentIfBreak(childrenDoc, { groupId: attrGroupId });
-    }
-    // if (
-    //   (isScriptLikeTag(node) || isVueCustomBlock(node, options)) &&
-    //   node.parentNode.type === NodeTypes.Document &&
-    //   options.parser === 'vue' &&
-    //   !options.vueIndentScriptAndStyle
-    // ) {
-    //   return childrenDoc;
-    // }
-    return indent(childrenDoc);
-  };
+    group(
+      [
+        group(printOpeningTag(path, options, print), { id: attrGroupId }),
+        doc,
+        printClosingTag(node, options),
+      ],
+      { id: elementGroupId },
+    );
 
   const printLineBeforeChildren = () => {
-    if (shouldHugContent) {
-      return ifBreak(softline, '', { groupId: attrGroupId });
-    }
     if (
       node.firstChild!.hasLeadingWhitespace &&
       node.firstChild!.isLeadingWhitespaceSensitive
     ) {
       return line;
     }
+
     if (
       node.firstChild!.type === NodeTypes.TextNode &&
       node.isWhitespaceSensitive &&
@@ -140,25 +102,11 @@ export function printElement(
       }
       return '';
     }
-    if (shouldHugContent) {
-      return ifBreak(softline, '', { groupId: attrGroupId });
-    }
     if (
       node.lastChild!.hasTrailingWhitespace &&
       node.lastChild!.isTrailingWhitespaceSensitive
     ) {
       return line;
-    }
-    const lastChild = node.lastChild!;
-    if (
-      (lastChild!.type === NodeTypes.HtmlComment &&
-        endsInProperlyIndentedEmptyLine(path, lastChild.body, options)) ||
-      (lastChild!.type === NodeTypes.TextNode &&
-        node.isWhitespaceSensitive &&
-        node.isIndentationSensitive &&
-        endsInProperlyIndentedEmptyLine(path, lastChild.value, options))
-    ) {
-      return '';
     }
     return softline;
   };
@@ -173,29 +121,13 @@ export function printElement(
 
   return printTag([
     forceBreakContent(node) ? breakParent : '',
-    printChildrenDoc([
+    indent([
       printLineBeforeChildren(),
-      printChildren(path, options, print),
+      printChildren(path as AstPath<typeof node>, options, print, {
+        leadingSpaceGroupId: elementGroupId,
+        trailingSpaceGroupId: elementGroupId,
+      }),
     ]),
     printLineAfterChildren(),
   ]);
-}
-
-// TODO: Not sure the name is correct, this is code we got from prettier and I'm
-// not 100% sure why we need it.
-function endsInProperlyIndentedEmptyLine(
-  path: AstPath<any>,
-  value: string,
-  options: LiquidParserOptions,
-) {
-  return new RegExp(
-    `\\n[\\t ]{${
-      options.tabWidth *
-      countParents(
-        path,
-        (node: LiquidHtmlNode) =>
-          !!node.parentNode && node.parentNode.type !== NodeTypes.Document,
-      )
-    }}$`,
-  ).test(value);
 }

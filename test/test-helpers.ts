@@ -3,43 +3,131 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
+import { LiquidParserOptions } from '../src/types';
 
-export function assertFormattedEqualsFixed(dirname: string, options = {}) {
+const PARAGRAPH_SPLITTER =
+  /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|debug|skip|<)/i;
+
+const TEST_MESSAGE = /^(\/\/|It|When|If|focus|debug|skip)[^<{]*/i;
+
+function testMessage(input: string, actual: string) {
+  return [
+    '',
+    '########## INPUT',
+    input.trimEnd(),
+    '########## ACTUAL',
+    actual.trimEnd(),
+    '##########',
+    '',
+  ]
+    .join('\n')
+    .replace(/\n/g, '\n      ')
+    .trimEnd();
+}
+
+function merge<T, U>(a: T, b: U): T & U {
+  return Object.assign({}, a, b);
+}
+
+const TEST_IDEMPOTENCE = !!(
+  process.env.TEST_IDEMPOTENCE && JSON.parse(process.env.TEST_IDEMPOTENCE)
+);
+
+export function assertFormattedEqualsFixed(
+  dirname: string,
+  options: Partial<LiquidParserOptions> = {},
+) {
   const source = readFile(dirname, 'index.liquid');
-  const formatted = format(source, options);
-  const expected = readFile(dirname, 'fixed.liquid');
-  if (expected !== formatted) {
-    writeFile(dirname, 'actual.liquid', formatted);
-  } else {
-    fs.rmSync(path.join(dirname, 'actual.liquid'), { force: true });
-  }
-  try {
-    return expect(formatted).to.eql(expected);
-  } catch (e) {
-    // Improve the stack trace so that it points to the fixed file instead
-    // of this test-helper file. Might make navigation smoother.
-    if ((e as any).stack as any) {
-      (e as any).stack = ((e as any).stack as string).replace(
-        /^(\s+)at assertFormattedEqualsFixed \(.*:\d+:\d+\)/im,
-        [
-          `$1at expected.liquid (${path.join(
-            dirname,
-            'fixed.liquid',
-          )}:${diffLoc(expected, formatted).join(':')})`,
-          `$1at actual.liquid (${path.join(dirname, 'actual.liquid')}:${diffLoc(
-            formatted,
-            expected,
-          ).join(':')})`,
-          `$1at input.liquid (${path.join(dirname, 'index.liquid')}:1:1)`,
-        ].join('\n'),
-      );
-    }
+  const expectedResults = readFile(dirname, 'fixed.liquid');
 
-    throw e;
+  const chunks = source.split(PARAGRAPH_SPLITTER);
+  const expectedChunks = expectedResults.split(PARAGRAPH_SPLITTER);
+
+  for (let i = 0; i < chunks.length; i++) {
+    const src = chunks[i];
+    const testConfig = getTestSetup(src, i);
+    const test = () => {
+      const testOptions = merge(options, testConfig.prettierOptions);
+      const input = src.replace(TEST_MESSAGE, '');
+      if (testConfig.debug) debug(input, testOptions);
+      let actual = format(input, testOptions).trimEnd();
+      let expected = expectedChunks[i].replace(TEST_MESSAGE, '').trimEnd();
+
+      if (TEST_IDEMPOTENCE) {
+        expected = actual;
+        actual = format(expected, testOptions).trimEnd();
+      }
+
+      try {
+        expect(actual, testMessage(input, actual)).to.eql(expected);
+      } catch (e) {
+        // Improve the stack trace so that it points to the fixed file instead
+        // of this test-helper file. Might make navigation smoother.
+        if ((e as any).stack as any) {
+          const fixedUrl = path.join(dirname, 'fixed.liquid');
+          const inputUrl = path.join(dirname, 'index.liquid');
+          const testUrl = path.join(dirname, 'index.spec.ts');
+          const fixedOffset = lineOffset(expectedResults, expected);
+          const fixedLoc = diffLoc(expected, actual, fixedOffset).join(':');
+          const inputLine = lineOffset(source, src) + 1;
+          (e as any).stack = ((e as any).stack as string).replace(
+            /^(\s+)at Context.test \(.*:\d+:\d+\)/im,
+            [
+              `$1at fixed.liquid (${fixedUrl}:${fixedLoc})`,
+              `$1at input.liquid (${inputUrl}:${inputLine}:0)`,
+              `$1at assertFormattedEqualsFixed (${testUrl}:5:6)`,
+            ].join('\n'),
+          );
+        }
+
+        throw e;
+      }
+    };
+
+    if (testConfig.focus || testConfig.debug) {
+      it.only(testConfig.message, test);
+    } else if (testConfig.skip) {
+      it.skip(testConfig.message, test);
+    } else {
+      it(testConfig.message, test);
+    }
   }
 }
 
-function diffLoc(expected: string, actual: string) {
+// prefix your tests with `debug` so that only this test runs and starts a debugging session
+// prefix your tests with `focus` so that only this test runs.
+// prefix your tests with `skip` so that it shows up as skipped.
+function getTestSetup(paragraph: string, index: number) {
+  let testMessage = TEST_MESSAGE.exec(paragraph) || [
+    `it should format as expected (chunk ${index})`,
+  ];
+
+  const message = testMessage[0]
+    .replace(/^\/\/\s*/, '')
+    .replace(/\r?\n/g, ' ')
+    .trimEnd()
+    .replace(/\.$/, '');
+  const prettierOptions: Partial<LiquidParserOptions> = {};
+  const optionsParser = /(?<name>\w+): (?<value>[^\s]*)/g;
+  let match: RegExpExecArray;
+  while ((match = optionsParser.exec(message)) !== null) {
+    prettierOptions[match.groups.name] = JSON.parse(match.groups.value);
+  }
+
+  return {
+    message: message.replace(optionsParser, '').trimEnd(),
+    prettierOptions,
+    focus: /^focus/i.test(message),
+    debug: /^debug/i.test(message),
+    skip: /^skip/i.test(message),
+  };
+}
+
+function lineOffset(source: string, needle: string): number {
+  return (source.slice(0, source.indexOf(needle)).match(/\n/g) || []).length;
+}
+
+function diffLoc(expected: string, actual: string, offset: number) {
   // assumes there's a diff.
   let line = 1;
   let col = 0;
@@ -51,7 +139,7 @@ function diffLoc(expected: string, actual: string) {
     col += 1;
     if (expected[i] !== actual[i]) break;
   }
-  return [line, col];
+  return [offset + line, col];
 }
 
 export function readFile(dirname: string, filename: string) {
@@ -70,6 +158,20 @@ export function format(content: string, options: any) {
   });
 }
 
+export function printToDoc(content: string, options: any = {}) {
+  return (prettier as any).__debug.printToDoc(content, {
+    ...options,
+    parser: 'liquid-html',
+    plugins: [plugin],
+  });
+}
+
+export function debug(content: string, options: any = {}) {
+  const printed = format(content, options);
+  const doc = printToDoc(content, options);
+  debugger;
+}
+
 /**
  * Lets you write "magic" string literals that are "reindented" similar to Ruby's <<~
  * So you can write
@@ -82,7 +184,10 @@ export function format(content: string, options: any) {
  *
  * And it will be as though function() was at indent 0 and foo was indent 1.
  */
-export function reindent(strs: TemplateStringsArray, ...keys: any[]): string {
+export function reindent(
+  strs: TemplateStringsArray,
+  ...keys: any[] | undefined
+): string {
   const s = strs.reduce((acc, next, i) => {
     if (keys[i] !== undefined) {
       return acc + next + keys[i];

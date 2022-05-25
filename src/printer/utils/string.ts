@@ -1,7 +1,7 @@
 import { LiquidAstPath, LiquidHtmlNode, LiquidParserOptions } from '~/types';
 
 export function isWhitespace(source: string, loc: number): boolean {
-  if (loc < 0 || loc >= source.length) return true;
+  if (loc < 0 || loc >= source.length) return false;
   return !!source[loc].match(/\s/);
 }
 

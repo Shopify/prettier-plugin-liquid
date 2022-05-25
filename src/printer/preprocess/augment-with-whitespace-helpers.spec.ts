@@ -8,6 +8,123 @@ import { DocumentNode, LiquidHtmlNode, LiquidParserOptions } from '~/types';
 describe('Module: augmentWithWhitespaceHelpers', () => {
   let ast: DocumentNode;
 
+  describe('Unit: isLeadingWhitespaceSensitive', () => {
+    it('should return true when this node and the prev imply an inline formatting context', () => {
+      const nodes = ['<span>hello</span>', '{{ drop }}', '{% if true %}hello{% endif %}'];
+
+      for (const left of nodes) {
+        for (const right of nodes) {
+          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
+          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive', `${left} ${right}`)
+            .to.be.true;
+        }
+      }
+    });
+
+    it('should return false when this node is whitespace stripping to the left', () => {
+      const firstChilds = ['hello', '{{ drop }}', '{% if true %}hello{% endif %}'];
+      const secondChilds = ['{{- drop }}', '{%- echo "world" %}', '{%- if true %}hello{% endif %}'];
+      for (const left of firstChilds) {
+        for (const right of secondChilds) {
+          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
+          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
+        }
+      }
+    });
+
+    it('should return false when the previous node is whitespace stripping to the right', () => {
+      const firstChilds = ['{{ drop -}}', '{% echo "world" -%}', '{% if true %}hello{% endif -%}'];
+      const secondChilds = ['hello', '{{ drop }}', '{% if true %}hello{% endif %}'];
+      for (const left of firstChilds) {
+        for (const right of secondChilds) {
+          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
+          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive', `${left} ${right}`)
+            .to.be.false;
+        }
+      }
+    });
+
+    it('should return false for the document node', () => {
+      ast = toAugmentedAst('');
+      expectPath(ast, 'isLeadingWhitespaceSensitive').to.be.false;
+    });
+
+    it('should return false for display none elements', () => {
+      ast = toAugmentedAst('<datalist><option value="hello world" /></datalist>');
+      expectPath(ast, 'children.0.isLeadingWhitespaceSensitive').to.be.false;
+    });
+
+    describe('When: the node is the first child', () => {
+      it('should return false when its parent is the DocumentNode', () => {
+        ast = toAugmentedAst('<p></p>');
+        expectPath(ast, 'children.0.isLeadingWhitespaceSensitive').to.be.false;
+      });
+
+      it('should return false when it is pre-like', () => {
+        ast = toAugmentedAst('<span> <pre></pre></span>');
+        expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
+      });
+
+      it('should return false if the parent strips whitespace from both ends', () => {
+        const nodes = [
+          'hello',
+          '<span>hello</span>',
+          '{{ drop }}',
+          '{% if true %}hello{% endif %}',
+        ];
+        for (const node of nodes) {
+          ast = toAugmentedAst(`<p> ${node} </p>`);
+          expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
+        }
+      });
+
+      it('should return false if the parent is whitespace stripping to the inner right', () => {
+        const nodes = [
+          'hello',
+          '<span>hello</span>',
+          '{{ drop }}',
+          '{% if true %}hello{% endif %}',
+        ];
+        for (const node of nodes) {
+          ast = toAugmentedAst(`{% form -%} ${node} {% endform %}`);
+          expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
+
+          ast = toAugmentedAst(`{% if A -%} ${node} {% endif %}`);
+          expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
+          expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
+          expectPath(ast, 'children.0.children.0.children.0.isLeadingWhitespaceSensitive').to.be
+            .false;
+
+          ast = toAugmentedAst(`{% if A %}hello{% else -%} ${node}{% endif %}`);
+          expectPath(ast, 'children.0.children.1.type').to.eql(NodeTypes.LiquidBranch);
+          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.true;
+          expectPath(ast, 'children.0.children.1.children.0.isLeadingWhitespaceSensitive').to.be
+            .false;
+
+          ast = toAugmentedAst(`{% if A %} hello {%- else -%} ${node} {% endif %}`);
+          expectPath(ast, 'children.0.children.1.type').to.eql(NodeTypes.LiquidBranch);
+          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
+        }
+      });
+
+      it('should return true for a LiquidBranch that is not stripped', () => {
+        ast = toAugmentedAst(`{% if A %} hello {% else %} world {% endif %}`);
+        expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.true;
+        expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.true;
+      });
+    });
+
+    it('should return false if the previous node creates a block rendering context that makes the following whitespace irrelevant', () => {
+      ast = toAugmentedAst('<p><div>hello</div> this</p>');
+      expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
+    });
+
+    it('should return false if the node itself creates a block rendering context', () => {
+      ast = toAugmentedAst('<p>this <div>hello</div></p>');
+      expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
+    });
+  });
+
   describe('Unit: isTrailingWhitespaceSensitive', () => {
     it('should return false when the next node is whitespace stripping to the left', () => {
       const firstChilds = [
@@ -144,124 +261,13 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
     });
   });
 
-  describe('Unit: isLeadingWhitespaceSensitive', () => {
-    it('should return true when this node and the prev imply an inline formatting context', () => {
-      const nodes = ['<span>hello</span>', '{{ drop }}', '{% if true %}hello{% endif %}'];
-
-      for (const left of nodes) {
-        for (const right of nodes) {
-          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
-          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive', `${left} ${right}`)
-            .to.be.true;
-        }
-      }
-    });
-
-    it('should return false when this node is whitespace stripping to the left', () => {
-      const firstChilds = ['hello', '{{ drop }}', '{% if true %}hello{% endif %}'];
-      const secondChilds = ['{{- drop }}', '{%- echo "world" %}', '{%- if true %}hello{% endif %}'];
-      for (const left of firstChilds) {
-        for (const right of secondChilds) {
-          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
-          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
-        }
-      }
-    });
-
-    it('should return false when the previous node is whitespace stripping to the right', () => {
-      const firstChilds = ['{{ drop -}}', '{% echo "world" -%}', '{% if true %}hello{% endif -%}'];
-      const secondChilds = ['hello', '{{ drop }}', '{% if true %}hello{% endif %}'];
-      for (const left of firstChilds) {
-        for (const right of secondChilds) {
-          ast = toAugmentedAst(`<p>${left} ${right}</p>`);
-          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive', `${left} ${right}`)
-            .to.be.false;
-        }
-      }
-    });
-
-    it('should return false for the document node', () => {
-      ast = toAugmentedAst('');
-      expectPath(ast, 'isLeadingWhitespaceSensitive').to.be.false;
-    });
-
-    it('should return false for display none elements', () => {
-      ast = toAugmentedAst('<datalist><option value="hello world" /></datalist>');
-      expectPath(ast, 'children.0.isLeadingWhitespaceSensitive').to.be.false;
-    });
-
-    describe('When: the node is the first child', () => {
-      it('should return false when its parent is the DocumentNode', () => {
-        ast = toAugmentedAst('<p></p>');
-        expectPath(ast, 'children.0.isLeadingWhitespaceSensitive').to.be.false;
-      });
-
-      it('should return false when it is pre-like', () => {
-        ast = toAugmentedAst('<span> <pre></pre></span>');
-        expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
-      });
-
-      it('should return false if the parent strips whitespace from both ends', () => {
-        const nodes = [
-          'hello',
-          '<span>hello</span>',
-          '{{ drop }}',
-          '{% if true %}hello{% endif %}',
-        ];
-        for (const node of nodes) {
-          ast = toAugmentedAst(`<p> ${node} </p>`);
-          expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
-        }
-      });
-
-      it('should return false if the parent is whitespace stripping to the inner right', () => {
-        const nodes = [
-          'hello',
-          '<span>hello</span>',
-          '{{ drop }}',
-          '{% if true %}hello{% endif %}',
-        ];
-        for (const node of nodes) {
-          ast = toAugmentedAst(`{% form -%} ${node} {% endform %}`);
-          expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
-
-          ast = toAugmentedAst(`{% if A -%} ${node} {% endif %}`);
-          expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
-          expectPath(ast, 'children.0.children.0.isLeadingWhitespaceSensitive').to.be.false;
-          expectPath(ast, 'children.0.children.0.children.0.isLeadingWhitespaceSensitive').to.be
-            .false;
-
-          ast = toAugmentedAst(`{% if A %}hello{% else -%} ${node}{% endif %}`);
-          expectPath(ast, 'children.0.children.1.type').to.eql(NodeTypes.LiquidBranch);
-          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.true;
-          expectPath(ast, 'children.0.children.1.children.0.isLeadingWhitespaceSensitive').to.be
-            .false;
-
-          ast = toAugmentedAst(`{% if A %} hello {%- else -%} ${node} {% endif %}`);
-          expectPath(ast, 'children.0.children.1.type').to.eql(NodeTypes.LiquidBranch);
-          expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
-        }
-      });
-    });
-
-    it('should return false if the previous node creates a block rendering context that makes the following whitespace irrelevant', () => {
-      ast = toAugmentedAst('<p><div>hello</div> this</p>');
-      expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
-    });
-
-    it('should return false if the node itself creates a block rendering context', () => {
-      ast = toAugmentedAst('<p>this <div>hello</div></p>');
-      expectPath(ast, 'children.0.children.1.isLeadingWhitespaceSensitive').to.be.false;
-    });
-  });
-
   describe('Unit: hasDanglingWhitespace', () => {
     it('should handle LiquidBranch tags properly', () => {
       ast = toAugmentedAst('{% if true %} {% endif %}');
-      // The if tag itself is not dangling, it has branches
-      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.false;
+      // The if tag itself is dangling if it only has one branch and it's empty
+      expectPath(ast, 'children.0.hasDanglingWhitespace').to.be.true;
 
-      // The default branch has dangling whitespace though
+      // The default branch has dangling whitespace
       expectPath(ast, 'children.0.children.0.type').to.eql(NodeTypes.LiquidBranch);
       expectPath(ast, 'children.0.children.0.hasDanglingWhitespace').to.be.true;
 
@@ -328,6 +334,50 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
         ast = toAugmentedAst(`<${tag}> </${tag}>`);
         expectPath(ast, 'children.0.isDanglingWhitespaceSensitive').to.be.false;
       }
+    });
+  });
+
+  describe('Unit: hasLeadingWhitespace', () => {
+    it('should return true for branched LiquidTag', () => {
+      ast = toAugmentedAst('{% if A %} hello {% endif %}');
+      expectPath(ast, 'children.0.type').to.be.eql(NodeTypes.LiquidTag);
+      expectPath(ast, 'children.0.hasLeadingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
+    });
+
+    it('should return the correct value for LiquidBranches', () => {
+      ast = toAugmentedAst('{% if A %} hello{% else %} ok{% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.hasLeadingWhitespace').to.be.false;
+
+      ast = toAugmentedAst('{% if A %} {% else %}ok{% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasLeadingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.hasLeadingWhitespace').to.be.true;
+    });
+  });
+
+  describe('Unit: hasTrailingWhitespace', () => {
+    it('should return true for branched LiquidTag', () => {
+      ast = toAugmentedAst('{% if A %} hello {% endif %}');
+      expectPath(ast, 'children.0.type').to.be.eql(NodeTypes.LiquidTag);
+      expectPath(ast, 'children.0.hasTrailingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.true;
+    });
+
+    it('should return the correct value for LiquidBranches', () => {
+      ast = toAugmentedAst('{% if A %} hello{% else %}ok {% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.false;
+      expectPath(ast, 'children.0.children.1.hasTrailingWhitespace').to.be.true;
+
+      ast = toAugmentedAst('{% if A %} {% else %}ok{% endif %}');
+      expectPath(ast, 'children.0.children.0.type').to.be.eql(NodeTypes.LiquidBranch);
+      expectPath(ast, 'children.0.children.0.hasTrailingWhitespace').to.be.true;
+      expectPath(ast, 'children.0.children.1.hasTrailingWhitespace').to.be.false;
     });
   });
 

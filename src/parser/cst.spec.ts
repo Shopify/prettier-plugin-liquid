@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { LiquidHtmlCST, toLiquidHtmlCST } from '~/parser/cst';
 import { BLOCKS, VOID_ELEMENTS } from '~/parser/grammar';
+import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
@@ -247,6 +248,19 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, [1]);
       });
     });
+  });
+
+  it('should throw when trying to parse unparseable code', () => {
+    const testCases = ['{% 10293 %}', '<h<>', '{% if', '{{ n', '<div>{{ n{% if'];
+    for (const testCase of testCases) {
+      try {
+        toLiquidHtmlCST(testCase);
+        expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
+      } catch (e) {
+        expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
+      }
+    }
   });
 
   function expectLocation(cst: LiquidHtmlCST, path: (string | number)[]) {

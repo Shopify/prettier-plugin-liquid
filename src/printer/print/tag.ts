@@ -1,6 +1,7 @@
 import { AstPath, Doc, doc } from 'prettier';
 import {
-  HtmlElement,
+  HtmlComment,
+  HtmlNode,
   HtmlSelfClosingElement,
   HtmlVoidElement,
   LiquidHtmlNode,
@@ -11,15 +12,22 @@ import {
 import {
   getLastDescendant,
   hasPrettierIgnore,
+  isHtmlNode,
+  isVoidElement,
+  isHtmlElement,
+  isLiquidNode,
   isNonEmptyArray,
   isPreLikeNode,
-  isSelfClosing,
+  hasNoCloseMarker,
   isTextLikeNode,
   shouldPreserveContent,
+  isSelfClosing,
+  isHtmlComment,
+  isMultilineLiquidTag,
 } from '~/printer/utils';
 
 const {
-  builders: { indent, join, line, softline, hardline },
+  builders: { breakParent, indent, join, line, softline, hardline },
 } = doc;
 const { replaceTextEndOfLine } = doc.utils as any;
 
@@ -29,7 +37,7 @@ export function printClosingTag(
   options: LiquidParserOptions,
 ) {
   return [
-    isSelfClosing(node) ? '' : printClosingTagStart(node, options),
+    hasNoCloseMarker(node) ? '' : printClosingTagStart(node, options),
     printClosingTagEnd(node, options),
   ];
 }
@@ -86,7 +94,6 @@ export function printClosingTagSuffix(
     : '';
 }
 
-// TODO
 export function printClosingTagStartMarker(
   node: LiquidHtmlNode | undefined,
   options: LiquidParserOptions,
@@ -100,9 +107,13 @@ export function printClosingTagStartMarker(
     // case 'ieConditionalComment':
     //   return '<!';
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlRawNode:
       // if (node.hasHtmComponentClosingTag) {
       //   return '<//';
       // }
+      if (typeof node.name !== 'string') {
+        return `</{{ ${node.name.markup.trim()} }}`;
+      }
       return `</${node.name}`;
     default:
       return '';
@@ -118,6 +129,7 @@ export function printClosingTagEndMarker(
   if (shouldNotPrintClosingTag(node, options)) {
     return '';
   }
+
   switch (node.type) {
     // case 'ieConditionalComment':
     // case 'ieConditionalEndComment':
@@ -126,11 +138,14 @@ export function printClosingTagEndMarker(
     //   return ']><!-->';
     // case 'interpolation':
     //   return '}}';
-    case NodeTypes.HtmlElement:
-      if (isSelfClosing(node)) {
-        return '/>';
-      }
-    // fall through
+    case NodeTypes.HtmlSelfClosingElement: {
+      // This looks like it doesn't make sense because it should be part of
+      // the printOpeningTagEndMarker but this is handled somewhere else.
+      // This function is used to determine what to borrow so the "end" to
+      // borrow is actually the other end.
+      return '/>';
+    }
+
     default:
       return '>';
   }
@@ -141,7 +156,7 @@ function shouldNotPrintClosingTag(
   options: LiquidParserOptions,
 ) {
   return (
-    !isSelfClosing(node) &&
+    !hasNoCloseMarker(node) &&
     !(node as any).blockEndPosition &&
     (hasPrettierIgnore(node) ||
       shouldPreserveContent(node.parentNode!, options))
@@ -160,9 +175,10 @@ export function needsToBorrowPrevClosingTagEndMarker(node: LiquidHtmlNode) {
    *     ^
    */
   return (
+    !isLiquidNode(node) &&
     node.prev &&
     // node.prev.type !== 'docType' &&
-    !isTextLikeNode(node.prev) &&
+    isHtmlNode(node.prev) &&
     node.isLeadingWhitespaceSensitive &&
     !node.hasLeadingWhitespace
   );
@@ -180,10 +196,11 @@ export function needsToBorrowLastChildClosingTagEndMarker(
    *     >
    */
   return (
+    isHtmlNode(node) &&
     node.lastChild &&
     node.lastChild.isTrailingWhitespaceSensitive &&
     !node.lastChild.hasTrailingWhitespace &&
-    !isTextLikeNode(getLastDescendant(node.lastChild)) &&
+    isHtmlNode(getLastDescendant(node.lastChild)) &&
     !isPreLikeNode(node)
   );
 }
@@ -201,10 +218,13 @@ export function needsToBorrowParentClosingTagStartMarker(node: LiquidHtmlNode) {
    *     >
    */
   return (
+    isHtmlNode(node.parentNode) &&
     !node.next &&
     !node.hasTrailingWhitespace &&
     node.isTrailingWhitespaceSensitive &&
-    isTextLikeNode(getLastDescendant(node))
+    !isLiquidNode(node) &&
+    (isTextLikeNode(getLastDescendant(node)) ||
+      isLiquidNode(getLastDescendant(node)))
   );
 }
 
@@ -216,7 +236,7 @@ export function needsToBorrowNextOpeningTagStartMarker(node: LiquidHtmlNode) {
    */
   return (
     node.next &&
-    !isTextLikeNode(node.next) &&
+    isHtmlNode(node.next) &&
     isTextLikeNode(node) &&
     node.isTrailingWhitespaceSensitive &&
     !node.hasTrailingWhitespace
@@ -248,19 +268,23 @@ export function needsToBorrowParentOpeningTagEndMarker(node: LiquidHtmlNode) {
    *       ^
    */
   return (
+    isHtmlNode(node.parentNode) &&
     !node.prev &&
     node.isLeadingWhitespaceSensitive &&
-    !node.hasLeadingWhitespace
+    !node.hasLeadingWhitespace &&
+    !isLiquidNode(node)
   );
 }
 
 function printAttributes(
-  path: AstPath<HtmlElement | HtmlSelfClosingElement | HtmlVoidElement>,
+  path: AstPath<HtmlNode>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
 ) {
   const node = path.getValue();
   const { locStart, locEnd } = options;
+
+  if (isHtmlComment(node)) return '';
 
   if (!isNonEmptyArray(node.attributes)) {
     return isSelfClosing(node)
@@ -294,19 +318,31 @@ function printAttributes(
   }, 'attributes');
 
   const forceNotToBreakAttrContent =
-    node.type === NodeTypes.HtmlElement &&
-    node.name === 'script' &&
-    node.attributes.length === 1 &&
-    (node.attributes[0] as any).name === 'src' &&
-    node.children.length === 0;
+    (options.singleLineLinkTags &&
+      typeof node.name === 'string' &&
+      node.name === 'link') ||
+    ((isSelfClosing(node) ||
+      isVoidElement(node) ||
+      (isHtmlElement(node) && node.children.length > 0)) &&
+      node.attributes &&
+      node.attributes.length === 1 &&
+      !isMultilineLiquidTag(node.attributes[0]));
 
-  const attributeLine =
-    // options.singleAttributePerLine &&
-    node.attributes.length > 1 ? hardline : line;
+  const forceBreakAttrContent =
+    node.source
+      .slice(node.blockStartPosition.start, node.blockStartPosition.end)
+      .indexOf('\n') !== -1;
+
+  const attributeLine = forceNotToBreakAttrContent
+    ? ' '
+    : options.singleAttributePerLine && node.attributes.length > 1
+    ? hardline
+    : line;
 
   const parts: Doc[] = [
     indent([
       forceNotToBreakAttrContent ? ' ' : line,
+      forceBreakAttrContent ? breakParent : '',
       join(attributeLine, printedAttributes),
     ]),
   ];
@@ -326,7 +362,7 @@ function printAttributes(
      *                ~
      *     /></span>
      */
-    (isSelfClosing(node) &&
+    (hasNoCloseMarker(node) &&
       needsToBorrowLastChildClosingTagEndMarker(node.parentNode!)) ||
     forceNotToBreakAttrContent
   ) {
@@ -353,9 +389,8 @@ function printOpeningTagEnd(node: LiquidHtmlNode) {
     : printOpeningTagEndMarker(node);
 }
 
-// TODO
 export function printOpeningTag(
-  path: AstPath<HtmlElement>,
+  path: AstPath<HtmlNode>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
 ) {
@@ -364,7 +399,7 @@ export function printOpeningTag(
   return [
     printOpeningTagStart(node, options),
     printAttributes(path, options, print),
-    isSelfClosing(node) ? '' : printOpeningTagEnd(node),
+    hasNoCloseMarker(node) ? '' : printOpeningTagEnd(node),
   ];
 }
 
@@ -403,10 +438,18 @@ export function printOpeningTagStartMarker(node: LiquidHtmlNode | undefined) {
     //   return '{{';
     // case 'docType':
     //   return '<!DOCTYPE';
+    case NodeTypes.HtmlComment:
+      return '<!--';
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlSelfClosingElement:
+    case NodeTypes.HtmlVoidElement:
+    case NodeTypes.HtmlRawNode:
       // if (node.condition) {
       //   return `<!--[if ${node.condition}]><!--><${node.name}`;
       // }
+      if (typeof node.name !== 'string') {
+        return `<{{ ${node.name.markup.trim()} }}`;
+      }
       return `<${node.name}`;
     default:
       return ''; // TODO
@@ -421,8 +464,11 @@ export function printOpeningTagEndMarker(node: LiquidHtmlNode | undefined) {
     //   return ']>';
     case NodeTypes.HtmlComment:
       return '-->';
+    case NodeTypes.HtmlSelfClosingElement:
     case NodeTypes.HtmlVoidElement:
+      return '';
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlRawNode:
       return '>';
     default:
       return '>';
@@ -431,7 +477,10 @@ export function printOpeningTagEndMarker(node: LiquidHtmlNode | undefined) {
 
 // TODO
 export function getNodeContent(
-  node: HtmlElement,
+  node: Exclude<
+    HtmlNode,
+    HtmlComment | HtmlVoidElement | HtmlSelfClosingElement
+  >,
   options: LiquidParserOptions,
 ) {
   let start = node.blockStartPosition.end;

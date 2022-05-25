@@ -1,16 +1,19 @@
-import { AstPath } from 'prettier';
 import {
   HtmlSelfClosingElement,
   LiquidHtmlNode,
   LiquidParserOptions,
   NodeTypes,
   TextNode,
+  LiquidNode,
+  LiquidNodeTypes,
+  HtmlNodeTypes,
+  HtmlNode,
+  HtmlVoidElement,
+  HtmlComment,
+  HtmlElement,
+  LiquidTag,
 } from '~/types';
-
-// placeholder while I get my shit together
-export function isVueCustomBlock(_node: any, _options: any) {
-  return false;
-}
+import { isEmpty } from '~/printer/utils/array';
 
 export function isScriptLikeTag(node: { type: NodeTypes }) {
   return node.type === NodeTypes.HtmlRawNode;
@@ -20,16 +23,57 @@ export function isPreLikeNode(node: { cssWhitespace: string }) {
   return node.cssWhitespace.startsWith('pre');
 }
 
+// A bit like self-closing except we distinguish between them.
+// Comments are also considered self-closing.
+export function hasNoCloseMarker(
+  node: LiquidHtmlNode,
+): node is HtmlComment | HtmlVoidElement | HtmlSelfClosingElement {
+  return isSelfClosing(node) || isVoidElement(node) || isHtmlComment(node);
+}
+
+export function isHtmlComment(node: LiquidHtmlNode): node is HtmlComment {
+  return node.type === NodeTypes.HtmlComment;
+}
+
 export function isSelfClosing(
   node: LiquidHtmlNode,
 ): node is HtmlSelfClosingElement {
   return node.type === NodeTypes.HtmlSelfClosingElement;
 }
 
+export function isVoidElement(node: LiquidHtmlNode): node is HtmlVoidElement {
+  return node.type === NodeTypes.HtmlVoidElement;
+}
+
+export function isHtmlElement(node: LiquidHtmlNode): node is HtmlElement {
+  return node.type === NodeTypes.HtmlElement;
+}
+
 export function isTextLikeNode(
   node: LiquidHtmlNode | undefined,
 ): node is TextNode {
   return !!node && node.type === NodeTypes.TextNode;
+}
+
+export function isLiquidNode(
+  node: LiquidHtmlNode | undefined,
+): node is LiquidNode {
+  return !!node && LiquidNodeTypes.includes(node.type as any);
+}
+
+export function isMultilineLiquidTag(
+  node: LiquidHtmlNode | undefined,
+): node is LiquidTag {
+  return (
+    !!node &&
+    node.type === NodeTypes.LiquidTag &&
+    !!node.children &&
+    !isEmpty(node.children)
+  );
+}
+
+export function isHtmlNode(node: LiquidHtmlNode | undefined): node is HtmlNode {
+  return !!node && HtmlNodeTypes.includes(node.type as any);
 }
 
 export function hasNonTextChild(node: LiquidHtmlNode) {
@@ -94,7 +138,9 @@ export function forceNextEmptyLine(node: LiquidHtmlNode | undefined) {
   // lines exist between nodes.
   let tmp: number;
   tmp = source.indexOf('\n', node.position.end);
-  tmp = source.indexOf('\n', tmp);
+  if (tmp === -1) return false;
+  tmp = source.indexOf('\n', tmp + 1);
+  if (tmp === -1) return false;
   return tmp < node.next.position.start;
 }
 
@@ -137,6 +183,14 @@ export function preferHardlineAsSurroundingSpaces(node: LiquidHtmlNode) {
         typeof node.name === 'string' &&
         ['script', 'select'].includes(node.name)
       );
+    case NodeTypes.LiquidTag:
+      if (
+        (node.prev && isTextLikeNode(node.prev)) ||
+        (node.next && isTextLikeNode(node.next))
+      ) {
+        return false;
+      }
+      return node.children && node.children.length > 0;
   }
 
   return false;
@@ -145,6 +199,7 @@ export function preferHardlineAsSurroundingSpaces(node: LiquidHtmlNode) {
 export function preferHardlineAsLeadingSpaces(node: LiquidHtmlNode) {
   return (
     preferHardlineAsSurroundingSpaces(node) ||
+    (isLiquidNode(node) && node.prev && isLiquidNode(node.prev)) ||
     (node.prev && preferHardlineAsTrailingSpaces(node.prev)) ||
     hasSurroundingLineBreak(node)
   );
@@ -153,6 +208,9 @@ export function preferHardlineAsLeadingSpaces(node: LiquidHtmlNode) {
 export function preferHardlineAsTrailingSpaces(node: LiquidHtmlNode) {
   return (
     preferHardlineAsSurroundingSpaces(node) ||
+    (isLiquidNode(node) &&
+      node.next &&
+      (isLiquidNode(node.next) || isHtmlNode(node.next))) ||
     (node.type === NodeTypes.HtmlElement && node.name === 'br') ||
     hasSurroundingLineBreak(node)
   );
@@ -196,28 +254,10 @@ function hasTrailingLineBreak(node: LiquidHtmlNode) {
 }
 
 function hasLineBreakInRange(source: string, start: number, end: number) {
-  return source.indexOf('\n', start) < end;
+  const index = source.indexOf('\n', start);
+  return index !== -1 && index < end;
 }
 
 export function getLastDescendant(node: LiquidHtmlNode): LiquidHtmlNode {
   return node.lastChild ? getLastDescendant(node.lastChild) : node;
-}
-
-export function countParents(
-  path: AstPath<LiquidHtmlNode>,
-  predicate: (x: any) => boolean,
-) {
-  let counter = 0;
-  for (let i = path.stack.length - 1; i >= 0; i--) {
-    const value = path.stack[i];
-    if (
-      value &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      predicate(value)
-    ) {
-      counter++;
-    }
-  }
-  return counter;
 }

@@ -24,11 +24,33 @@ export enum NodeTypes {
   TextNode = 'TextNode',
 }
 
+export const HtmlNodeTypes = [
+  NodeTypes.HtmlElement,
+  NodeTypes.HtmlRawNode,
+  NodeTypes.HtmlVoidElement,
+  NodeTypes.HtmlSelfClosingElement,
+] as const;
+
+export const LiquidNodeTypes = [
+  NodeTypes.LiquidTag,
+  NodeTypes.LiquidDrop,
+  NodeTypes.LiquidBranch,
+  NodeTypes.LiquidRawTag,
+] as const;
+
 export type LiquidAstPath = AstPath<LiquidHtmlNode>;
-export type LiquidParserOptions = ParserOptions<LiquidHtmlNode>;
+export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
+  singleAttributePerLine: boolean;
+  singleLineLinkTags: boolean;
+  indentSchema: boolean;
+};
+export type LiquidPrinterArgs = {
+  leadingSpaceGroupId?: symbol[] | symbol;
+  trailingSpaceGroupId?: symbol[] | symbol;
+};
 export type LiquidPrinter = (
   path: AstPath<LiquidHtmlNode>,
-  parentGroupId?: symbol,
+  args?: LiquidPrinterArgs,
 ) => Doc;
 
 // This one warrants a bit of an explanation 'cuz it's definitely next
@@ -117,6 +139,7 @@ export type LiquidTag = Augmented<AST.LiquidTag, AllAugmentations>;
 export type LiquidBranch = Augmented<AST.LiquidBranch, AllAugmentations>;
 export type LiquidDrop = Augmented<AST.LiquidDrop, AllAugmentations>;
 export type HtmlNode = Augmented<AST.HtmlNode, AllAugmentations>;
+export type HtmlTag = Exclude<HtmlNode, HtmlComment>;
 export type HtmlElement = Augmented<AST.HtmlElement, AllAugmentations>;
 export type HtmlVoidElement = Augmented<AST.HtmlVoidElement, AllAugmentations>;
 export type HtmlSelfClosingElement = Augmented<

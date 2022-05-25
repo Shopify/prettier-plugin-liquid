@@ -6,14 +6,19 @@ import {
   LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
+  LiquidPrinterArgs,
 } from '~/types';
 import {
+  FORCE_BREAK_GROUP_ID,
+  FORCE_FLAT_GROUP_ID,
   forceBreakChildren,
   forceNextEmptyLine,
   hasPrettierIgnore,
+  isEmpty,
+  isLiquidNode,
+  hasNoCloseMarker,
   isTextLikeNode,
   preferHardlineAsLeadingSpaces,
-  isSelfClosing,
 } from '~/printer/utils';
 import {
   needsToBorrowNextOpeningTagStartMarker,
@@ -34,6 +39,7 @@ function printChild(
   childPath: LiquidAstPath,
   options: LiquidParserOptions,
   print: LiquidPrinter,
+  args: LiquidPrinterArgs,
 ) {
   const child = childPath.getValue();
 
@@ -56,68 +62,71 @@ function printChild(
     ];
   }
 
-  return print(childPath);
+  return print(childPath, args);
 }
 
-function printBetweenLine(prevNode: LiquidHtmlNode, nextNode: LiquidHtmlNode) {
-  return isTextLikeNode(prevNode) && isTextLikeNode(nextNode)
-    ? prevNode.isTrailingWhitespaceSensitive
-      ? prevNode.hasTrailingWhitespace
-        ? preferHardlineAsLeadingSpaces(nextNode)
-          ? hardline
-          : line
-        : ''
-      : preferHardlineAsLeadingSpaces(nextNode)
-      ? hardline
-      : softline
-    : (needsToBorrowNextOpeningTagStartMarker(prevNode) &&
-        (hasPrettierIgnore(nextNode) ||
-          /**
-           *     123<a
-           *          ~
-           *       ><b>
-           */
-          nextNode.firstChild ||
-          /**
-           *     123<!--
-           *            ~
-           *     -->
-           */
-          isSelfClosing(nextNode) ||
-          /**
-           *     123<span
-           *             ~
-           *       attr
-           */
-          (nextNode.type === NodeTypes.HtmlElement &&
-            nextNode.attributes.length > 0))) ||
-      /**
-       *     <img
-       *       src="long"
-       *                 ~
-       *     />123
-       */
-      (prevNode.type === NodeTypes.HtmlElement &&
-        isSelfClosing(prevNode) &&
-        needsToBorrowPrevClosingTagEndMarker(nextNode))
-    ? ''
-    : !nextNode.isLeadingWhitespaceSensitive ||
-      preferHardlineAsLeadingSpaces(nextNode) ||
-      /**
-       *       Want to write us a letter? Use our<a
-       *         ><b><a>mailing address</a></b></a
-       *                                          ~
-       *       >.
-       */
-      (needsToBorrowPrevClosingTagEndMarker(nextNode) &&
-        prevNode.lastChild &&
-        needsToBorrowParentClosingTagStartMarker(prevNode.lastChild) &&
-        prevNode.lastChild.lastChild &&
-        needsToBorrowParentClosingTagStartMarker(prevNode.lastChild.lastChild))
-    ? hardline
-    : nextNode.hasLeadingWhitespace
-    ? line
-    : softline;
+function printBetweenLine(
+  prevNode: LiquidHtmlNode | undefined,
+  nextNode: LiquidHtmlNode | undefined,
+) {
+  if (!prevNode || !nextNode) return '';
+
+  const spaceBetweenLinesIsHandledSomewhereElse =
+    (needsToBorrowNextOpeningTagStartMarker(prevNode) &&
+      (hasPrettierIgnore(nextNode) ||
+        /**
+         *     123<a
+         *          ~
+         *       ><b>
+         */
+        nextNode.firstChild ||
+        /**
+         *     123<!--
+         *            ~
+         *     -->
+         */
+        hasNoCloseMarker(nextNode) ||
+        /**
+         *     123<span
+         *             ~
+         *       attr
+         */
+        (nextNode.type === NodeTypes.HtmlElement &&
+          nextNode.attributes.length > 0))) ||
+    /**
+     *     <img
+     *       src="long"
+     *                 ~
+     *     />123
+     */
+    (prevNode.type === NodeTypes.HtmlElement &&
+      hasNoCloseMarker(prevNode) &&
+      needsToBorrowPrevClosingTagEndMarker(nextNode));
+
+  if (spaceBetweenLinesIsHandledSomewhereElse) {
+    return '';
+  }
+
+  const shouldUseHardline =
+    !nextNode.isLeadingWhitespaceSensitive ||
+    preferHardlineAsLeadingSpaces(nextNode) ||
+    /**
+     *       Want to write us a letter? Use our<a
+     *         ><b><a>mailing address</a></b></a
+     *                                          ~
+     *       >.
+     */
+    (needsToBorrowPrevClosingTagEndMarker(nextNode) &&
+      prevNode.lastChild &&
+      needsToBorrowParentClosingTagStartMarker(prevNode.lastChild) &&
+      prevNode.lastChild.lastChild &&
+      needsToBorrowParentClosingTagStartMarker(prevNode.lastChild.lastChild));
+
+  if (shouldUseHardline) {
+    return hardline;
+  }
+
+  return nextNode.hasLeadingWhitespace ? line : softline;
 }
 
 export type HasChildren = Extract<
@@ -125,10 +134,44 @@ export type HasChildren = Extract<
   { children?: LiquidHtmlNode[] }
 >;
 
+type Whitespace =
+  | doc.builders.Line
+  | doc.builders.Softline
+  | doc.builders.IfBreak;
+
+interface WhitespaceBetweenNode {
+  /**
+   * @doc Leading, doesn't break content
+   */
+  leadingHardlines: typeof hardline[];
+
+  /**
+   * @doc Leading, breaks first if content doesn't fit.
+   */
+  leadingWhitespace: Whitespace[];
+
+  /**
+   * @doc Leading, breaks first and trailing whitespace if content doesn't fit.
+   */
+  leadingDependentWhitespace: doc.builders.Softline[];
+
+  /**
+   * @doc Trailing, breaks when content breaks.
+   */
+  trailingWhitespace: Whitespace[];
+
+  /**
+   * @doc Trailing, doesn't break content
+   */
+  trailingHardlines: typeof hardline[];
+}
+
+// This code is adapted from prettier's language-html plugin.
 export function printChildren(
   path: AstPath<HasChildren>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
+  args: LiquidPrinterArgs,
 ) {
   const node = path.getValue();
 
@@ -144,9 +187,7 @@ export function printChildren(
 
       ...path.map((childPath) => {
         const childNode = childPath.getValue();
-        const prevBetweenLine = !childNode.prev
-          ? ''
-          : printBetweenLine(childNode.prev, childNode);
+        const prevBetweenLine = printBetweenLine(childNode.prev, childNode);
         return [
           !prevBetweenLine
             ? ''
@@ -154,83 +195,222 @@ export function printChildren(
                 prevBetweenLine,
                 forceNextEmptyLine(childNode.prev) ? hardline : '',
               ],
-          printChild(childPath, options, print),
+          printChild(childPath, options, print, {
+            leadingSpaceGroupId: FORCE_BREAK_GROUP_ID,
+            trailingSpaceGroupId: FORCE_BREAK_GROUP_ID,
+          }),
         ];
       }, 'children'),
     ];
   }
 
-  const groupIds = node.children.map(() => Symbol(''));
-  return path.map((childPath: AstPath<LiquidHtmlNode>, childIndex: number) => {
-    const childNode = childPath.getValue();
+  const leadingSpaceGroupIds = node.children.map((_, i) =>
+    Symbol(`leading-${i}`),
+  );
+  const trailingSpaceGroupIds = node.children.map((_, i) =>
+    Symbol(`trailing-${i}`),
+  );
 
-    if (isTextLikeNode(childNode)) {
-      if (childNode.prev && isTextLikeNode(childNode.prev)) {
-        const prevBetweenLine = printBetweenLine(childNode.prev, childNode);
-        if (prevBetweenLine) {
-          if (forceNextEmptyLine(childNode.prev)) {
-            return [hardline, hardline, printChild(childPath, options, print)];
-          }
-          return [prevBetweenLine, printChild(childPath, options, print)];
-        }
+  /**
+   * Whitespace handling. My favourite topic.
+   *
+   * TL;DR we sort the output of printBetweenLine into buckets.
+   *
+   * What we want:
+   * - Hardlines should go in as is and not break unrelated content
+   * - When we want the content to flow as a paragraph, we'll immitate
+   *   prettier's `fill` builder with this:
+   *     group([whitespace, group(content, whitespace)])
+   * - When we want the content to break surrounding whitespace in pairs,
+   *   we'll do this:
+   *     group([whitespace, content, whitespace])
+   * - We want to know the whitespace beforehand because conditional whitespace
+   *   stripping depends on the groupId of the already printed group that
+   *   breaks.
+   */
+  const whitespaceBetweenNode = path.map(
+    (
+      childPath: AstPath<LiquidHtmlNode>,
+      childIndex: number,
+    ): WhitespaceBetweenNode => {
+      const childNode = childPath.getValue();
+
+      const leadingHardlines: typeof hardline[] = [];
+      const leadingWhitespace: Whitespace[] = [];
+      const leadingDependentWhitespace: doc.builders.Softline[] = [];
+      const trailingWhitespace: Whitespace[] = [];
+      const trailingHardlines: typeof hardline[] = [];
+
+      const prevBetweenLine = printBetweenLine(childNode.prev, childNode);
+      const nextBetweenLine = printBetweenLine(childNode, childNode.next);
+
+      if (isTextLikeNode(childNode)) {
+        return {
+          leadingHardlines,
+          leadingWhitespace,
+          leadingDependentWhitespace,
+          trailingWhitespace,
+          trailingHardlines,
+        };
       }
-      return printChild(childPath, options, print);
-    }
 
-    const prevParts = [];
-    const leadingParts = [];
-    const trailingParts = [];
-    const nextParts = [];
-
-    const prevBetweenLine = childNode.prev
-      ? printBetweenLine(childNode.prev, childNode)
-      : '';
-
-    const nextBetweenLine = childNode.next
-      ? printBetweenLine(childNode, childNode.next)
-      : '';
-
-    if (prevBetweenLine) {
-      if (forceNextEmptyLine(childNode.prev)) {
-        prevParts.push(hardline, hardline);
-      } else if (prevBetweenLine === hardline) {
-        prevParts.push(hardline);
-      } else {
-        if (isTextLikeNode(childNode.prev)) {
-          leadingParts.push(prevBetweenLine);
+      if (prevBetweenLine) {
+        if (forceNextEmptyLine(childNode.prev)) {
+          leadingHardlines.push(hardline, hardline);
+        } else if (prevBetweenLine === hardline) {
+          leadingHardlines.push(hardline);
         } else {
-          leadingParts.push(
-            ifBreak('', softline, {
-              groupId: groupIds[childIndex - 1],
-            }),
-          );
+          if (isTextLikeNode(childNode.prev)) {
+            if (isLiquidNode(childNode) && prevBetweenLine === softline) {
+              leadingDependentWhitespace.push(
+                prevBetweenLine as typeof softline,
+              );
+            } else {
+              leadingWhitespace.push(prevBetweenLine as doc.builders.Line);
+            }
+          } else {
+            // We're collapsing nextBetweenLine and prevBetweenLine of
+            // adjacent nodes here. When the previous node breaks content,
+            // then we want to print nothing here. If it doesn't, then add
+            // a softline and give a chance to _this_ node to break.
+            leadingWhitespace.push(
+              ifBreak('', softline, {
+                groupId: trailingSpaceGroupIds[childIndex - 1],
+              }),
+            );
+          }
         }
       }
-    }
 
-    if (nextBetweenLine) {
-      if (forceNextEmptyLine(childNode)) {
-        if (isTextLikeNode(childNode.next)) {
-          nextParts.push(hardline, hardline);
+      if (nextBetweenLine) {
+        if (forceNextEmptyLine(childNode)) {
+          if (isTextLikeNode(childNode.next)) {
+            trailingHardlines.push(hardline, hardline);
+          }
+        } else if (nextBetweenLine === hardline) {
+          if (isTextLikeNode(childNode.next)) {
+            trailingHardlines.push(hardline);
+          }
+          // there's a hole here, it's intentional!
+        } else {
+          // We know it's not a typeof hardline here because we do the
+          // check on the previous condition.
+          trailingWhitespace.push(nextBetweenLine as doc.builders.Line);
         }
-      } else if (nextBetweenLine === hardline) {
-        if (isTextLikeNode(childNode.next)) {
-          nextParts.push(hardline);
-        }
-      } else {
-        trailingParts.push(nextBetweenLine);
       }
-    }
+
+      return {
+        leadingHardlines,
+        leadingWhitespace,
+        leadingDependentWhitespace,
+        trailingWhitespace,
+        trailingHardlines,
+      } as WhitespaceBetweenNode;
+    },
+    'children',
+  );
+
+  return path.map((childPath, childIndex) => {
+    const {
+      leadingHardlines,
+      leadingWhitespace,
+      leadingDependentWhitespace,
+      trailingWhitespace,
+      trailingHardlines,
+    } = whitespaceBetweenNode[childIndex];
 
     return [
-      ...prevParts,
-      group([
-        ...leadingParts,
-        group([printChild(childPath, options, print), ...trailingParts], {
-          id: groupIds[childIndex],
-        }),
-      ]),
-      ...nextParts,
+      ...leadingHardlines, // independent
+      group(
+        [
+          ...leadingWhitespace, // breaks first
+          group(
+            [
+              ...leadingDependentWhitespace, // breaks with trailing
+              printChild(childPath, options, print, {
+                leadingSpaceGroupId: leadingSpaceGroupId(
+                  whitespaceBetweenNode,
+                  childIndex,
+                ),
+                trailingSpaceGroupId: trailingSpaceGroupId(
+                  whitespaceBetweenNode,
+                  childIndex,
+                ),
+              }),
+              ...trailingWhitespace, // breaks second, if content breaks
+            ],
+            {
+              id: trailingSpaceGroupIds[childIndex],
+            },
+          ),
+        ],
+        {
+          id: leadingSpaceGroupIds[childIndex],
+        },
+      ),
+      ...trailingHardlines, // independent
     ];
   }, 'children');
+
+  function leadingSpaceGroupId(
+    whitespaceBetweenNode: WhitespaceBetweenNode[],
+    index: number,
+  ): symbol[] | symbol | undefined {
+    if (index === 0) {
+      return args.leadingSpaceGroupId;
+    }
+
+    const prev = whitespaceBetweenNode[index - 1];
+    const curr = whitespaceBetweenNode[index];
+    const groupIds = [];
+
+    if (!isEmpty(prev.trailingHardlines) || !isEmpty(curr.leadingHardlines)) {
+      return FORCE_BREAK_GROUP_ID;
+    }
+
+    if (!isEmpty(prev.trailingWhitespace)) {
+      groupIds.push(trailingSpaceGroupIds[index - 1]);
+    }
+
+    if (!isEmpty(curr.leadingWhitespace)) {
+      groupIds.push(leadingSpaceGroupIds[index]);
+    }
+
+    if (!isEmpty(curr.leadingDependentWhitespace)) {
+      groupIds.push(trailingSpaceGroupIds[index]);
+    }
+
+    if (isEmpty(groupIds)) {
+      groupIds.push(FORCE_FLAT_GROUP_ID);
+    }
+
+    return groupIds;
+  }
+
+  function trailingSpaceGroupId(
+    whitespaceBetweenNode: WhitespaceBetweenNode[],
+    index: number,
+  ) {
+    if (index === whitespaceBetweenNode.length - 1) {
+      return args.trailingSpaceGroupId;
+    }
+
+    const curr = whitespaceBetweenNode[index];
+    const next = whitespaceBetweenNode[index + 1];
+    const groupIds = [];
+
+    if (!isEmpty(curr.trailingHardlines) || !isEmpty(next.leadingHardlines)) {
+      return FORCE_BREAK_GROUP_ID;
+    }
+
+    if (!isEmpty(curr.trailingWhitespace)) {
+      groupIds.push(trailingSpaceGroupIds[index]);
+    }
+
+    if (isEmpty(groupIds)) {
+      groupIds.push(FORCE_FLAT_GROUP_ID);
+    }
+
+    return groupIds;
+  }
 }

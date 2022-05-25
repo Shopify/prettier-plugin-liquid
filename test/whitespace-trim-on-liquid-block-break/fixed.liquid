@@ -2,20 +2,24 @@
 
 In HTMLElement children array,
 
-it should not add Whitespace Trim Characters (WTC) if the liquid drop does not
-break on a new line
-<div>{% if condition %}hello{% endif %}</div>
-
-it should add wtc if the liquid drop breaks on a new line and the previous/next
-characters were not spaces.
+it should add wtc if the liquid tag breaks on a new line and its children are whitespace sensitive and there wasn't whitespace to begin with
 <div>
+  {% if condition -%}
+    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  {%- endif %}
+</div>
+
+it should add wtc if the liquid tag breaks on a new line, the node is
+leading/trailing space sensitive, and there was no leading/trailing whitespace
+<span>
   {%- if condition -%}
     aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
   {%- endif -%}
-</div>
+</span>
+
 <div>
   <img>
-  {%- if condition %}aaaaaa{% endif -%}
+  {%- if condition %}aaaaaa{% endif %}
 </div>
 
 it should not add wtc if the liquid drop breaks on a new line and the
@@ -30,15 +34,32 @@ previous/next characters were spaces
 
 In LiquidTag children array,
 
-when it does break and there was a whitespace, it should not change anything
+If it breaks and the htmlWhitespaceSensitivity is 'strict', then add whitespace stripping
+htmlWhitespaceSensitivity: 'strict'
+printWidth: 30
+{% form -%}
+  aaaaaaaaaaaa
+{%- endform %}
+
+If it breaks and the htmlWhitespaceSensitivity is 'ignore', then omit whitespace stripping
+htmlWhitespaceSensitivity: "ignore"
+printWidth: 30
+{% if A %}
+  aaaaaaaaaaaa
+{% endif %}
+
+If it breaks and the node is display: inline add whitespace stripping
+printWidth: 30
+<!-- display: inline -->
+{% form -%}
+  aaaaaaaaaaaa
+{%- endform %}
+
+When it does break, there was a whitespace, and the parent is not
+leading/trailing space sensitive, it should not change anything
 {% form %}
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 {% endform %}
-
-when it does break and there wasn't whitespace, it should add WTCs
-{% form -%}
-  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-{%- endform %}
 
 --------------------------------------------------------------------------------
 

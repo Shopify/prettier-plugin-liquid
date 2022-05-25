@@ -19,3 +19,13 @@
     <div x=1 y=2 z=3>UNCLOSED HAHA
   {% endraw %}
 </div>
+
+it should pretty-print and indent the contents of the schema tag
+printWidth: 1
+{% schema %}
+  {
+    "some": {
+      "indented": "Object"
+    }
+  }
+{% endschema %}

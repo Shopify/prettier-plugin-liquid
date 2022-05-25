@@ -57,6 +57,23 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPosition(ast, 'children.0.attributes.2');
   });
 
+  it('should parse HTML attributes inside tags', () => {
+    const ast = toLiquidHtmlAST(
+      `<img {% if cond %}src="https://1234" loading='lazy'{% else %}disabled{% endif %}>`,
+    );
+    expectPath(ast, 'children.0').to.exist;
+    expectPath(ast, 'children.0.type').to.eql('HtmlVoidElement');
+    expectPath(ast, 'children.0.name').to.eql('img');
+    expectPath(ast, 'children.0.attributes.0.name').to.eql('if');
+    expectPath(ast, 'children.0.attributes.0.children.0.type').to.eql('LiquidBranch');
+    expectPath(ast, 'children.0.attributes.0.children.0.children.0.type').to.eql(
+      'AttrDoubleQuoted',
+    );
+    expectPath(ast, 'children.0.attributes.0.children.0.children.1.type').to.eql(
+      'AttrSingleQuoted',
+    );
+  });
+
   it('should parse HTML tags with Liquid Drop names', () => {
     [
       `<{{ node_type }} src="https://1234" loading='lazy' disabled></{{node_type}}>`,
@@ -92,7 +109,13 @@ describe('Unit: toLiquidHtmlAST', () => {
       '<{{ node_type }}></{{ wrong_end_node }}>',
     ];
     for (const testCase of testCases) {
-      expect(() => toLiquidHtmlAST(testCase)).to.throw(LiquidHTMLASTParsingError);
+      try {
+        toLiquidHtmlAST(testCase);
+        expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
+      } catch (e) {
+        expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
+      }
     }
   });
 
