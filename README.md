@@ -17,7 +17,7 @@
 
 <div align="center">
 
-  🗣 [Slack](https://join.slack.com/t/shopifypartners/shared_invite/zt-sdr2quab-mGkzkttZ2hnVm0~8noSyvw) | 💬 [Discussions](https://github.com/Shopify/prettier-plugin-liquid/discussions) | 📝 [Changelog](./CHANGELOG.md)
+🗣 [Slack](https://join.slack.com/t/shopifypartners/shared_invite/zt-sdr2quab-mGkzkttZ2hnVm0~8noSyvw) | 💬 [Discussions](https://github.com/Shopify/prettier-plugin-liquid/discussions) | 📝 [Changelog](./CHANGELOG.md)
 
 </div>
 
@@ -29,7 +29,7 @@ https://user-images.githubusercontent.com/4990691/145229362-568ab7d4-4345-42b7-8
 
 ## Can this be used in production?
 
-_Not yet_. We have a [list of issues](TODO.md) we're going through before it is considered stable.
+_Not yet_. We have a [list of issues](https://github.com/Shopify/prettier-plugin-liquid/issues) we're going through before it is considered stable.
 
 ## Installation
 
@@ -97,7 +97,7 @@ Then use Prettier with Liquid, just like this:
 ```js
 prettier.format(YOUR_CODE, {
   plugins: [prettierPluginLiquid],
-  parser: "liquid-html"
+  parser: 'liquid-html',
 });
 ```
 
@@ -110,12 +110,12 @@ TODO: See this code in action [in this basic demo](https://jsbin.com/butoruw/edi
 Bundlers like webpack, Rollup or browserify automatically recognize how to handle the plugin. Remember that even when using a bundler, you still have to use the standalone builds:
 
 ```js
-import prettier from "prettier/standalone";
-import liquidPlugin from "@shopify/prettier-plugin-liquid/standalone";
+import prettier from 'prettier/standalone';
+import liquidPlugin from '@shopify/prettier-plugin-liquid/standalone';
 
 prettier.format(YOUR_CODE, {
   plugins: [liquidPlugin],
-  parser: "liquid-html"
+  parser: 'liquid-html',
 });
 ```
 
