@@ -13,15 +13,19 @@ yarn test
 
 ## Context
 
-There's a lot of abstract concepts that goes into making this plugin. Read [HOW_IT_WORKS.md](HOW_IT_WORKS.md) for a technical overview.
+There's a lot of abstract concepts that goes into making this plugin.
+
+- Take a look at our plugin's [principles](./docs/principles/index.md).
+- Read [HOW_IT_WORKS.md](HOW_IT_WORKS.md) for a technical overview.
+- Read [Whitespace Handling](./docs/whitespace-handling.md) for an overview of how we deal with that internally.
 
 The source code for this plugin is in TypeScript.
 
 ## Standards
 
-* PR should explain what the feature does, and why the change exists.
-* PR should include any carrier specific documentation explaining how it works.
-* Code should be generic and reusable.
+- PR should explain what the feature does, and why the change exists.
+- PR should include any carrier specific documentation explaining how it works.
+- Code should be generic and reusable.
 
 ## Formating
 
@@ -45,6 +49,12 @@ To run the integration tests (where we make sure an input file gets transformed 
 
 ```bash
 yarn test:integration
+```
+
+To run all tests:
+
+```bash
+yarn test
 ```
 
 To run from source on another repo or file:
@@ -72,4 +82,3 @@ prettier --plugin . --write path/to/files.liquid
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create a new Pull Request
-
