@@ -29,6 +29,7 @@ import {
   bodyLines,
   hasLineBreakInRange,
   isEmpty,
+  isTextLikeNode,
   reindent,
 } from '~/printer/utils';
 import { printElement } from '~/printer/print/element';
@@ -84,11 +85,14 @@ function printAttributes<
   );
 }
 
-function printAttribute<T extends AttributeNodeBase<any>>(
-  path: AstPath<T>,
-  options: LiquidParserOptions,
-  _print: LiquidPrinter,
-) {
+const oppositeQuotes = {
+  '"': "'",
+  "'": '"',
+};
+
+function printAttribute<
+  T extends Extract<LiquidHtmlNode, { attributePosition: Position }>,
+>(path: AstPath<T>, options: LiquidParserOptions, _print: LiquidPrinter) {
   const node = path.getValue();
   const attrGroupId = Symbol('attr-group-id');
   // What should be the rule here? Should it really be "paragraph"?
@@ -121,7 +125,15 @@ function printAttribute<T extends AttributeNodeBase<any>>(
     node.attributePosition.start,
     node.attributePosition.end,
   );
-  const quote = options.singleQuote ? `'` : `"`;
+  const preferredQuote = options.singleQuote ? `'` : `"`;
+  const attributeValueContainsQuote = !!node.value.find(
+    (valueNode) =>
+      isTextLikeNode(valueNode) && valueNode.value.includes(preferredQuote),
+  );
+  const quote = attributeValueContainsQuote
+    ? oppositeQuotes[preferredQuote]
+    : preferredQuote;
+
   return [
     node.name,
     '=',

@@ -77,3 +77,19 @@ If there's multiple attributes inside an if tag attribute node with a newline, m
 <div {% if some_condition %}
        attribute="abstractNode"
        ok=value{% endif %}></div>
+
+If singleQuote is true, and the attribute value contained single quotes, use double quotes
+singleQuote: true
+<link onload="this.media='all'">
+
+If singleQuote is false, and the attribute value contained double quotes, use single quotes
+singleQuote: false
+<link onload='this.media="all"'>
+
+If singleQuote is true, and the attribute value has liquid tags that contain single quotes, don't care.
+singleQuote: true
+<script src="{{ 'styles.css' | asset_url }}"></script>
+
+If singleQuote is false, and the attribute value has liquid tags that contain double quotes, don't care.
+singleQuote: false
+<script src="{{ "styles.css" | asset_url }}"></script>
