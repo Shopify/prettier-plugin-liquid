@@ -33,143 +33,33 @@ _Not yet_. We have a [list of issues](https://github.com/Shopify/prettier-plugin
 
 ## Installation
 
-yarn:
-
 ```bash
-yarn add --dev prettier @shopify/prettier-plugin-liquid
-# or globally
-yarn global add prettier @shopify/prettier-plugin-liquid
-```
-
-npm:
-
-```bash
+# with npm
 npm install --save-dev prettier @shopify/prettier-plugin-liquid
-# or globally
-npm install --global prettier @shopify/prettier-plugin-liquid
+
+# with yarn
+yarn add --dev prettier @shopify/prettier-plugin-liquid
 ```
 
 ## Usage
 
-### With Node.js
+See our [Wiki](https://github.com/Shopify/prettier-plugin-liquid/wiki) pages on the subject:
 
-#### As a local dependency
+- [In the terminal](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-your-terminal) (with Node.js)
+- [In the browser](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-the-browser)
+- [In your editor](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-your-editor)
+- [In a CI workflow](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-CI)
+- [As a precommit hook](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-as-a-precommit-hook)
+- [With a bundler](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-with-a-bundler)
 
-You can add prettier as a script in your `package.json`,
+## Known issues
 
-```json
-{
-  "scripts": {
-    "prettier": "prettier"
-  }
-}
-```
-
-and then run it via
-
-```bash
-yarn run prettier path/to/file.liquid --write
-# or
-npm run prettier -- path/to/file.liquid --write
-```
-
-#### As a global dependency
-
-If you installed the plugin globally, run
-
-```bash
-prettier path/to/file.liquid --write
-```
-
-### In the Browser
-
-This package exposes a `standalone.js` that can be used alongside Prettier's own `standalone.js` to make the Liquid plugin work in browsers without a compile step.
-
-First, grab both standalone scripts from an npm CDN like [unpkg](https://unpkg.com/):
-
-```html
-<script src="https://unpkg.com/prettier/standalone.js"></script>
-<script src="https://unpkg.com/@shopify/prettier-plugin-liquid/standalone.js"></script>
-```
-
-Then use Prettier with Liquid, just like this:
-
-```js
-prettier.format(YOUR_CODE, {
-  plugins: [prettierPluginLiquid],
-  parser: 'liquid-html',
-});
-```
-
-<!--
-TODO: See this code in action [in this basic demo](https://jsbin.com/butoruw/edit?html,output).
--->
-
-### With Bundlers
-
-Bundlers like webpack, Rollup or browserify automatically recognize how to handle the plugin. Remember that even when using a bundler, you still have to use the standalone builds:
-
-```js
-import prettier from 'prettier/standalone';
-import liquidPlugin from '@shopify/prettier-plugin-liquid/standalone';
-
-prettier.format(YOUR_CODE, {
-  plugins: [liquidPlugin],
-  parser: 'liquid-html',
-});
-```
-
-## Liquid that can't be prettier
-
-Like the [Ember/Handlebars plugin](https://prettier.io/blog/2021/05/09/2.3.0.html#:~:text=The%20feature%20is,under%20the%20hood.), this prettier plugin only supports a _subset_ of Liquid: Liquid that can be turned into a tree.
-
-A common use case that isn't supported is opening HTML tags inside a Liquid block without closing it (and vice-versa):
-
-```liquid
-// not supported
-{% if is_3d %}
-  <product-media list=of props>
-{% else %}
-  <div>
-{% endif %}
-    content that goes in the middle
-{% if is_3d %}
-  </product-media>
-{% else %}
-  </div>
-{% endif %}
-```
-
-When this happens, prettier will throw the following error:
-
-```
-example.liquid[error] example.liquid: LiquidHTMLParsingError: Attempting to close LiquidTag 'if' before HtmlElement 'div' was closed
-[error]   3 |   <product-media list=of props>
-[error]   4 | {% else %}
-[error] > 5 |   <div>
-[error]     |   ^^^^^
-[error] > 6 | {% endif %}
-[error]     | ^^^^^^^^^^^^
-[error]   7 |     content that goes in the middle
-[error]   8 | {% if is_3d %}
-[error]   9 |   </product-media>
-```
-
-However... We _do_ support Liquid variables as HTML tag names.
-
-```liquid
-{% liquid
-  if is_3d
-    assign wrapper = 'product-media'
-  else
-    assign wrapper = 'div'
-  endif
-%}
-<{{ wrapper }}>
-  content that goes in the middle.
-</{{ wrapper }}>
-```
+Take a look at our [known issues](./KNOWN_ISSUES.md) and [open issues](https://github.com/Shopify/prettier-plugin-liquid/issues).
 
 ## Contributing
 
 [Read our contributing guide](CONTRIBUTING.md)
+
+## License
+
+MIT.
