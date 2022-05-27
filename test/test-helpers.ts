@@ -107,7 +107,10 @@ function getTestSetup(paragraph: string, index: number) {
     .replace(/\r?\n/g, ' ')
     .trimEnd()
     .replace(/\.$/, '');
-  const prettierOptions: Partial<LiquidParserOptions> = {};
+  const prettierOptions: Partial<LiquidParserOptions> = {
+    printWidth: 80, // We changed the default, but the tests were written with 80 in mind.
+    indentSchema: true, // We changed the default, but the tests were written with true in mind.
+  };
   const optionsParser = /(?<name>\w+): (?<value>[^\s]*)/g;
   let match: RegExpExecArray;
   while ((match = optionsParser.exec(message)) !== null) {

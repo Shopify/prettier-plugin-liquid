@@ -1,4 +1,4 @@
-import { Plugin, SupportOptions } from 'prettier';
+import { Plugin, RequiredOptions, SupportOptions } from 'prettier';
 import { parsers, liquidHtmlLanguageName } from '~/parser';
 import { printers } from '~/printer';
 import { LiquidHtmlNode } from '~/types';
@@ -23,12 +23,14 @@ const options: SupportOptions = {
   indentSchema: {
     type: 'boolean',
     category: 'LIQUID',
-    default: true,
+    default: false,
     description: 'Indent the contents of the {% schema %} tag',
     since: '0.0.1',
   },
 };
-const defaultOptions = {};
+const defaultOptions: Partial<RequiredOptions> = {
+  printWidth: 120,
+};
 
 const plugin: Plugin<LiquidHtmlNode> = {
   languages,
