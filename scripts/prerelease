@@ -1,0 +1,46 @@
+#!/usr/bin/env node
+
+const fs = require('fs').promises;
+const path = require('path');
+const packageJson = require('../package.json');
+
+async function run() {
+  const VERSION = process.env.VERSION;
+  if (!VERSION) {
+    throw new Error('VERSION environment variable required');
+  }
+  if (!/^\d+\.\d+\.\d+/.test(VERSION)) {
+    throw new Error('VERSION environment variable must match "X.X.X[-.*]"');
+  }
+  await Promise.all([updateSinceVersion(VERSION), updatePackageJson(VERSION)]);
+}
+
+async function updateSinceVersion(version) {
+  const fileToBeModified = path.join(__dirname, '../src/index.ts');
+  const index = await fs.readFile(fileToBeModified, 'utf8');
+  const modified = index.replace(/SINCE_VERSION/g, version);
+  await fs.writeFile(fileToBeModified, modified, 'utf8');
+}
+
+async function updatePackageJson(version) {
+  const packageJsonPath = path.join(__dirname, '../package.json');
+  packageJson.version = version;
+  await fs.writeFile(
+    packageJsonPath,
+    JSON.stringify(packageJson, null, 2) + '\n',
+    'utf8',
+  );
+}
+
+async function main() {
+  let statusCode = 0;
+  try {
+    await run();
+  } catch (e) {
+    console.log(e);
+    statusCode = 1;
+  }
+  process.exit(statusCode);
+}
+
+main();

@@ -14,7 +14,8 @@
     "grammar/*",
     "dist/**/*.js",
     "standalone.js",
-    "standalone.js.LICENSE.txt"
+    "standalone.js.LICENSE.txt",
+    "ThirdPartyNotices.txt"
   ],
   "scripts": {
     "build": "yarn build:ts && yarn build:shims && yarn build:standalone",
@@ -27,10 +28,11 @@
     "debug": "node --inspect-brk node_modules/.bin/_mocha \"{src,test}/**/*.ts\"",
     "format": "scripts/relative-to-alias && prettier --write --ignore-unknown \"{src,test}/**/*.ts\"",
     "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
+    "prepare": "husky install",
+    "prerelease": "scripts/prerelease",
     "prettier": "prettier --plugin . --parser=liquid-html",
     "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'",
-    "test:idempotence": "cross-env TEST_IDEMPOTENCE=true node_modules/.bin/mocha 'test/**/*.spec.ts'",
-    "prepare": "husky install"
+    "test:idempotence": "cross-env TEST_IDEMPOTENCE=true node_modules/.bin/mocha 'test/**/*.spec.ts'"
   },
   "peerDependencies": {
     "prettier": "^2.0.0"

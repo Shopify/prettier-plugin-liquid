@@ -23,16 +23,17 @@ const options: SupportOptions = {
     category: 'HTML',
     default: false,
     description: 'Always print link tags on a single line to remove clutter',
-    since: '0.0.1',
+    since: '0.1.0',
   },
   indentSchema: {
     type: 'boolean',
     category: 'LIQUID',
     default: false,
     description: 'Indent the contents of the {% schema %} tag',
-    since: '0.0.1',
+    since: '0.1.0',
   },
 };
+
 const defaultOptions: Partial<RequiredOptions> = {
   printWidth: 120,
 };

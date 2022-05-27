@@ -5,7 +5,7 @@
 2. Run the following command to update the version in `package.json` and replace the `VERSION` placeholder in the documentation for new configuration variables:
 
    ```bash
-   VERSION="X.X.X"
+   export VERSION="X.X.X"
    yarn prerelease
    ```
 
