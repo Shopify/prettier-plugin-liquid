@@ -14,7 +14,7 @@ A clear and concise description of what the bug is.
 ```liquid
 ```
 
-**Expected output**
+**Actual output**
 ```liquid
 ```
 
