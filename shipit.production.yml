@@ -1,4 +1,4 @@
 deploy:
   override:
     - yarn install
-    - yarn build && yarn publish
+    - yarn build && npm publish
