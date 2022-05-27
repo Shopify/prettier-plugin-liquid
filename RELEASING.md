@@ -23,9 +23,16 @@
 
 5. Merge your PR to main.
 
-6. On [Shipit](https://shipit.shopify.io/shopify/prettier-plugin-liquid), deploy your commit.
+6. Push the tag
 
-7. [Create a GitHub release](https://github.com/Shopify/prettier-plugin-liquid/releases/new) for the change.
+   ```bash
+   git tag v$VERSION
+   git push origin v$VERSION
+   ```
+
+8. On [Shipit](https://shipit.shopify.io/shopify/prettier-plugin-liquid), deploy your commit.
+
+9. [Create a GitHub release](https://github.com/Shopify/prettier-plugin-liquid/releases/new) for the change.
 
    ```
    git fetch origin
