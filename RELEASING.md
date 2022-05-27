@@ -17,7 +17,8 @@
    git checkout -b "bump/v$VERSION"
    git add CHANGELOG.md package.json src/index.ts
    git commit -m "Bump version to $VERSION"
-   hub compare "main:bump/v$VERSION"
+   git push origin "bump/v$VERSION"
+   gh pr create --base="main" --head="Shopify:bump/v$VERSION"
    ```
 
 5. Merge your PR to main.
