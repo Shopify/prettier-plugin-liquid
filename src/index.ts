@@ -1,14 +1,19 @@
-import { Plugin, RequiredOptions, SupportOptions } from 'prettier';
+import {
+  Plugin,
+  RequiredOptions,
+  SupportLanguage,
+  SupportOptions,
+} from 'prettier';
 import { parsers, liquidHtmlLanguageName } from '~/parser';
 import { printers } from '~/printer';
 import { LiquidHtmlNode } from '~/types';
 
-const languages = [
+const languages: SupportLanguage[] = [
   {
     name: 'LiquidHTML',
     parsers: [liquidHtmlLanguageName],
     extensions: ['.liquid'],
-    vscodelanguageIds: ['liquid', 'Liquid'],
+    vscodeLanguageIds: ['liquid', 'Liquid'],
   },
 ];
 
