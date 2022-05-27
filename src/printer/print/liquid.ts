@@ -39,12 +39,12 @@ export function printLiquidDrop(
   const node: LiquidDrop = path.getValue() as LiquidDrop;
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
-    isExtremelyLeadingWhitespaceSensitive(node),
+    hasMeaningfulLackOfLeadingWhitespace(node),
     leadingSpaceGroupId,
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.whitespaceEnd,
-    isExtremelyTrailingWhitespaceSensitive(node),
+    hasMeaningfulLackOfTrailingWhitespace(node),
     trailingSpaceGroupId,
   );
 
@@ -144,7 +144,7 @@ export function printLiquidBlockEnd(
   );
   const whitespaceEnd = getWhitespaceTrim(
     node.delimiterWhitespaceEnd ?? '',
-    isExtremelyTrailingWhitespaceSensitive(node),
+    hasMeaningfulLackOfTrailingWhitespace(node),
     trailingSpaceGroupId,
   );
   return group([
@@ -333,15 +333,15 @@ export function printLiquidBranch(
   ];
 }
 
-function isExtremelyLeadingWhitespaceSensitive(node: LiquidHtmlNode): boolean {
+function hasMeaningfulLackOfLeadingWhitespace(node: LiquidHtmlNode): boolean {
   return node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace;
 }
 
-function isExtremelyTrailingWhitespaceSensitive(node: LiquidHtmlNode): boolean {
+function hasMeaningfulLackOfTrailingWhitespace(node: LiquidHtmlNode): boolean {
   return node.isTrailingWhitespaceSensitive && !node.hasTrailingWhitespace;
 }
 
-function isExtremelyDanglingSpaceSensitive(node: LiquidHtmlNode): boolean {
+function hasMeaningfulLackOfDanglingWhitespace(node: LiquidHtmlNode): boolean {
   return node.isDanglingWhitespaceSensitive && !node.hasDanglingWhitespace;
 }
 
@@ -351,13 +351,13 @@ function needsBlockStartLeadingWhitespaceStrippingOnBreak(
   switch (node.type) {
     case NodeTypes.LiquidTag: {
       return (
-        !isAttributeNode(node) && isExtremelyLeadingWhitespaceSensitive(node)
+        !isAttributeNode(node) && hasMeaningfulLackOfLeadingWhitespace(node)
       );
     }
     case NodeTypes.LiquidBranch: {
       return (
         !isAttributeNode(node.parentNode! as LiquidTag) &&
-        isExtremelyLeadingWhitespaceSensitive(node)
+        hasMeaningfulLackOfLeadingWhitespace(node)
       );
     }
     default: {
@@ -378,12 +378,12 @@ function needsBlockStartTrailingWhitespaceStrippingOnBreak(
       }
 
       if (!node.children) {
-        return isExtremelyTrailingWhitespaceSensitive(node);
+        return hasMeaningfulLackOfTrailingWhitespace(node);
       }
 
       return isEmpty(node.children)
-        ? isExtremelyDanglingSpaceSensitive(node)
-        : isExtremelyLeadingWhitespaceSensitive(node.firstChild!);
+        ? hasMeaningfulLackOfDanglingWhitespace(node)
+        : hasMeaningfulLackOfLeadingWhitespace(node.firstChild!);
     }
 
     case NodeTypes.LiquidBranch: {
@@ -392,8 +392,8 @@ function needsBlockStartTrailingWhitespaceStrippingOnBreak(
       }
 
       return node.firstChild
-        ? isExtremelyLeadingWhitespaceSensitive(node.firstChild)
-        : isExtremelyDanglingSpaceSensitive(node);
+        ? hasMeaningfulLackOfLeadingWhitespace(node.firstChild)
+        : hasMeaningfulLackOfDanglingWhitespace(node);
     }
 
     default: {
@@ -410,11 +410,11 @@ function needsBlockEndLeadingWhitespaceStrippingOnBreak(node: LiquidTag) {
   } else if (isAttributeNode(node)) {
     return false;
   } else if (isBranchedTag(node)) {
-    return isExtremelyTrailingWhitespaceSensitive(node.lastChild!);
+    return hasMeaningfulLackOfTrailingWhitespace(node.lastChild!);
   } else if (isEmpty(node.children)) {
-    return isExtremelyDanglingSpaceSensitive(node);
+    return hasMeaningfulLackOfDanglingWhitespace(node);
   } else {
-    return isExtremelyTrailingWhitespaceSensitive(node.lastChild!);
+    return hasMeaningfulLackOfTrailingWhitespace(node.lastChild!);
   }
 }
 
