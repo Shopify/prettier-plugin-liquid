@@ -14,11 +14,11 @@ A clear and concise description of what the bug is.
 ```liquid
 ```
 
-**Actual output**
+**Expected output**
 ```liquid
 ```
 
-**Expected output**
+**Actual output**
 ```liquid
 ```
 
