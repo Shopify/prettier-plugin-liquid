@@ -226,9 +226,17 @@ function printNode(
 
     case NodeTypes.HtmlRawNode: {
       const lines = bodyLines(node.body);
+      const shouldSkipFirstLine =
+        !node.source[node.blockStartPosition.end].match(/\r|\n/);
       const body =
         lines.length > 0 && lines[0] !== ''
-          ? [indent([hardline, join(hardline, reindent(lines))]), hardline]
+          ? [
+              indent([
+                hardline,
+                join(hardline, reindent(lines, shouldSkipFirstLine)),
+              ]),
+              hardline,
+            ]
           : [softline];
 
       return group([
@@ -249,7 +257,9 @@ function printNode(
 
     case NodeTypes.LiquidRawTag: {
       const lines = bodyLines(node.body);
-      const body = reindent(lines);
+      const shouldSkipFirstLine =
+        !node.source[node.blockStartPosition.end].match(/\r|\n/);
+      const body = reindent(lines, shouldSkipFirstLine);
       const blockStart = group([
         '{%',
         node.whitespaceStart,
