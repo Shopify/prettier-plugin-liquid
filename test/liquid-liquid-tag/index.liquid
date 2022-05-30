@@ -16,3 +16,12 @@
     assign z = 1
   endif -%}
 </div>
+
+It should paste as is
+{%- liquid
+  if empty  and true
+    render 'icon-cart-empty'
+  else
+    render 'icon-cart'
+  endif
+-%}
