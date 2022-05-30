@@ -7,6 +7,10 @@
   "license": "MIT",
   "main": "dist/index.js",
   "homepage": "https://github.com/shopify/prettier-plugin-liquid#readme",
+  "publishConfig": {
+    "access": "public",
+    "@shopify:registry": "https://registry.npmjs.org"
+  },
   "bugs": {
     "url": "https://github.com/shopify/prettier-plugin-liquid/issues"
   },
