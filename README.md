@@ -49,7 +49,7 @@ See our [Wiki](https://github.com/Shopify/prettier-plugin-liquid/wiki) pages on 
 - [In the browser](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-the-browser)
 - [In your editor](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-your-editor)
 - [In a CI workflow](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-in-CI)
-- [As a precommit hook](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-as-a-precommit-hook)
+- [As a pre-commit hook](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-as-a-pre-commit-hook)
 - [With a bundler](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-with-a-bundler)
 
 ## Configuration
