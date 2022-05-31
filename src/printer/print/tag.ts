@@ -24,6 +24,8 @@ import {
   isSelfClosing,
   isHtmlComment,
   isMultilineLiquidTag,
+  hasMeaningfulLackOfLeadingWhitespace,
+  hasMeaningfulLackOfTrailingWhitespace,
 } from '~/printer/utils';
 
 const {
@@ -31,7 +33,6 @@ const {
 } = doc;
 const { replaceTextEndOfLine } = doc.utils as any;
 
-// TODO
 export function printClosingTag(
   node: LiquidHtmlNode,
   options: LiquidParserOptions,
@@ -42,7 +43,6 @@ export function printClosingTag(
   ];
 }
 
-// TODO
 export function printClosingTagStart(
   node: LiquidHtmlNode,
   options: LiquidParserOptions,
@@ -56,7 +56,6 @@ export function printClosingTagStart(
       ];
 }
 
-// TODO
 export function printClosingTagEnd(
   node: LiquidHtmlNode,
   options: LiquidParserOptions,
@@ -82,7 +81,6 @@ function printClosingTagPrefix(
     : '';
 }
 
-// TODO
 export function printClosingTagSuffix(
   node: LiquidHtmlNode,
   options: LiquidParserOptions,
@@ -120,7 +118,6 @@ export function printClosingTagStartMarker(
   }
 }
 
-// TODO
 export function printClosingTagEndMarker(
   node: LiquidHtmlNode | undefined,
   options: LiquidParserOptions,
@@ -163,7 +160,6 @@ function shouldNotPrintClosingTag(
   );
 }
 
-//TODO
 export function needsToBorrowPrevClosingTagEndMarker(node: LiquidHtmlNode) {
   /**
    *     <p></p
@@ -179,12 +175,10 @@ export function needsToBorrowPrevClosingTagEndMarker(node: LiquidHtmlNode) {
     node.prev &&
     // node.prev.type !== 'docType' &&
     isHtmlNode(node.prev) &&
-    node.isLeadingWhitespaceSensitive &&
-    !node.hasLeadingWhitespace
+    hasMeaningfulLackOfLeadingWhitespace(node)
   );
 }
 
-//TODO
 export function needsToBorrowLastChildClosingTagEndMarker(
   node: LiquidHtmlNode,
 ) {
@@ -198,8 +192,7 @@ export function needsToBorrowLastChildClosingTagEndMarker(
   return (
     isHtmlNode(node) &&
     node.lastChild &&
-    node.lastChild.isTrailingWhitespaceSensitive &&
-    !node.lastChild.hasTrailingWhitespace &&
+    hasMeaningfulLackOfTrailingWhitespace(node.lastChild) &&
     isHtmlNode(getLastDescendant(node.lastChild)) &&
     !isPreLikeNode(node)
   );
@@ -220,8 +213,7 @@ export function needsToBorrowParentClosingTagStartMarker(node: LiquidHtmlNode) {
   return (
     isHtmlNode(node.parentNode) &&
     !node.next &&
-    !node.hasTrailingWhitespace &&
-    node.isTrailingWhitespaceSensitive &&
+    hasMeaningfulLackOfTrailingWhitespace(node) &&
     !isLiquidNode(node) &&
     (isTextLikeNode(getLastDescendant(node)) ||
       isLiquidNode(getLastDescendant(node)))
@@ -238,8 +230,7 @@ export function needsToBorrowNextOpeningTagStartMarker(node: LiquidHtmlNode) {
     node.next &&
     isHtmlNode(node.next) &&
     isTextLikeNode(node) &&
-    node.isTrailingWhitespaceSensitive &&
-    !node.hasTrailingWhitespace
+    hasMeaningfulLackOfTrailingWhitespace(node)
   );
 }
 
@@ -270,8 +261,7 @@ export function needsToBorrowParentOpeningTagEndMarker(node: LiquidHtmlNode) {
   return (
     isHtmlNode(node.parentNode) &&
     !node.prev &&
-    node.isLeadingWhitespaceSensitive &&
-    !node.hasLeadingWhitespace &&
+    hasMeaningfulLackOfLeadingWhitespace(node) &&
     !isLiquidNode(node)
   );
 }
@@ -403,7 +393,6 @@ export function printOpeningTag(
   ];
 }
 
-// TODO
 export function printOpeningTagStart(
   node: LiquidHtmlNode,
   options: LiquidParserOptions,
@@ -413,7 +402,6 @@ export function printOpeningTagStart(
     : [printOpeningTagPrefix(node, options), printOpeningTagStartMarker(node)];
 }
 
-// TODO
 export function printOpeningTagPrefix(
   node: LiquidHtmlNode,
   options: LiquidParserOptions,
@@ -456,7 +444,6 @@ export function printOpeningTagStartMarker(node: LiquidHtmlNode | undefined) {
   }
 }
 
-// TODO
 export function printOpeningTagEndMarker(node: LiquidHtmlNode | undefined) {
   if (!node) return '';
   switch (node.type) {
@@ -475,7 +462,6 @@ export function printOpeningTagEndMarker(node: LiquidHtmlNode | undefined) {
   }
 }
 
-// TODO
 export function getNodeContent(
   node: Exclude<
     HtmlNode,

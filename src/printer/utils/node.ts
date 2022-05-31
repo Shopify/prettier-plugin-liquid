@@ -216,6 +216,24 @@ export function preferHardlineAsTrailingSpaces(node: LiquidHtmlNode) {
   );
 }
 
+export function hasMeaningfulLackOfLeadingWhitespace(
+  node: LiquidHtmlNode,
+): boolean {
+  return node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace;
+}
+
+export function hasMeaningfulLackOfTrailingWhitespace(
+  node: LiquidHtmlNode,
+): boolean {
+  return node.isTrailingWhitespaceSensitive && !node.hasTrailingWhitespace;
+}
+
+export function hasMeaningfulLackOfDanglingWhitespace(
+  node: LiquidHtmlNode,
+): boolean {
+  return node.isDanglingWhitespaceSensitive && !node.hasDanglingWhitespace;
+}
+
 function hasSurroundingLineBreak(node: LiquidHtmlNode) {
   return hasLeadingLineBreak(node) && hasTrailingLineBreak(node);
 }

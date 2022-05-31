@@ -8,7 +8,7 @@ export * from '~/printer/utils/string';
 export * from '~/printer/utils/node';
 
 const { builders } = doc;
-const { ifBreak, indent } = builders;
+const { ifBreak } = builders;
 
 export function getSource(path: LiquidAstPath) {
   return path.getValue().source;

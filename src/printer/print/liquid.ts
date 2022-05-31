@@ -1,6 +1,5 @@
 import { AstPath, Doc, doc } from 'prettier';
 import {
-  LiquidHtmlNode,
   LiquidTag,
   LiquidBranch,
   LiquidDrop,
@@ -15,6 +14,9 @@ import { assertNever } from '~/utils';
 
 import {
   getWhitespaceTrim,
+  hasMeaningfulLackOfLeadingWhitespace,
+  hasMeaningfulLackOfTrailingWhitespace,
+  hasMeaningfulLackOfDanglingWhitespace,
   isDeeplyNested,
   isEmpty,
   isHtmlNode,
@@ -23,6 +25,7 @@ import {
   reindent,
   trim,
 } from '~/printer/utils';
+
 import { printChildren } from '~/printer/print/children';
 
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
@@ -331,18 +334,6 @@ export function printLiquidBranch(
       printChildren(path, options, print, args),
     ]),
   ];
-}
-
-function hasMeaningfulLackOfLeadingWhitespace(node: LiquidHtmlNode): boolean {
-  return node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace;
-}
-
-function hasMeaningfulLackOfTrailingWhitespace(node: LiquidHtmlNode): boolean {
-  return node.isTrailingWhitespaceSensitive && !node.hasTrailingWhitespace;
-}
-
-function hasMeaningfulLackOfDanglingWhitespace(node: LiquidHtmlNode): boolean {
-  return node.isDanglingWhitespaceSensitive && !node.hasDanglingWhitespace;
 }
 
 function needsBlockStartLeadingWhitespaceStrippingOnBreak(
