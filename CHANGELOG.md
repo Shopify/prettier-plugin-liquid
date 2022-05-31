@@ -1,4 +1,10 @@
 
+0.1.3 / 2022-05-31
+==================
+
+  * Micro refactor of node.isLeadingWhitespaceSensitive && !node.hasLeadingWhitespace
+  * Add gif to README
+
 0.1.2 / 2022-05-30
 ==================
 
