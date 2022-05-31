@@ -25,7 +25,7 @@ Prettier is an opinionated code formatter. It enforces a consistent style by par
 
 **This is the developer preview** of the Liquid/HTML prettier plugin.
 
-https://user-images.githubusercontent.com/4990691/145229362-568ab7d4-4345-42b7-8794-59f7683a88a3.mp4
+![demo](https://github.com/Shopify/prettier-plugin-liquid/blob/main/docs/demo.gif?raw=true)
 
 ## Can this be used in production?
 
