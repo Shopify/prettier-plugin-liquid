@@ -68,7 +68,7 @@ export function printLiquidDrop(
     '{{',
     whitespaceStart,
     ' ',
-    node.markup.trim(),
+    node.markup,
     ' ',
     whitespaceEnd,
     '}}',
@@ -120,7 +120,7 @@ export function printLiquidBlockStart(
     ]);
   }
 
-  const markup = node.markup.trim();
+  const markup = node.markup;
   return group([
     '{%',
     whitespaceStart,

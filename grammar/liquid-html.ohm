@@ -44,7 +44,7 @@ LiquidHTML {
     letter (alnum | "-" | ":")*
 
   liquidTagName =
-    letter (alnum)*
+    letter (alnum | "_")*
 
   AttrList = Attr*
 
@@ -70,12 +70,13 @@ LiquidHTML {
   quotes =  "'" | "\""
 
   LiquidNode = liquidNode
-  liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag
+  liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag | liquidInlineComment
 
   liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
   liquidDrop = "{{" "-"? anyExceptStar<("-}}" | "}}")> "-"? "}}"
+  liquidInlineComment = "{%" "-"? space* "#" space? tagMarkup "-"? "%}"
 
   liquidRawTag =
     | liquidRawTagImpl<"raw">

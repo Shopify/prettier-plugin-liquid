@@ -5,3 +5,22 @@
 {% endcomment %}
 
 {% comment %}theme-check-disable foo{% endcomment %}
+
+It should support inline comments
+{% # hello world %}
+
+It should maintain paragraphs, but not indentation
+{%
+  # hello world how are you doing today?
+  # this keeps on going
+  # and it's looking weird
+  # Here's a list of things:
+  #  - one
+  #  - two
+  #  - three
+
+  # Here's a new paragraph
+  # oh hi!
+  #
+  # Here's another one with a # before the paragraph
+%}

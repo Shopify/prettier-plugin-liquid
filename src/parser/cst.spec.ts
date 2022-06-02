@@ -5,12 +5,13 @@ import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
+  let cst;
   describe('Case: HtmlComment', () => {
     it('should basically parse html comments', () => {
       ['<!-- hello world -->'].forEach((text) => {
-        const cst = toLiquidHtmlCST(text);
+        cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.type').to.equal('HtmlComment');
-        expectPath(cst, '0.body').to.equal(' hello world ');
+        expectPath(cst, '0.body').to.equal('hello world');
         expectLocation(cst, [0]);
       });
     });
@@ -19,7 +20,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
   describe('Case: HtmlNode', () => {
     it('should basically parse open and close tags', () => {
       ['<div></div>', '<div ></div >'].forEach((text) => {
-        const cst = toLiquidHtmlCST(text);
+        cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.type').to.equal('HtmlTagOpen');
         expectPath(cst, '0.name').to.equal('div');
         expectPath(cst, '1.type').to.equal('HtmlTagClose');
@@ -30,13 +31,13 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
 
     it('should parse liquid drop tag names', () => {
-      const cst = toLiquidHtmlCST('<{{ node_type }}></{{ node_type }}>');
+      cst = toLiquidHtmlCST('<{{ node_type }}></{{ node_type }}>');
       expectPath(cst, '0.type').to.equal('HtmlTagOpen');
       expectPath(cst, '0.name.type').to.equal('LiquidDrop');
-      expectPath(cst, '0.name.markup').to.equal(' node_type ');
+      expectPath(cst, '0.name.markup').to.equal('node_type');
       expectPath(cst, '1.type').to.equal('HtmlTagClose');
       expectPath(cst, '1.name.type').to.equal('LiquidDrop');
-      expectPath(cst, '1.name.markup').to.equal(' node_type ');
+      expectPath(cst, '1.name.markup').to.equal('node_type');
       expectLocation(cst, [0]);
       expectLocation(cst, [0, 'name']);
       expectLocation(cst, [1]);
@@ -44,7 +45,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
 
     it('should parse script and style tags as a dump', () => {
-      const cst = toLiquidHtmlCST(
+      cst = toLiquidHtmlCST(
         '<script>\nconst a = {{ product | json }}\n</script><style>\n#id {}\n</style>',
       );
       expectPath(cst, '0.type').to.eql('HtmlRawTag');
@@ -58,7 +59,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
       const source = '<script>const a = {{ product | json }}</script>';
-      const cst = toLiquidHtmlCST(source);
+      cst = toLiquidHtmlCST(source);
       expectPath(cst, '0.type').to.equal('HtmlRawTag');
       expectPath(cst, '0.blockStartLocStart').to.equal(0);
       expectPath(cst, '0.blockStartLocEnd').to.equal(source.indexOf('const'));
@@ -69,7 +70,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     it('should parse void elements', () => {
       VOID_ELEMENTS.forEach((voidElementName) => {
-        const cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
+        cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
         expectPath(cst, '0.type').to.equal('HtmlVoidElement');
         expectPath(cst, '0.name').to.equal(voidElementName);
         expectLocation(cst, [0]);
@@ -78,7 +79,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     it('should parse empty attributes', () => {
       ['<div empty>', '<div empty >', '<div\nempty\n>'].forEach((text) => {
-        const cst = toLiquidHtmlCST(text);
+        cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
         expectPath(cst, '0.attrList.0.name').to.equal('empty');
         expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
@@ -98,7 +99,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           `<div ${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote} >`,
           `<div\n${testConfig.name}=${testConfig.quote}${testConfig.name}${testConfig.quote}\n>`,
         ].forEach((text) => {
-          const cst = toLiquidHtmlCST(text);
+          cst = toLiquidHtmlCST(text);
           expectPath(cst, '0.attrList.0.type').to.equal(testConfig.type);
           expectPath(cst, '0.attrList.0.name').to.equal(testConfig.name);
           expectPath(cst, '0.attrList.0.value.0.type').to.eql('TextNode');
@@ -115,7 +116,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
             `<div ${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote} >`,
             `<div\n${testConfig.name}=${testConfig.quote}https://{{ name }}${testConfig.quote}\n>`,
           ].forEach((text) => {
-            const cst = toLiquidHtmlCST(text);
+            cst = toLiquidHtmlCST(text);
             expectPath(cst, '0.attrList.0.value.1.type').to.eql('LiquidDrop', text);
             expectLocation(cst, [0]);
             expectLocation(cst, [0, 'attrList', 0]);
@@ -129,7 +130,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           `<div {% if A %} ${testConfig.name}=${testConfig.quote}https://name${testConfig.quote} {% endif %}>`,
           `<div\n{% if A %}\n${testConfig.name}=${testConfig.quote}https://name${testConfig.quote}\n{% endif %}>`,
         ].forEach((text) => {
-          const cst = toLiquidHtmlCST(text);
+          cst = toLiquidHtmlCST(text);
           expectPath(cst, '0.attrList.0.type').to.eql('LiquidTagOpen', text);
           expectPath(cst, '0.attrList.1.type').to.eql(testConfig.type, text);
           expectPath(cst, '0.attrList.1.value.0.value').to.eql('https://name');
@@ -143,13 +144,13 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
   describe('Case: LiquidNode', () => {
     it('should basically parse liquid drops', () => {
-      const cst = toLiquidHtmlCST('{{ name }}{{- names -}}');
+      cst = toLiquidHtmlCST('{{ name }}{{- names -}}');
       expectPath(cst, '0.type').to.equal('LiquidDrop');
-      expectPath(cst, '0.markup').to.equal(' name ');
+      expectPath(cst, '0.markup').to.equal('name');
       expectPath(cst, '0.whitespaceStart').to.equal(null);
       expectPath(cst, '0.whitespaceEnd').to.equal(null);
       expectPath(cst, '1.type').to.equal('LiquidDrop');
-      expectPath(cst, '1.markup').to.equal(' names ');
+      expectPath(cst, '1.markup').to.equal('names');
       expectPath(cst, '1.whitespaceStart').to.equal('-');
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
       expectLocation(cst, [0]);
@@ -157,7 +158,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     it('should parse raw tags', () => {
       ['style', 'raw'].forEach((raw) => {
-        const cst = toLiquidHtmlCST(`{% ${raw} -%}<div>{%- end${raw} %}`);
+        cst = toLiquidHtmlCST(`{% ${raw} -%}<div>{%- end${raw} %}`);
         expectPath(cst, '0.type').to.equal('LiquidRawTag');
         expectPath(cst, '0.body').to.equal('<div>');
         expectPath(cst, '0.whitespaceStart').to.equal(null);
@@ -170,7 +171,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
       const source = '{% raw -%}<div>{%- endraw %}';
-      const cst = toLiquidHtmlCST(source);
+      cst = toLiquidHtmlCST(source);
       expectPath(cst, '0.type').to.equal('LiquidRawTag');
       expectPath(cst, '0.body').to.equal('<div>');
       expectPath(cst, '0.blockStartLocStart').to.equal(0);
@@ -183,15 +184,15 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
 
     it('should basically parse liquid tags', () => {
-      const cst = toLiquidHtmlCST('{%   assign x = 1 %}{% if hi -%}{%- endif %}');
+      cst = toLiquidHtmlCST('{%   assign x = 1 %}{% if hi -%}{%- endif %}');
       expectPath(cst, '0.type').to.equal('LiquidTag');
       expectPath(cst, '0.name').to.equal('assign');
-      expectPath(cst, '0.markup').to.equal('x = 1 ');
+      expectPath(cst, '0.markup').to.equal('x = 1');
       expectPath(cst, '0.whitespaceStart').to.equal(null);
       expectPath(cst, '0.whitespaceEnd').to.equal(null);
       expectPath(cst, '1.type').to.equal('LiquidTagOpen');
       expectPath(cst, '1.name').to.equal('if');
-      expectPath(cst, '1.markup').to.equal('hi ');
+      expectPath(cst, '1.markup').to.equal('hi');
       expectPath(cst, '1.whitespaceStart').to.equal(null);
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
       expectPath(cst, '2.type').to.equal('LiquidTagClose');
@@ -203,12 +204,12 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     it('should parse tag open / close', () => {
       BLOCKS.forEach((block: string) => {
-        const cst = toLiquidHtmlCST(`{% ${block} args -%}{%- end${block} %}`);
+        cst = toLiquidHtmlCST(`{% ${block} args -%}{%- end${block} %}`);
         expectPath(cst, '0.type').to.equal('LiquidTagOpen');
         expectPath(cst, '0.name').to.equal(block);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectPath(cst, '0.markup').to.equal('args ');
+        expectPath(cst, '0.markup').to.equal('args');
         expectPath(cst, '1.type').to.equal('LiquidTagClose');
         expectPath(cst, '1.name').to.equal(block);
         expectPath(cst, '1.whitespaceStart').to.equal('-');
@@ -220,7 +221,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
   describe('Case: TextNode', () => {
     it('should parse text nodes', () => {
       ['<div>hello</div>', '{% if condition %}hello{% endif %}'].forEach((text) => {
-        const cst = toLiquidHtmlCST(text);
+        cst = toLiquidHtmlCST(text);
         expectPath(cst, '1.type').to.equal('TextNode');
         expectPath(cst, '1.value').to.equal('hello');
         expectLocation(cst, [1]);
@@ -242,7 +243,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         { testCase: '{% if a %}  \n bb  {% endif %}', expected: 'bb' },
         { testCase: '{% if a %}  \n b  {% endif %}', expected: 'b' },
       ].forEach(({ testCase, expected }) => {
-        const cst = toLiquidHtmlCST(testCase);
+        cst = toLiquidHtmlCST(testCase);
         expectPath(cst, '1.type').to.equal('TextNode');
         expectPathStringified(cst, '1.value').to.equal(JSON.stringify(expected));
         expectLocation(cst, [1]);
@@ -261,6 +262,14 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
       }
     }
+  });
+
+  it('should parse inline comments', () => {
+    cst = toLiquidHtmlCST('{% # hello world \n # hi %}');
+    expectPath(cst, '0.type').to.eql('LiquidTag');
+    expectPath(cst, '0.name').to.eql('#');
+    expectPath(cst, '0.markup').to.eql('hello world \n # hi');
+    expectLocation(cst, [0]);
   });
 
   function expectLocation(cst: LiquidHtmlCST, path: (string | number)[]) {
