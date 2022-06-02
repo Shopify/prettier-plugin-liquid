@@ -67,6 +67,6 @@
   "dependencies": {
     "html-styles": "^1.0.0",
     "line-column": "^1.0.2",
-    "ohm-js": "^16.0.0"
+    "ohm-js": "^16.3.0"
   }
 }

@@ -251,7 +251,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
   });
 
   it('should throw when trying to parse unparseable code', () => {
-    const testCases = ['{% 10293 %}', '<h<>', '{% if', '{{ n', '<div>{{ n{% if'];
+    const testCases = ['{% 10293 %}', '<h=>', '{% if', '{{ n', '<div>{{ n{% if'];
     for (const testCase of testCases) {
       try {
         toLiquidHtmlCST(testCase);

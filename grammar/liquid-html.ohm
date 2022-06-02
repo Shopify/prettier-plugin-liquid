@@ -57,7 +57,8 @@ LiquidHTML {
   AttrSingleQuoted = attrName "=" "'" #(attrSingleQuotedValue "'")
   AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
 
-  attrName = letter (letter | digit | "-" | ":")*
+  // https://html.spec.whatwg.org/#attributes-2
+  attrName = anyExceptPlus<(space | quotes | "=" | ">" | "/" | "{{" | "{%" | controls | noncharacters)>
   attrUnquotedValue = (attrUnquotedTextNode)*
   attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
   attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
@@ -136,4 +137,6 @@ LiquidHTML {
 
   TextNode = AnyExceptPlus<openControl>
   openControl = "<" | "{{" | "{%"
+  controls = "\u{007F}".."\u{009F}"
+  noncharacters = "\u{FDD0}".."\u{FDEF}"
 }
