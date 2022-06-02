@@ -355,10 +355,7 @@ function printNode(
       return [
         '<!--',
         group([
-          indent([
-            line,
-            join(hardline, reindent(bodyLines(node.body.trimStart()), true)),
-          ]),
+          indent([line, join(hardline, reindent(bodyLines(node.body), true))]),
           line,
         ]),
         '-->',

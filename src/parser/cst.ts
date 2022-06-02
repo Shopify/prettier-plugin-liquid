@@ -151,6 +151,8 @@ export type LiquidHtmlConcreteNode =
 
 export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
 
+const markup = (i: number) => (tokens: any) => tokens[i].sourceString.trim();
+
 export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
   const locStart = (tokens: any) => tokens[0].source.startIdx;
   const locEnd = (tokens: any) => tokens[tokens.length - 1].source.endIdx;
@@ -170,7 +172,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
   const ohmAST = toAST(res, {
     HtmlComment: {
-      body: 1,
+      body: markup(1),
       locStart,
       locEnd,
     },
@@ -272,7 +274,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidTagOpen: {
       type: ConcreteNodeTypes.LiquidTagOpen,
       name: 3,
-      markup: 5,
+      markup: markup(5),
       whitespaceStart: 1,
       whitespaceEnd: 6,
       locStart,
@@ -291,7 +293,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidTag: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
-      markup: 5,
+      markup: markup(5),
       whitespaceStart: 1,
       whitespaceEnd: 6,
       locStart,
@@ -300,9 +302,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidDrop: {
       type: ConcreteNodeTypes.LiquidDrop,
-      markup: 2,
+      markup: markup(2),
       whitespaceStart: 1,
       whitespaceEnd: 3,
+      locStart,
+      locEnd,
+    },
+
+    liquidInlineComment: {
+      type: ConcreteNodeTypes.LiquidTag,
+      name: 3,
+      markup: markup(5),
+      whitespaceStart: 1,
+      whitespaceEnd: 6,
       locStart,
       locEnd,
     },
