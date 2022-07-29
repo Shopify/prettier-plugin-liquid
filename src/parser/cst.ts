@@ -192,7 +192,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     HtmlVoidElement: {
       name: 1,
-      attrList: 2,
+      attrList: 3,
       locStart,
       locEnd,
     },

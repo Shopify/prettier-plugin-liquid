@@ -25,7 +25,7 @@ LiquidHTML {
     "</" name space* ">"
 
   HtmlVoidElement =
-    #("<" voidElementName ~(alnum | "-")) AttrList "/"? ">"
+    #("<" voidElementName &(space | "/" | ">")) AttrList "/"? ">"
 
   HtmlSelfClosingElement =
     #("<" tagNameOrLiquidDrop) AttrList "/>"
