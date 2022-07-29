@@ -158,12 +158,24 @@ function printAttribute<
   ];
 }
 
+function isYamlFrontMatter(node: TextNode) {
+  return (
+    node.parentNode &&
+    node.parentNode.type === NodeTypes.Document &&
+    !node.prev &&
+    /^---\r?\n/.test(node.value)
+  );
+}
+
 function printTextNode(
   path: AstPath<TextNode>,
   options: LiquidParserOptions,
   _print: LiquidPrinter,
 ) {
   const node = path.getValue();
+
+  if (isYamlFrontMatter(node)) return node.value;
+
   if (node.value.match(/^\s*$/)) return '';
   const text = node.value;
 
