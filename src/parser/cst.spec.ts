@@ -73,6 +73,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
         expectPath(cst, '0.type').to.equal('HtmlVoidElement');
         expectPath(cst, '0.name').to.equal(voidElementName);
+        expectPath(cst, '0.attrList.0.name').to.equal('disabled');
         expectLocation(cst, [0]);
       });
     });
