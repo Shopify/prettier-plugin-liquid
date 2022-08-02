@@ -5,12 +5,34 @@ import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlAST', () => {
   let ast;
-  it('should transform a basic Liquid Drop into a LiquidDrop', () => {
-    ast = toLiquidHtmlAST('{{ name }}');
-    expectPath(ast, 'children.0').to.exist;
-    expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
-    expectPath(ast, 'children.0.markup').to.eql('name');
-    expectPosition(ast, 'children.0');
+
+  describe('Unit: LiquidDrop', () => {
+    it('should transform a base case Liquid Drop into a LiquidDrop', () => {
+      ast = toLiquidHtmlAST('{{ name }}');
+      expectPath(ast, 'children.0').to.exist;
+      expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
+      expectPath(ast, 'children.0.markup').to.eql('name');
+      expectPosition(ast, 'children.0');
+    });
+
+    it('should parse strings as LiquidVariable > String', () => {
+      [
+        { expression: `"string o' string"`, value: `string o' string`, single: false },
+        { expression: `'He said: "hi!"'`, value: `He said: "hi!"`, single: true },
+      ].forEach(({ expression, value, single }) => {
+        ast = toLiquidHtmlAST(`{{ ${expression} }}`);
+        expectPath(ast, 'children.0').to.exist;
+        expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
+        expectPath(ast, 'children.0.markup.type').to.eql('LiquidVariable');
+        expectPath(ast, 'children.0.markup.rawSource').to.eql(expression);
+        expectPath(ast, 'children.0.markup.expression.type').to.eql('String');
+        expectPath(ast, 'children.0.markup.expression.value').to.eql(value);
+        expectPath(ast, 'children.0.markup.expression.single').to.eql(single);
+        expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+        expectPosition(ast, 'children.0.markup.expression');
+      });
+    });
   });
 
   it('should transform a basic Liquid Tag into a LiquidTag', () => {

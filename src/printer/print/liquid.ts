@@ -36,7 +36,7 @@ const { group, hardline, ifBreak, indent, join, line, softline } = builders;
 export function printLiquidDrop(
   path: LiquidAstPath,
   _options: LiquidParserOptions,
-  _print: LiquidPrinter,
+  print: LiquidPrinter,
   { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs,
 ) {
   const node: LiquidDrop = path.getValue() as LiquidDrop;
@@ -51,8 +51,20 @@ export function printLiquidDrop(
     trailingSpaceGroupId,
   );
 
+  if (typeof node.markup !== 'string') {
+    return group([
+      '{{',
+      whitespaceStart,
+      ' ',
+      path.call(print, 'markup'),
+      ' ',
+      whitespaceEnd,
+      '}}',
+    ]);
+  }
+
   // This should probably be better than this but it'll do for now.
-  const lines = markupLines(node);
+  const lines = markupLines(node.markup);
   if (lines.length > 1) {
     return group([
       '{{',
@@ -83,7 +95,7 @@ export function printLiquidBlockStart(
   const node = path.getValue();
   if (!node.name) return '';
 
-  const lines = markupLines(node);
+  const lines = markupLines(node.markup);
 
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,

@@ -75,7 +75,9 @@ LiquidHTML {
   liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
-  liquidDrop = "{{" "-"? anyExceptStar<("-}}" | "}}")> "-"? "}}"
+  liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
+  liquidDropCases = liquidVariable | liquidDropBaseCase
+  liquidDropBaseCase = anyExceptStar<("-}}" | "}}")>
   liquidInlineComment = "{%" "-"? space* "#" space? tagMarkup "-"? "%}"
 
   liquidRawTag =
@@ -90,6 +92,27 @@ LiquidHTML {
     "{%" "-"? space* "end" name space* "-"? "%}"
   liquidRawTagClose<name> =
     "{%" "-"? space* "end" name space* "-"? "%}"
+
+  // In order for the grammar to "fallback" to the base case, this
+  // rule must pass if and only if we support what we parse. This
+  // implies that—since we don't support filters yet—we have a
+  // positive lookahead on "-}}" or "}}" in the rule. We do this
+  // because we'd otherwise positively match the following string
+  // instead of falling back to the other rule:
+  // {{ 'string' | some_filter }}
+  liquidVariable = liquidExpression space* &("-}}" | "}}") // liquidFilter*
+
+  // TODO
+  liquidExpression =
+    | liquidLiteral
+
+  // TODO
+  liquidLiteral =
+    | liquidString
+
+  liquidString = liquidSingleQuotedString | liquidDoubleQuotedString
+  liquidSingleQuotedString = "'" anyExceptStar<("'"| "%}" | "}}")> "'"
+  liquidDoubleQuotedString = "\"" anyExceptStar<("\""| "%}" | "}}")> "\""
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype

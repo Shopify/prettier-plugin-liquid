@@ -80,6 +80,10 @@ function getCssDisplay(
     case NodeTypes.Document:
       return 'block';
 
+    case NodeTypes.LiquidVariable:
+    case NodeTypes.String:
+      return 'should not be relevant';
+
     default:
       return assertNever(node);
   }
@@ -121,6 +125,10 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
 
     case NodeTypes.Document:
       return CSS_WHITE_SPACE_DEFAULT;
+
+    case NodeTypes.LiquidVariable:
+    case NodeTypes.String:
+      return 'should not be relevant';
 
     default:
       return assertNever(node);

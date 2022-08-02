@@ -22,6 +22,12 @@ export enum NodeTypes {
   AttrUnquoted = 'AttrUnquoted',
   AttrEmpty = 'AttrEmpty',
   TextNode = 'TextNode',
+
+  LiquidVariable = 'LiquidVariable',
+  VariableLookup = 'VariableLookup',
+  String = 'String',
+  Number = 'Number',
+  Range = 'Range',
 }
 
 export const HtmlNodeTypes = [
