@@ -15,6 +15,7 @@ import {
   ConcreteAttrDoubleQuoted,
   ConcreteAttrUnquoted,
   ConcreteLiquidVariable,
+  ConcreteLiquidLiteral,
   ConcreteLiquidFilters,
   ConcreteLiquidExpression,
 } from '~/parser/cst';
@@ -130,7 +131,7 @@ interface LiquidVariable extends ASTNode<NodeTypes.LiquidVariable> {
 }
 
 // TODO
-type LiquidExpression = LiquidString | LiquidNumber;
+type LiquidExpression = LiquidString | LiquidNumber | LiquidLiteral;
 
 // TODO
 type LiquidFilter = undefined;
@@ -142,6 +143,11 @@ interface LiquidString extends ASTNode<NodeTypes.String> {
 
 interface LiquidNumber extends ASTNode<NodeTypes.Number> {
   value: string;
+}
+
+interface LiquidLiteral extends ASTNode<NodeTypes.LiquidLiteral> {
+  keyword: ConcreteLiquidLiteral['keyword'];
+  value: ConcreteLiquidLiteral['value'];
 }
 
 export type HtmlNode =
@@ -644,6 +650,15 @@ function toExpression(
         type: NodeTypes.Number,
         position: position(node),
         value: node.value,
+        source,
+      };
+    }
+    case ConcreteNodeTypes.LiquidLiteral: {
+      return {
+        type: NodeTypes.LiquidLiteral,
+        position: position(node),
+        value: node.value,
+        keyword: node.keyword,
         source,
       };
     }

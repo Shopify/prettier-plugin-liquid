@@ -198,6 +198,29 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0.markup.expression');
       });
     });
+
+    it('should parse Liquid literals', () => {
+      [
+        { expression: `nil`, value: null },
+        { expression: `null`, value: null },
+        { expression: `true`, value: true },
+        { expression: `blank`, value: '' },
+        { expression: `empty`, value: '' },
+      ].forEach(({ expression, value }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable', expression);
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('LiquidLiteral');
+        expectPath(cst, '0.markup.expression.keyword').to.equal(expression);
+        expectPath(cst, '0.markup.expression.value').to.equal(value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {
