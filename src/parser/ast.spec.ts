@@ -33,6 +33,27 @@ describe('Unit: toLiquidHtmlAST', () => {
         expectPosition(ast, 'children.0.markup.expression');
       });
     });
+
+    it('should parse numbers as LiquidVariable > Number', () => {
+      [
+        { expression: `1`, value: '1' },
+        { expression: `1.02`, value: '1.02' },
+        { expression: `0`, value: '0' },
+        { expression: `-0`, value: '-0' },
+        { expression: `-0.0`, value: '-0.0' },
+      ].forEach(({ expression, value }) => {
+        ast = toLiquidHtmlAST(`{{ ${expression} }}`);
+        expectPath(ast, 'children.0').to.exist;
+        expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
+        expectPath(ast, 'children.0.markup.type').to.eql('LiquidVariable');
+        expectPath(ast, 'children.0.markup.rawSource').to.eql(expression);
+        expectPath(ast, 'children.0.markup.expression.type').to.eql('Number');
+        expectPath(ast, 'children.0.markup.expression.value').to.eql(value);
+        expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+        expectPosition(ast, 'children.0.markup.expression');
+      });
+    });
   });
 
   it('should transform a basic Liquid Tag into a LiquidTag', () => {

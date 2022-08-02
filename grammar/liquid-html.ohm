@@ -109,10 +109,15 @@ LiquidHTML {
   // TODO
   liquidLiteral =
     | liquidString
+    | liquidNumber
 
   liquidString = liquidSingleQuotedString | liquidDoubleQuotedString
   liquidSingleQuotedString = "'" anyExceptStar<("'"| "%}" | "}}")> "'"
   liquidDoubleQuotedString = "\"" anyExceptStar<("\""| "%}" | "}}")> "\""
+
+  liquidNumber = liquidFloat | liquidInteger
+  liquidInteger = "-"? digit+
+  liquidFloat = "-"? digit+ "." digit+
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype

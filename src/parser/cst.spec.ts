@@ -176,6 +176,28 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0.markup.expression');
       });
     });
+
+    it('should parse numbers', () => {
+      [
+        { expression: `1`, value: '1' },
+        { expression: `1.02`, value: '1.02' },
+        { expression: `0`, value: '0' },
+        { expression: `-0`, value: '-0' },
+        { expression: `-0.0`, value: '-0.0' },
+      ].forEach(({ expression, value }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable');
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('Number');
+        expectPath(cst, '0.markup.expression.value').to.equal(value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {

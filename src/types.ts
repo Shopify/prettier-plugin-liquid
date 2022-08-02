@@ -24,10 +24,10 @@ export enum NodeTypes {
   TextNode = 'TextNode',
 
   LiquidVariable = 'LiquidVariable',
-  VariableLookup = 'VariableLookup',
   String = 'String',
   Number = 'Number',
-  Range = 'Range',
+  // Range = 'Range',
+  // VariableLookup = 'VariableLookup',
 }
 
 export const HtmlNodeTypes = [

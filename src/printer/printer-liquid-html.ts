@@ -386,6 +386,10 @@ function printNode(
       return [quote, node.value, quote];
     }
 
+    case NodeTypes.Number: {
+      return node.value;
+    }
+
     case NodeTypes.LiquidVariable: {
       // TODO this is where you'll do the pipe first/last logic.
       return [path.call(print, 'expression')];
