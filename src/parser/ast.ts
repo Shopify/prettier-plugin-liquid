@@ -9,22 +9,31 @@ import {
   ConcreteNodeTypes,
   ConcreteTextNode,
   LiquidHtmlCST,
-  LiquidHtmlConcreteNode,
   toLiquidHtmlCST,
   ConcreteHtmlSelfClosingElement,
   ConcreteAttrSingleQuoted,
   ConcreteAttrDoubleQuoted,
   ConcreteAttrUnquoted,
+  ConcreteLiquidVariable,
+  ConcreteLiquidFilters,
+  ConcreteLiquidExpression,
 } from '~/parser/cst';
 import { NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
+
+interface HasPosition {
+  locStart: number;
+  locEnd: number;
+}
 
 export type LiquidHtmlNode =
   | DocumentNode
   | LiquidNode
   | HtmlNode
   | AttributeNode
+  | LiquidVariable
+  | LiquidExpression
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
@@ -109,9 +118,26 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   /**
    * The body of the drop. May contain filters. Not trimmed.
    */
-  markup: string;
+  markup: string | LiquidVariable;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
+}
+
+interface LiquidVariable extends ASTNode<NodeTypes.LiquidVariable> {
+  expression: LiquidExpression;
+  filters: LiquidFilter[];
+  rawSource: string;
+}
+
+// TODO
+type LiquidExpression = LiquidString;
+
+// TODO
+type LiquidFilter = undefined;
+
+interface LiquidString extends ASTNode<NodeTypes.String> {
+  single: boolean;
+  value: string;
 }
 
 export type HtmlNode =
@@ -333,8 +359,13 @@ function getName(
   switch (node.type) {
     case NodeTypes.HtmlElement:
     case ConcreteNodeTypes.HtmlTagClose:
-      if (typeof node.name === 'string') return node.name;
-      return `{{${node.name.markup.trim()}}}`;
+      if (typeof node.name === 'string') {
+        return node.name;
+      } else if (typeof node.name.markup === 'string') {
+        return `{{${node.name.markup.trim()}}}`;
+      } else {
+        return `{{${node.name.markup.rawSource}}}`;
+      }
     default:
       return node.name;
   }
@@ -565,12 +596,49 @@ function toName(name: string | ConcreteLiquidDrop, source: string) {
 function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
   return {
     type: NodeTypes.LiquidDrop,
-    markup: node.markup,
+    markup:
+      typeof node.markup === 'string'
+        ? node.markup
+        : toLiquidVariable(node.markup, source),
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     position: position(node),
     source,
   };
+}
+
+function toLiquidVariable(
+  node: ConcreteLiquidVariable,
+  source: string,
+): LiquidVariable {
+  return {
+    type: NodeTypes.LiquidVariable,
+    expression: toExpression(node.expression, source),
+    filters: toFilters(node.filters, source),
+    position: position(node),
+    rawSource: node.rawSource,
+    source,
+  };
+}
+
+function toExpression(
+  node: ConcreteLiquidExpression,
+  source: string,
+): LiquidExpression {
+  return {
+    type: NodeTypes.String,
+    position: position(node),
+    single: node.single,
+    value: node.value,
+    source,
+  };
+}
+
+function toFilters(
+  filters: ConcreteLiquidFilters[],
+  source: string,
+): LiquidFilter[] {
+  return [];
 }
 
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
@@ -614,9 +682,7 @@ function toHtmlSelfClosingElement(
   };
 }
 
-function position(
-  node: LiquidHtmlConcreteNode | ConcreteAttributeNode,
-): Position {
+function position(node: HasPosition): Position {
   return {
     start: node.locStart,
     end: node.locEnd,

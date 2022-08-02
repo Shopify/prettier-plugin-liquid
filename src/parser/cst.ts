@@ -1,4 +1,5 @@
 import { Parser } from 'prettier';
+import { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
@@ -20,6 +21,9 @@ export enum ConcreteNodeTypes {
   LiquidTagOpen = 'LiquidTagOpen',
   LiquidTagClose = 'LiquidTagClose',
   TextNode = 'TextNode',
+
+  LiquidVariable = 'LiquidVariable',
+  String = 'String',
 }
 
 export interface Parsers {
@@ -128,7 +132,26 @@ export interface ConcreteLiquidTag
 
 export interface ConcreteLiquidDrop
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidDrop> {
-  markup: string;
+  markup: ConcreteLiquidVariable | string;
+}
+
+// The variable is the name + filters, like shopify/liquid.
+export interface ConcreteLiquidVariable
+  extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidVariable> {
+  expression: ConcreteLiquidExpression;
+  filters: ConcreteLiquidFilters[];
+  rawSource: string;
+}
+
+export type ConcreteLiquidFilters = undefined; // TODO
+
+// TODO
+export type ConcreteLiquidExpression = ConcreteStringLiteral;
+
+export interface ConcreteStringLiteral
+  extends ConcreteBasicNode<ConcreteNodeTypes.String> {
+  value: string;
+  single: boolean;
 }
 
 export type ConcreteHtmlNode =
@@ -151,11 +174,11 @@ export type LiquidHtmlConcreteNode =
 
 export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
 
-const markup = (i: number) => (tokens: any) => tokens[i].sourceString.trim();
+const markup = (i: number) => (tokens: Node[]) => tokens[i].sourceString.trim();
 
 export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
-  const locStart = (tokens: any) => tokens[0].source.startIdx;
-  const locEnd = (tokens: any) => tokens[tokens.length - 1].source.endIdx;
+  const locStart = (tokens: Node[]) => tokens[0].source.startIdx;
+  const locEnd = (tokens: Node[]) => tokens[tokens.length - 1].source.endIdx;
   const textNode = {
     type: ConcreteNodeTypes.TextNode,
     value: function () {
@@ -265,10 +288,10 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       delimiterWhitespaceEnd: 14,
       locStart,
       locEnd,
-      blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
-      blockStartLocEnd: (tokens: any) => tokens[6].source.endIdx,
-      blockEndLocStart: (tokens: any) => tokens[8].source.startIdx,
-      blockEndLocEnd: (tokens: any) => tokens[15].source.endIdx,
+      blockStartLocStart: (tokens: Node[]) => tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: Node[]) => tokens[6].source.endIdx,
+      blockEndLocStart: (tokens: Node[]) => tokens[8].source.startIdx,
+      blockEndLocEnd: (tokens: Node[]) => tokens[15].source.endIdx,
     },
 
     liquidTagOpen: {
@@ -302,9 +325,42 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidDrop: {
       type: ConcreteNodeTypes.LiquidDrop,
-      markup: markup(2),
+      markup: 3,
       whitespaceStart: 1,
-      whitespaceEnd: 3,
+      whitespaceEnd: 4,
+      locStart,
+      locEnd,
+    },
+
+    liquidDropCases: 0,
+    liquidExpression: 0,
+    liquidLiteral: 0,
+    liquidDropBaseCase: (sw: Node) => sw.sourceString.trimEnd(),
+    liquidVariable: {
+      type: ConcreteNodeTypes.LiquidVariable,
+      expression: 0,
+      rawSource: (tokens: Node[]) =>
+        text
+          .slice(locStart(tokens), tokens[tokens.length - 2].source.endIdx)
+          .trimEnd(),
+      locStart,
+      // The last node of this rule is a positive lookahead, we don't
+      // want its endIdx, we want the endIdx of the previous one.
+      locEnd: (tokens: Node[]) => tokens[tokens.length - 2].source.endIdx,
+    },
+
+    liquidString: 0,
+    liquidDoubleQuotedString: {
+      type: ConcreteNodeTypes.String,
+      single: () => false,
+      value: 1,
+      locStart,
+      locEnd,
+    },
+    liquidSingleQuotedString: {
+      type: ConcreteNodeTypes.String,
+      single: () => true,
+      value: 1,
       locStart,
       locEnd,
     },
