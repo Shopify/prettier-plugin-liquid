@@ -23,9 +23,19 @@ export enum ConcreteNodeTypes {
   TextNode = 'TextNode',
 
   LiquidVariable = 'LiquidVariable',
+  LiquidLiteral = 'LiquidLiteral',
   String = 'String',
   Number = 'Number',
 }
+
+export const LiquidLiteralValues = {
+  nil: null,
+  null: null,
+  true: true as true,
+  false: false as false,
+  blank: '' as '',
+  empty: '' as '',
+};
 
 export interface Parsers {
   [astFormat: string]: Parser;
@@ -149,7 +159,8 @@ export type ConcreteLiquidFilters = undefined; // TODO
 // TODO
 export type ConcreteLiquidExpression =
   | ConcreteStringLiteral
-  | ConcreteNumberLiteral;
+  | ConcreteNumberLiteral
+  | ConcreteLiquidLiteral;
 
 export interface ConcreteStringLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.String> {
@@ -160,6 +171,12 @@ export interface ConcreteStringLiteral
 export interface ConcreteNumberLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.Number> {
   value: string; // float parsing is weird but supported
+}
+
+export interface ConcreteLiquidLiteral
+  extends ConcreteBasicNode<ConcreteNodeTypes.LiquidLiteral> {
+  keyword: keyof typeof LiquidLiteralValues;
+  value: typeof LiquidLiteralValues[keyof typeof LiquidLiteralValues];
 }
 
 export type ConcreteHtmlNode =
@@ -342,7 +359,17 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidDropCases: 0,
     liquidExpression: 0,
-    liquidLiteral: 0,
+    liquidLiteral: {
+      type: ConcreteNodeTypes.LiquidLiteral,
+      value: (tokens: Node[]) => {
+        const keyword = tokens[0]
+          .sourceString as keyof typeof LiquidLiteralValues;
+        return LiquidLiteralValues[keyword];
+      },
+      keyword: 0,
+      locStart,
+      locEnd,
+    },
     liquidDropBaseCase: (sw: Node) => sw.sourceString.trimEnd(),
     liquidVariable: {
       type: ConcreteNodeTypes.LiquidVariable,

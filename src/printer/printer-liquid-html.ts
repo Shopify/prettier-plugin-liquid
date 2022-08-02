@@ -390,6 +390,14 @@ function printNode(
       return node.value;
     }
 
+    case NodeTypes.LiquidLiteral: {
+      // We prefer nil over null.
+      if (node.keyword === 'null') {
+        return 'nil';
+      }
+      return node.keyword;
+    }
+
     case NodeTypes.LiquidVariable: {
       // TODO this is where you'll do the pipe first/last logic.
       return [path.call(print, 'expression')];
