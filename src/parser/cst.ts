@@ -24,6 +24,7 @@ export enum ConcreteNodeTypes {
 
   LiquidVariable = 'LiquidVariable',
   String = 'String',
+  Number = 'Number',
 }
 
 export interface Parsers {
@@ -146,12 +147,19 @@ export interface ConcreteLiquidVariable
 export type ConcreteLiquidFilters = undefined; // TODO
 
 // TODO
-export type ConcreteLiquidExpression = ConcreteStringLiteral;
+export type ConcreteLiquidExpression =
+  | ConcreteStringLiteral
+  | ConcreteNumberLiteral;
 
 export interface ConcreteStringLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.String> {
   value: string;
   single: boolean;
+}
+
+export interface ConcreteNumberLiteral
+  extends ConcreteBasicNode<ConcreteNodeTypes.Number> {
+  value: string; // float parsing is weird but supported
 }
 
 export type ConcreteHtmlNode =
@@ -361,6 +369,13 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       type: ConcreteNodeTypes.String,
       single: () => true,
       value: 1,
+      locStart,
+      locEnd,
+    },
+
+    liquidNumber: {
+      type: ConcreteNodeTypes.Number,
+      value: 0,
       locStart,
       locEnd,
     },

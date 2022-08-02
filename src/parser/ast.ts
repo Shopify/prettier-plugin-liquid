@@ -130,13 +130,17 @@ interface LiquidVariable extends ASTNode<NodeTypes.LiquidVariable> {
 }
 
 // TODO
-type LiquidExpression = LiquidString;
+type LiquidExpression = LiquidString | LiquidNumber;
 
 // TODO
 type LiquidFilter = undefined;
 
 interface LiquidString extends ASTNode<NodeTypes.String> {
   single: boolean;
+  value: string;
+}
+
+interface LiquidNumber extends ASTNode<NodeTypes.Number> {
   value: string;
 }
 
@@ -625,13 +629,28 @@ function toExpression(
   node: ConcreteLiquidExpression,
   source: string,
 ): LiquidExpression {
-  return {
-    type: NodeTypes.String,
-    position: position(node),
-    single: node.single,
-    value: node.value,
-    source,
-  };
+  switch (node.type) {
+    case ConcreteNodeTypes.String: {
+      return {
+        type: NodeTypes.String,
+        position: position(node),
+        single: node.single,
+        value: node.value,
+        source,
+      };
+    }
+    case ConcreteNodeTypes.Number: {
+      return {
+        type: NodeTypes.Number,
+        position: position(node),
+        value: node.value,
+        source,
+      };
+    }
+    default: {
+      return assertNever(node);
+    }
+  }
 }
 
 function toFilters(
