@@ -21,7 +21,6 @@ import {
   LiquidPrinterArgs,
   DocumentNode,
 } from '~/types';
-import { AttributeNodeBase } from '~/parser/ast';
 import { assertNever } from '~/utils';
 
 import { preprocess } from '~/printer/print-preprocess';
@@ -376,6 +375,46 @@ function printNode(
 
     case NodeTypes.TextNode: {
       return printTextNode(path as AstPath<TextNode>, options, print);
+    }
+
+    case NodeTypes.String: {
+      const preferredQuote = options.singleQuote ? `'` : `"`;
+      const attributeValueContainsQuote = node.value.includes(preferredQuote);
+      const quote = attributeValueContainsQuote
+        ? oppositeQuotes[preferredQuote]
+        : preferredQuote;
+      return [quote, node.value, quote];
+    }
+
+    case NodeTypes.Number: {
+      if (args.truncate) {
+        return node.value.replace(/\.\d+$/, '');
+      } else {
+        return node.value;
+      }
+    }
+
+    case NodeTypes.Range: {
+      return [
+        '(',
+        path.call((p) => print(p, { truncate: true }), 'start'),
+        '..',
+        path.call((p) => print(p, { truncate: true }), 'end'),
+        ')',
+      ];
+    }
+
+    case NodeTypes.LiquidLiteral: {
+      // We prefer nil over null.
+      if (node.keyword === 'null') {
+        return 'nil';
+      }
+      return node.keyword;
+    }
+
+    case NodeTypes.LiquidVariable: {
+      // TODO this is where you'll do the pipe first/last logic.
+      return [path.call(print, 'expression')];
     }
 
     default: {

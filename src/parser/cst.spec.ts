@@ -12,7 +12,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.type').to.equal('HtmlComment');
         expectPath(cst, '0.body').to.equal('hello world');
-        expectLocation(cst, [0]);
+        expectLocation(cst, '0');
       });
     });
   });
@@ -25,8 +25,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.name').to.equal('div');
         expectPath(cst, '1.type').to.equal('HtmlTagClose');
         expectPath(cst, '1.name').to.equal('div');
-        expectLocation(cst, [0]);
-        expectLocation(cst, [1]);
+        expectLocation(cst, '0');
+        expectLocation(cst, '1');
       });
     });
 
@@ -38,10 +38,10 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.type').to.equal('HtmlTagClose');
       expectPath(cst, '1.name.type').to.equal('LiquidDrop');
       expectPath(cst, '1.name.markup').to.equal('node_type');
-      expectLocation(cst, [0]);
-      expectLocation(cst, [0, 'name']);
-      expectLocation(cst, [1]);
-      expectLocation(cst, [1, 'name']);
+      expectLocation(cst, '0');
+      expectLocation(cst, '0.name');
+      expectLocation(cst, '1');
+      expectLocation(cst, '1.name');
     });
 
     it('should parse script and style tags as a dump', () => {
@@ -54,7 +54,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.type').to.eql('HtmlRawTag');
       expectPath(cst, '1.name').to.eql('style');
       expectPath(cst, '1.body').to.eql('\n#id {}\n');
-      expectLocation(cst, [0]);
+      expectLocation(cst, '0');
     });
 
     it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
@@ -65,16 +65,16 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '0.blockStartLocEnd').to.equal(source.indexOf('const'));
       expectPath(cst, '0.blockEndLocStart').to.equal(source.indexOf('</script>'));
       expectPath(cst, '0.blockEndLocEnd').to.equal(source.length);
-      expectLocation(cst, [0]);
+      expectLocation(cst, '0');
     });
 
     it('should parse void elements', () => {
-      VOID_ELEMENTS.forEach((voidElementName) => {
+      VOID_ELEMENTS.forEach((voidElementName: any) => {
         cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
         expectPath(cst, '0.type').to.equal('HtmlVoidElement');
         expectPath(cst, '0.name').to.equal(voidElementName);
         expectPath(cst, '0.attrList.0.name').to.equal('disabled');
-        expectLocation(cst, [0]);
+        expectLocation(cst, '0');
       });
     });
 
@@ -84,8 +84,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
         expectPath(cst, '0.attrList.0.name').to.equal('empty');
         expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
-        expectLocation(cst, [0]);
-        expectLocation(cst, [0, 'attrList', 0]);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.attrList.0');
       });
     });
 
@@ -105,8 +105,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           expectPath(cst, '0.attrList.0.name').to.equal(testConfig.name);
           expectPath(cst, '0.attrList.0.value.0.type').to.eql('TextNode');
           expectPath(cst, '0.attrList.0.value.0.value').to.eql(testConfig.name);
-          expectLocation(cst, [0]);
-          expectLocation(cst, [0, 'attrList', 0]);
+          expectLocation(cst, '0');
+          expectLocation(cst, '0.attrList.0');
         });
       });
 
@@ -119,8 +119,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           ].forEach((text) => {
             cst = toLiquidHtmlCST(text);
             expectPath(cst, '0.attrList.0.value.1.type').to.eql('LiquidDrop', text);
-            expectLocation(cst, [0]);
-            expectLocation(cst, [0, 'attrList', 0]);
+            expectLocation(cst, '0');
+            expectLocation(cst, '0.attrList.0');
           });
         });
       }
@@ -136,14 +136,14 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           expectPath(cst, '0.attrList.1.type').to.eql(testConfig.type, text);
           expectPath(cst, '0.attrList.1.value.0.value').to.eql('https://name');
           expectPath(cst, '0.attrList.2.type').to.eql('LiquidTagClose', text);
-          expectLocation(cst, [0]);
-          expectLocation(cst, [0, 'attrList', 0]);
+          expectLocation(cst, '0');
+          expectLocation(cst, '0.attrList.0');
         });
       });
     });
   });
 
-  describe('Case: LiquidNode', () => {
+  describe('Case: LiquidDrop', () => {
     it('should basically parse liquid drops', () => {
       cst = toLiquidHtmlCST('{{ name }}{{- names -}}');
       expectPath(cst, '0.type').to.equal('LiquidDrop');
@@ -154,9 +154,113 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.markup').to.equal('names');
       expectPath(cst, '1.whitespaceStart').to.equal('-');
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
-      expectLocation(cst, [0]);
+      expectLocation(cst, '0');
     });
 
+    it('should parse strings', () => {
+      [
+        { expression: `"string o' string"`, value: `string o' string`, single: false },
+        { expression: `'He said: "hi!"'`, value: `He said: "hi!"`, single: true },
+      ].forEach(({ expression, value, single }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable');
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('String');
+        expectPath(cst, '0.markup.expression.value').to.equal(value);
+        expectPath(cst, '0.markup.expression.single').to.equal(single);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
+
+    it('should parse numbers', () => {
+      [
+        { expression: `1`, value: '1' },
+        { expression: `1.02`, value: '1.02' },
+        { expression: `0`, value: '0' },
+        { expression: `-0`, value: '-0' },
+        { expression: `-0.0`, value: '-0.0' },
+      ].forEach(({ expression, value }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable');
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('Number');
+        expectPath(cst, '0.markup.expression.value').to.equal(value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
+
+    it('should parse Liquid literals', () => {
+      [
+        { expression: `nil`, value: null },
+        { expression: `null`, value: null },
+        { expression: `true`, value: true },
+        { expression: `blank`, value: '' },
+        { expression: `empty`, value: '' },
+      ].forEach(({ expression, value }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable', expression);
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('LiquidLiteral');
+        expectPath(cst, '0.markup.expression.keyword').to.equal(expression);
+        expectPath(cst, '0.markup.expression.value').to.equal(value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
+
+    it('should parse ranges', () => {
+      [
+        {
+          expression: `(0..5)`,
+          start: { value: '0', type: 'Number' },
+          end: { value: '5', type: 'Number' },
+        },
+        {
+          expression: `( 0 .. 5 )`,
+          start: { value: '0', type: 'Number' },
+          end: { value: '5', type: 'Number' },
+        },
+        {
+          expression: `(true..false)`,
+          start: { value: true, type: 'LiquidLiteral' },
+          end: { value: false, type: 'LiquidLiteral' },
+        },
+      ].forEach(({ expression, start, end }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable', expression);
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('Range');
+        expectPath(cst, '0.markup.expression.start.type').to.equal(start.type);
+        expectPath(cst, '0.markup.expression.start.value').to.equal(start.value);
+        expectPath(cst, '0.markup.expression.end.type').to.equal(end.type);
+        expectPath(cst, '0.markup.expression.end.value').to.equal(end.value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+        expectLocation(cst, '0.markup.expression.start');
+        expectLocation(cst, '0.markup.expression.end');
+      });
+    });
+  });
+
+  describe('Case: LiquidNode', () => {
     it('should parse raw tags', () => {
       ['style', 'raw'].forEach((raw) => {
         cst = toLiquidHtmlCST(`{% ${raw} -%}<div>{%- end${raw} %}`);
@@ -166,7 +270,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
         expectPath(cst, '0.delimiterWhitespaceStart').to.equal('-');
         expectPath(cst, '0.delimiterWhitespaceEnd').to.equal(null);
-        expectLocation(cst, [0]);
+        expectLocation(cst, '0');
       });
     });
 
@@ -181,7 +285,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '0.blockEndLocEnd').to.equal(source.length);
       expectPath(cst, '0.delimiterWhitespaceStart').to.equal('-');
       expectPath(cst, '0.delimiterWhitespaceEnd').to.equal(null);
-      expectLocation(cst, [0]);
+      expectLocation(cst, '0');
     });
 
     it('should basically parse liquid tags', () => {
@@ -200,7 +304,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '2.name').to.equal('if');
       expectPath(cst, '2.whitespaceStart').to.equal('-');
       expectPath(cst, '2.whitespaceEnd').to.equal(null);
-      expectLocation(cst, [0]);
+      expectLocation(cst, '0');
     });
 
     it('should parse tag open / close', () => {
@@ -225,7 +329,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(text);
         expectPath(cst, '1.type').to.equal('TextNode');
         expectPath(cst, '1.value').to.equal('hello');
-        expectLocation(cst, [1]);
+        expectLocation(cst, '1');
       });
     });
 
@@ -247,7 +351,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(testCase);
         expectPath(cst, '1.type').to.equal('TextNode');
         expectPathStringified(cst, '1.value').to.equal(JSON.stringify(expected));
-        expectLocation(cst, [1]);
+        expectLocation(cst, '1');
       });
     });
   });
@@ -270,12 +374,12 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     expectPath(cst, '0.type').to.eql('LiquidTag');
     expectPath(cst, '0.name').to.eql('#');
     expectPath(cst, '0.markup').to.eql('hello world \n # hi');
-    expectLocation(cst, [0]);
+    expectLocation(cst, '0');
   });
 
-  function expectLocation(cst: LiquidHtmlCST, path: (string | number)[]) {
-    expect(deepGet(path.concat('locStart'), cst)).to.be.a('number');
-    expect(deepGet(path.concat('locEnd'), cst)).to.be.a('number');
+  function expectLocation(cst: LiquidHtmlCST, path: string) {
+    expect(deepGet(path.split('.').concat('locStart'), cst)).to.be.a('number');
+    expect(deepGet(path.split('.').concat('locEnd'), cst)).to.be.a('number');
   }
 
   function expectPath(cst: LiquidHtmlCST, path: string) {

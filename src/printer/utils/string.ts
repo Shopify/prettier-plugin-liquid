@@ -14,10 +14,8 @@ export function bodyLines(str: string): string[] {
     .split(/\r?\n/);
 }
 
-export function markupLines<
-  T extends Extract<LiquidHtmlNode, { markup: string }>,
->(node: T): string[] {
-  return node.markup.trim().split('\n');
+export function markupLines(markup: string): string[] {
+  return markup.trim().split('\n');
 }
 
 export function reindent(lines: string[], skipFirst = false): string[] {
