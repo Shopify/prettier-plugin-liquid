@@ -374,6 +374,11 @@ function printNode(
       ];
     }
 
+    case NodeTypes.LiquidVariable: {
+      // TODO this is where you'll do the pipe first/last logic.
+      return [path.call(print, 'expression')];
+    }
+
     case NodeTypes.TextNode: {
       return printTextNode(path as AstPath<TextNode>, options, print);
     }
@@ -411,11 +416,6 @@ function printNode(
         return 'nil';
       }
       return node.keyword;
-    }
-
-    case NodeTypes.LiquidVariable: {
-      // TODO this is where you'll do the pipe first/last logic.
-      return [path.call(print, 'expression')];
     }
 
     case NodeTypes.VariableLookup: {
