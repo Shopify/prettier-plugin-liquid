@@ -221,6 +221,43 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0.markup.expression');
       });
     });
+
+    it('should parse ranges', () => {
+      [
+        {
+          expression: `(0..5)`,
+          start: { value: '0', type: 'Number' },
+          end: { value: '5', type: 'Number' },
+        },
+        {
+          expression: `( 0 .. 5 )`,
+          start: { value: '0', type: 'Number' },
+          end: { value: '5', type: 'Number' },
+        },
+        {
+          expression: `(true..false)`,
+          start: { value: true, type: 'LiquidLiteral' },
+          end: { value: false, type: 'LiquidLiteral' },
+        },
+      ].forEach(({ expression, start, end }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable', expression);
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('Range');
+        expectPath(cst, '0.markup.expression.start.type').to.equal(start.type);
+        expectPath(cst, '0.markup.expression.start.value').to.equal(start.value);
+        expectPath(cst, '0.markup.expression.end.type').to.equal(end.type);
+        expectPath(cst, '0.markup.expression.end.value').to.equal(end.value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+        expectLocation(cst, '0.markup.expression.start');
+        expectLocation(cst, '0.markup.expression.end');
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {

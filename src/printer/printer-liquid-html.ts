@@ -387,7 +387,21 @@ function printNode(
     }
 
     case NodeTypes.Number: {
-      return node.value;
+      if (args.truncate) {
+        return node.value.replace(/\.\d+$/, '');
+      } else {
+        return node.value;
+      }
+    }
+
+    case NodeTypes.Range: {
+      return [
+        '(',
+        path.call((p) => print(p, { truncate: true }), 'start'),
+        '..',
+        path.call((p) => print(p, { truncate: true }), 'end'),
+        ')',
+      ];
     }
 
     case NodeTypes.LiquidLiteral: {

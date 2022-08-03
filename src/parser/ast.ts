@@ -131,7 +131,11 @@ interface LiquidVariable extends ASTNode<NodeTypes.LiquidVariable> {
 }
 
 // TODO
-type LiquidExpression = LiquidString | LiquidNumber | LiquidLiteral;
+type LiquidExpression =
+  | LiquidString
+  | LiquidNumber
+  | LiquidLiteral
+  | LiquidRange;
 
 // TODO
 type LiquidFilter = undefined;
@@ -143,6 +147,11 @@ interface LiquidString extends ASTNode<NodeTypes.String> {
 
 interface LiquidNumber extends ASTNode<NodeTypes.Number> {
   value: string;
+}
+
+interface LiquidRange extends ASTNode<NodeTypes.Range> {
+  start: LiquidExpression;
+  end: LiquidExpression;
 }
 
 interface LiquidLiteral extends ASTNode<NodeTypes.LiquidLiteral> {
@@ -659,6 +668,15 @@ function toExpression(
         position: position(node),
         value: node.value,
         keyword: node.keyword,
+        source,
+      };
+    }
+    case ConcreteNodeTypes.Range: {
+      return {
+        type: NodeTypes.Range,
+        start: toExpression(node.start, source),
+        end: toExpression(node.end, source),
+        position: position(node),
         source,
       };
     }
