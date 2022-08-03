@@ -8,10 +8,10 @@ describe('Unit: toLiquidHtmlAST', () => {
 
   describe('Unit: LiquidDrop', () => {
     it('should transform a base case Liquid Drop into a LiquidDrop', () => {
-      ast = toLiquidHtmlAST('{{ name }}');
+      ast = toLiquidHtmlAST('{{ !-asd }}');
       expectPath(ast, 'children.0').to.exist;
       expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
-      expectPath(ast, 'children.0.markup').to.eql('name');
+      expectPath(ast, 'children.0.markup').to.eql('!-asd');
       expectPosition(ast, 'children.0');
     });
 
@@ -112,6 +112,85 @@ describe('Unit: toLiquidHtmlAST', () => {
         expectPosition(ast, 'children.0.markup.expression.end');
       });
     });
+
+    interface Lookup {
+      type: 'VariableLookup';
+      lookups: (string | number | Lookup)[];
+      name: string | undefined;
+    }
+
+    it('should parse variable lookups as LiquidVariable > VariableLookup', () => {
+      const v = (name: string, lookups: (string | number | Lookup)[] = []): Lookup => ({
+        type: 'VariableLookup',
+        name,
+        lookups,
+      });
+      [
+        { expression: `x`, name: 'x', lookups: [] },
+        { expression: `x.y`, name: 'x', lookups: ['y'] },
+        { expression: `x["y"]`, name: 'x', lookups: ['y'] },
+        { expression: `x['y']`, name: 'x', lookups: ['y'] },
+        { expression: `x[1]`, name: 'x', lookups: [1] },
+        { expression: `x.y.z`, name: 'x', lookups: ['y', 'z'] },
+        { expression: `x["y"]["z"]`, name: 'x', lookups: ['y', 'z'] },
+        { expression: `x["y"].z`, name: 'x', lookups: ['y', 'z'] },
+        { expression: `["product"]`, name: null, lookups: ['product'] },
+        { expression: `page.about-us`, name: 'page', lookups: ['about-us'] },
+        { expression: `["x"].y`, name: null, lookups: ['x', 'y'] },
+        { expression: `["x"]["y"]`, name: null, lookups: ['x', 'y'] },
+        { expression: `x[y]`, name: 'x', lookups: [v('y')] },
+        { expression: `x[y.z]`, name: 'x', lookups: [v('y', ['z'])] },
+      ].forEach(({ expression, name, lookups }) => {
+        ast = toLiquidHtmlAST(`{{ ${expression} }}`);
+        expectPath(ast, 'children.0').to.exist;
+        expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
+        expectPath(ast, 'children.0.markup.type').to.eql('LiquidVariable');
+        expectPath(ast, 'children.0.markup.rawSource').to.eql(expression);
+        expectPath(ast, 'children.0.markup.expression.type').to.eql('VariableLookup');
+        expectPath(ast, 'children.0.markup.expression.name').to.eql(name);
+
+        lookups.forEach((lookup: string | number | Lookup, i: number) => {
+          switch (typeof lookup) {
+            case 'string': {
+              expectPath(ast, `children.0.markup.expression.lookups.${i}.type`).to.equal('String');
+              expectPath(ast, `children.0.markup.expression.lookups.${i}.value`).to.equal(lookup);
+              break;
+            }
+            case 'number': {
+              expectPath(ast, `children.0.markup.expression.lookups.${i}.type`).to.equal('Number');
+              expectPath(ast, `children.0.markup.expression.lookups.${i}.value`).to.equal(
+                lookup.toString(),
+              );
+              break;
+            }
+            default: {
+              expectPath(ast, `children.0.markup.expression.lookups.${i}.type`).to.equal(
+                'VariableLookup',
+              );
+              expectPath(ast, `children.0.markup.expression.lookups.${i}.name`).to.equal(
+                lookup.name,
+              );
+              lookup.lookups.forEach((val, j) => {
+                // Being lazy here... Assuming string properties.
+                expectPath(
+                  ast,
+                  `children.0.markup.expression.lookups.${i}.lookups.${j}.type`,
+                ).to.equal('String');
+                expectPath(
+                  ast,
+                  `children.0.markup.expression.lookups.${i}.lookups.${j}.value`,
+                ).to.equal(val);
+              });
+              break;
+            }
+          }
+        });
+
+        expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+        expectPosition(ast, 'children.0.markup.expression');
+      });
+    });
   });
 
   it('should transform a basic Liquid Tag into a LiquidTag', () => {
@@ -190,7 +269,8 @@ describe('Unit: toLiquidHtmlAST', () => {
       expectPath(ast, 'children.0').to.exist;
       expectPath(ast, 'children.0.type').to.eql('HtmlElement');
       expectPath(ast, 'children.0.name.type').to.eql('LiquidDrop');
-      expectPath(ast, 'children.0.name.markup').to.eql('node_type');
+      expectPath(ast, 'children.0.name.markup.type').to.eql('LiquidVariable');
+      expectPath(ast, 'children.0.name.markup.rawSource').to.eql('node_type');
       expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
       expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');
       expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql('https://1234');

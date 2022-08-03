@@ -24,6 +24,7 @@ export enum ConcreteNodeTypes {
 
   LiquidVariable = 'LiquidVariable',
   LiquidLiteral = 'LiquidLiteral',
+  VariableLookup = 'VariableLookup',
   String = 'String',
   Number = 'Number',
   Range = 'Range',
@@ -157,12 +158,12 @@ export interface ConcreteLiquidVariable
 
 export type ConcreteLiquidFilters = undefined; // TODO
 
-// TODO
 export type ConcreteLiquidExpression =
   | ConcreteStringLiteral
   | ConcreteNumberLiteral
   | ConcreteLiquidLiteral
-  | ConcreteLiquidRange;
+  | ConcreteLiquidRange
+  | ConcreteLiquidVariableLookup;
 
 export interface ConcreteStringLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.String> {
@@ -185,6 +186,12 @@ export interface ConcreteLiquidRange
   extends ConcreteBasicNode<ConcreteNodeTypes.Range> {
   start: ConcreteLiquidExpression;
   end: ConcreteLiquidExpression;
+}
+
+export interface ConcreteLiquidVariableLookup
+  extends ConcreteBasicNode<ConcreteNodeTypes.VariableLookup> {
+  name: string | null;
+  lookups: ConcreteLiquidExpression[];
 }
 
 export type ConcreteHtmlNode =
@@ -422,6 +429,24 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
+    liquidVariableLookup: {
+      type: ConcreteNodeTypes.VariableLookup,
+      name: 0,
+      lookups: 1,
+      locStart,
+      locEnd,
+    },
+
+    lookup: 0,
+    dotLookup: {
+      type: ConcreteNodeTypes.String,
+      value: ([, , , node1, node2]: Node[]) =>
+        node1.sourceString + node2.sourceString,
+      locStart: (nodes: Node[]) => nodes[2].source.startIdx,
+      locEnd: (nodes: Node[]) => nodes[nodes.length - 1].source.endIdx,
+    },
+    indexLookup: 3,
 
     liquidInlineComment: {
       type: ConcreteNodeTypes.LiquidTag,

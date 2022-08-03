@@ -1,6 +1,7 @@
 import { Printer, AstPath, Doc, doc } from 'prettier';
 import {
   LiquidHtmlNode,
+  LiquidExpression,
   LiquidTag,
   LiquidBranch,
   LiquidDrop,
@@ -415,6 +416,32 @@ function printNode(
     case NodeTypes.LiquidVariable: {
       // TODO this is where you'll do the pipe first/last logic.
       return [path.call(print, 'expression')];
+    }
+
+    case NodeTypes.VariableLookup: {
+      const doc: Doc[] = [];
+      if (node.name) {
+        doc.push(node.name);
+      }
+      const lookups: Doc[] = path.map((lookupPath, index) => {
+        const lookup = lookupPath.getValue() as LiquidExpression;
+        switch (lookup.type) {
+          case NodeTypes.String: {
+            const value = lookup.value;
+            // We prefer direct access
+            // (for everything but stuff with dashes)
+            const isGlobalStringLookup = index === 0 && !node.name;
+            if (!isGlobalStringLookup && /^[a-z0-9_]+\??$/i.test(value)) {
+              return ['.', value];
+            }
+            return ['[', print(lookupPath), ']'];
+          }
+          default: {
+            return ['[', print(lookupPath), ']'];
+          }
+        }
+      }, 'lookups');
+      return [...doc, ...lookups];
     }
 
     default: {

@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import { LiquidHtmlCST, toLiquidHtmlCST } from '~/parser/cst';
 import { BLOCKS, VOID_ELEMENTS } from '~/parser/grammar';
-import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
-  let cst;
+  let cst: LiquidHtmlCST;
+
   describe('Case: HtmlComment', () => {
     it('should basically parse html comments', () => {
       ['<!-- hello world -->'].forEach((text) => {
@@ -34,10 +34,14 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       cst = toLiquidHtmlCST('<{{ node_type }}></{{ node_type }}>');
       expectPath(cst, '0.type').to.equal('HtmlTagOpen');
       expectPath(cst, '0.name.type').to.equal('LiquidDrop');
-      expectPath(cst, '0.name.markup').to.equal('node_type');
+      expectPath(cst, '0.name.markup.type').to.equal('LiquidVariable');
+      expectPath(cst, '0.name.markup.expression.type').to.equal('VariableLookup');
+      expectPath(cst, '0.name.markup.expression.name').to.equal('node_type');
       expectPath(cst, '1.type').to.equal('HtmlTagClose');
       expectPath(cst, '1.name.type').to.equal('LiquidDrop');
-      expectPath(cst, '1.name.markup').to.equal('node_type');
+      expectPath(cst, '1.name.markup.type').to.equal('LiquidVariable');
+      expectPath(cst, '1.name.markup.expression.type').to.equal('VariableLookup');
+      expectPath(cst, '1.name.markup.expression.name').to.equal('node_type');
       expectLocation(cst, '0');
       expectLocation(cst, '0.name');
       expectLocation(cst, '1');
@@ -144,14 +148,14 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
   });
 
   describe('Case: LiquidDrop', () => {
-    it('should basically parse liquid drops', () => {
-      cst = toLiquidHtmlCST('{{ name }}{{- names -}}');
+    it('should basically parse unparseables', () => {
+      cst = toLiquidHtmlCST('{{ !-asdl }}{{- !-asdl -}}');
       expectPath(cst, '0.type').to.equal('LiquidDrop');
-      expectPath(cst, '0.markup').to.equal('name');
+      expectPath(cst, '0.markup').to.equal('!-asdl');
       expectPath(cst, '0.whitespaceStart').to.equal(null);
       expectPath(cst, '0.whitespaceEnd').to.equal(null);
       expectPath(cst, '1.type').to.equal('LiquidDrop');
-      expectPath(cst, '1.markup').to.equal('names');
+      expectPath(cst, '1.markup').to.equal('!-asdl');
       expectPath(cst, '1.whitespaceStart').to.equal('-');
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
       expectLocation(cst, '0');
@@ -214,6 +218,80 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.expression.type').to.equal('LiquidLiteral');
         expectPath(cst, '0.markup.expression.keyword').to.equal(expression);
         expectPath(cst, '0.markup.expression.value').to.equal(value);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
+
+    interface Lookup {
+      type: 'VariableLookup';
+      lookups: (string | number | Lookup)[];
+      name: string | undefined;
+    }
+
+    it('should parse variable lookups', () => {
+      const v = (name: string, lookups: (string | number | Lookup)[] = []): Lookup => ({
+        type: 'VariableLookup',
+        name,
+        lookups,
+      });
+      [
+        { expression: `x`, name: 'x', lookups: [] },
+        { expression: `x.y`, name: 'x', lookups: ['y'] },
+        { expression: `x["y"]`, name: 'x', lookups: ['y'] },
+        { expression: `x['y']`, name: 'x', lookups: ['y'] },
+        { expression: `x[1]`, name: 'x', lookups: [1] },
+        { expression: `x.y.z`, name: 'x', lookups: ['y', 'z'] },
+        { expression: `x["y"]["z"]`, name: 'x', lookups: ['y', 'z'] },
+        { expression: `x["y"].z`, name: 'x', lookups: ['y', 'z'] },
+        { expression: `["product"]`, name: null, lookups: ['product'] },
+        { expression: `page.about-us`, name: 'page', lookups: ['about-us'] },
+        { expression: `["x"].y`, name: null, lookups: ['x', 'y'] },
+        { expression: `["x"]["y"]`, name: null, lookups: ['x', 'y'] },
+        { expression: `x[y]`, name: 'x', lookups: [v('y')] },
+        { expression: `x[y.z]`, name: 'x', lookups: [v('y', ['z'])] },
+      ].forEach(({ expression, name, lookups }) => {
+        cst = toLiquidHtmlCST(`{{ ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable', expression);
+        expectPath(cst, '0.markup.rawSource').to.equal(expression);
+        expectPath(cst, '0.markup.expression.type').to.equal('VariableLookup');
+        expectPath(cst, '0.markup.expression.name').to.equal(name, expression);
+        expectPath(cst, '0.markup.expression.lookups').to.be.an('array');
+
+        lookups.forEach((lookup: string | number | Lookup, i: number) => {
+          switch (typeof lookup) {
+            case 'string': {
+              expectPath(cst, `0.markup.expression.lookups.${i}.type`).to.equal('String');
+              expectPath(cst, `0.markup.expression.lookups.${i}.value`).to.equal(lookup);
+              break;
+            }
+            case 'number': {
+              expectPath(cst, `0.markup.expression.lookups.${i}.type`).to.equal('Number');
+              expectPath(cst, `0.markup.expression.lookups.${i}.value`).to.equal(lookup.toString());
+              break;
+            }
+            default: {
+              expectPath(cst, `0.markup.expression.lookups.${i}.type`).to.equal('VariableLookup');
+              expectPath(cst, `0.markup.expression.lookups.${i}.name`).to.equal(lookup.name);
+              lookup.lookups.forEach((val, j) => {
+                // Being lazy here... Assuming string properties.
+                expectPath(cst, `0.markup.expression.lookups.${i}.lookups.${j}.type`).to.equal(
+                  'String',
+                );
+                expectPath(cst, `0.markup.expression.lookups.${i}.lookups.${j}.value`).to.equal(
+                  val,
+                );
+              });
+              expectLocation(cst, `0.markup.expression.lookups.${i}`);
+              break;
+            }
+          }
+        });
+
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
         expectLocation(cst, '0');

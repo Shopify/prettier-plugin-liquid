@@ -28,7 +28,7 @@ export enum NodeTypes {
   String = 'String',
   Number = 'Number',
   Range = 'Range',
-  // VariableLookup = 'VariableLookup',
+  VariableLookup = 'VariableLookup',
 }
 
 export const HtmlNodeTypes = [
@@ -167,4 +167,8 @@ export type AttrDoubleQuoted = Augmented<
 >;
 export type AttrUnquoted = Augmented<AST.AttrUnquoted, AllAugmentations>;
 export type AttrEmpty = Augmented<AST.AttrEmpty, AllAugmentations>;
+export type LiquidExpression = Augmented<
+  AST.LiquidExpression,
+  AllAugmentations
+>;
 export type TextNode = Augmented<AST.TextNode, AllAugmentations>;

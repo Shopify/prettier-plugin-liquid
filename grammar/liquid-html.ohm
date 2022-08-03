@@ -102,12 +102,12 @@ LiquidHTML {
   // {{ 'string' | some_filter }}
   liquidVariable = liquidExpression space* &("-}}" | "}}") // liquidFilter*
 
-  // TODO
   liquidExpression =
     | liquidString
     | liquidNumber
     | liquidLiteral
     | liquidRange
+    | liquidVariableLookup
 
   liquidString = liquidSingleQuotedString | liquidDoubleQuotedString
   liquidSingleQuotedString = "'" anyExceptStar<("'"| "%}" | "}}")> "'"
@@ -127,6 +127,14 @@ LiquidHTML {
 
   liquidRange =
     "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
+
+  liquidVariableLookup = variableSegment? lookup*
+  variableSegment = letter (alnum | "_" | "-")*
+  lookup =
+    | dotLookup
+    | indexLookup
+  dotLookup = space* "." space* variableSegment "?"?
+  indexLookup = space* "[" space* liquidExpression space* "]"
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype

@@ -130,12 +130,12 @@ interface LiquidVariable extends ASTNode<NodeTypes.LiquidVariable> {
   rawSource: string;
 }
 
-// TODO
-type LiquidExpression =
+export type LiquidExpression =
   | LiquidString
   | LiquidNumber
   | LiquidLiteral
-  | LiquidRange;
+  | LiquidRange
+  | LiquidVariableLookup;
 
 // TODO
 type LiquidFilter = undefined;
@@ -157,6 +157,11 @@ interface LiquidRange extends ASTNode<NodeTypes.Range> {
 interface LiquidLiteral extends ASTNode<NodeTypes.LiquidLiteral> {
   keyword: ConcreteLiquidLiteral['keyword'];
   value: ConcreteLiquidLiteral['value'];
+}
+
+interface LiquidVariableLookup extends ASTNode<NodeTypes.VariableLookup> {
+  name: string | null;
+  lookups: LiquidExpression[];
 }
 
 export type HtmlNode =
@@ -676,6 +681,15 @@ function toExpression(
         type: NodeTypes.Range,
         start: toExpression(node.start, source),
         end: toExpression(node.end, source),
+        position: position(node),
+        source,
+      };
+    }
+    case ConcreteNodeTypes.VariableLookup: {
+      return {
+        type: NodeTypes.VariableLookup,
+        name: node.name,
+        lookups: node.lookups.map((lookup) => toExpression(lookup, source)),
         position: position(node),
         source,
       };
