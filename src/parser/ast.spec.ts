@@ -76,6 +76,42 @@ describe('Unit: toLiquidHtmlAST', () => {
         expectPosition(ast, 'children.0.markup.expression');
       });
     });
+
+    it('should parse ranges as LiquidVariable > Range', () => {
+      [
+        {
+          expression: `(0..5)`,
+          start: { value: '0', type: 'Number' },
+          end: { value: '5', type: 'Number' },
+        },
+        {
+          expression: `( 0 .. 5 )`,
+          start: { value: '0', type: 'Number' },
+          end: { value: '5', type: 'Number' },
+        },
+        {
+          expression: `(true..false)`,
+          start: { value: true, type: 'LiquidLiteral' },
+          end: { value: false, type: 'LiquidLiteral' },
+        },
+      ].forEach(({ expression, start, end }) => {
+        ast = toLiquidHtmlAST(`{{ ${expression} }}`);
+        expectPath(ast, 'children.0').to.exist;
+        expectPath(ast, 'children.0.type').to.eql('LiquidDrop');
+        expectPath(ast, 'children.0.markup.type').to.eql('LiquidVariable');
+        expectPath(ast, 'children.0.markup.rawSource').to.eql(expression);
+        expectPath(ast, 'children.0.markup.expression.type').to.eql('Range');
+        expectPath(ast, 'children.0.markup.expression.start.type').to.eql(start.type);
+        expectPath(ast, 'children.0.markup.expression.start.value').to.eql(start.value);
+        expectPath(ast, 'children.0.markup.expression.end.type').to.eql(end.type);
+        expectPath(ast, 'children.0.markup.expression.end.value').to.eql(end.value);
+        expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+        expectPosition(ast, 'children.0.markup.expression');
+        expectPosition(ast, 'children.0.markup.expression.start');
+        expectPosition(ast, 'children.0.markup.expression.end');
+      });
+    });
   });
 
   it('should transform a basic Liquid Tag into a LiquidTag', () => {

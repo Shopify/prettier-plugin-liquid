@@ -107,6 +107,7 @@ LiquidHTML {
     | liquidString
     | liquidNumber
     | liquidLiteral
+    | liquidRange
 
   liquidString = liquidSingleQuotedString | liquidDoubleQuotedString
   liquidSingleQuotedString = "'" anyExceptStar<("'"| "%}" | "}}")> "'"
@@ -123,6 +124,9 @@ LiquidHTML {
     | "empty"
     | "nil"
     | "null"
+
+  liquidRange =
+    "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype

@@ -27,7 +27,7 @@ export enum NodeTypes {
   LiquidLiteral = 'LiquidLiteral',
   String = 'String',
   Number = 'Number',
-  // Range = 'Range',
+  Range = 'Range',
   // VariableLookup = 'VariableLookup',
 }
 
@@ -54,6 +54,7 @@ export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
 export type LiquidPrinterArgs = {
   leadingSpaceGroupId?: symbol[] | symbol;
   trailingSpaceGroupId?: symbol[] | symbol;
+  truncate?: boolean;
 };
 export type LiquidPrinter = (
   path: AstPath<LiquidHtmlNode>,

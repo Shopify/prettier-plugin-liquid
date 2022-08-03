@@ -84,6 +84,7 @@ function getCssDisplay(
     case NodeTypes.LiquidLiteral:
     case NodeTypes.String:
     case NodeTypes.Number:
+    case NodeTypes.Range:
       return 'should not be relevant';
 
     default:
@@ -132,6 +133,7 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
     case NodeTypes.LiquidLiteral:
     case NodeTypes.String:
     case NodeTypes.Number:
+    case NodeTypes.Range:
       return 'should not be relevant';
 
     default:

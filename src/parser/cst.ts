@@ -26,6 +26,7 @@ export enum ConcreteNodeTypes {
   LiquidLiteral = 'LiquidLiteral',
   String = 'String',
   Number = 'Number',
+  Range = 'Range',
 }
 
 export const LiquidLiteralValues = {
@@ -160,7 +161,8 @@ export type ConcreteLiquidFilters = undefined; // TODO
 export type ConcreteLiquidExpression =
   | ConcreteStringLiteral
   | ConcreteNumberLiteral
-  | ConcreteLiquidLiteral;
+  | ConcreteLiquidLiteral
+  | ConcreteLiquidRange;
 
 export interface ConcreteStringLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.String> {
@@ -177,6 +179,12 @@ export interface ConcreteLiquidLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.LiquidLiteral> {
   keyword: keyof typeof LiquidLiteralValues;
   value: typeof LiquidLiteralValues[keyof typeof LiquidLiteralValues];
+}
+
+export interface ConcreteLiquidRange
+  extends ConcreteBasicNode<ConcreteNodeTypes.Range> {
+  start: ConcreteLiquidExpression;
+  end: ConcreteLiquidExpression;
 }
 
 export type ConcreteHtmlNode =
@@ -403,6 +411,14 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidNumber: {
       type: ConcreteNodeTypes.Number,
       value: 0,
+      locStart,
+      locEnd,
+    },
+
+    liquidRange: {
+      type: ConcreteNodeTypes.Range,
+      start: 2,
+      end: 6,
       locStart,
       locEnd,
     },
