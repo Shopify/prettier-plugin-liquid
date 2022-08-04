@@ -24,6 +24,8 @@ export enum NodeTypes {
   TextNode = 'TextNode',
 
   LiquidVariable = 'LiquidVariable',
+  LiquidFilter = 'LiquidFilter',
+  NamedArgument = 'NamedArgument',
   LiquidLiteral = 'LiquidLiteral',
   String = 'String',
   Number = 'Number',

@@ -23,6 +23,8 @@ export enum ConcreteNodeTypes {
   TextNode = 'TextNode',
 
   LiquidVariable = 'LiquidVariable',
+  LiquidFilter = 'LiquidFilter',
+  NamedArgument = 'NamedArgument',
   LiquidLiteral = 'LiquidLiteral',
   VariableLookup = 'VariableLookup',
   String = 'String',
@@ -150,13 +152,27 @@ export interface ConcreteLiquidDrop
 
 // The variable is the name + filters, like shopify/liquid.
 export interface ConcreteLiquidVariable
-  extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidVariable> {
+  extends ConcreteBasicNode<ConcreteNodeTypes.LiquidVariable> {
   expression: ConcreteLiquidExpression;
-  filters: ConcreteLiquidFilters[];
+  filters: ConcreteLiquidFilter[];
   rawSource: string;
 }
 
-export type ConcreteLiquidFilters = undefined; // TODO
+export interface ConcreteLiquidFilter
+  extends ConcreteBasicNode<ConcreteNodeTypes.LiquidFilter> {
+  name: string;
+  args: ConcreteLiquidArgument[];
+}
+
+export type ConcreteLiquidArgument =
+  | ConcreteLiquidExpression
+  | ConcreteLiquidNamedArgument;
+
+export interface ConcreteLiquidNamedArgument
+  extends ConcreteBasicNode<ConcreteNodeTypes.NamedArgument> {
+  name: string;
+  value: ConcreteLiquidExpression;
+}
 
 export type ConcreteLiquidExpression =
   | ConcreteStringLiteral
@@ -374,21 +390,11 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidDropCases: 0,
     liquidExpression: 0,
-    liquidLiteral: {
-      type: ConcreteNodeTypes.LiquidLiteral,
-      value: (tokens: Node[]) => {
-        const keyword = tokens[0]
-          .sourceString as keyof typeof LiquidLiteralValues;
-        return LiquidLiteralValues[keyword];
-      },
-      keyword: 0,
-      locStart,
-      locEnd,
-    },
     liquidDropBaseCase: (sw: Node) => sw.sourceString.trimEnd(),
     liquidVariable: {
       type: ConcreteNodeTypes.LiquidVariable,
       expression: 0,
+      filters: 1,
       rawSource: (tokens: Node[]) =>
         text
           .slice(locStart(tokens), tokens[tokens.length - 2].source.endIdx)
@@ -397,6 +403,28 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       // The last node of this rule is a positive lookahead, we don't
       // want its endIdx, we want the endIdx of the previous one.
       locEnd: (tokens: Node[]) => tokens[tokens.length - 2].source.endIdx,
+    },
+
+    liquidFilter: {
+      type: ConcreteNodeTypes.LiquidFilter,
+      name: 3,
+      args(nodes: Node[]) {
+        // Traditinally, this would get transformed into null or array. But
+        // it's better if we have an empty array instead of null here.
+        if (nodes[7].sourceString === '') {
+          return [];
+        } else {
+          return nodes[7].toAST((this as any).args.mapping);
+        }
+      },
+    },
+    filterArguments: 0,
+    filterArgument: 0,
+    positionalArgument: 0,
+    namedArgument: {
+      type: ConcreteNodeTypes.NamedArgument,
+      name: 0,
+      value: 4,
     },
 
     liquidString: 0,
@@ -422,6 +450,18 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
+    liquidLiteral: {
+      type: ConcreteNodeTypes.LiquidLiteral,
+      value: (tokens: Node[]) => {
+        const keyword = tokens[0]
+          .sourceString as keyof typeof LiquidLiteralValues;
+        return LiquidLiteralValues[keyword];
+      },
+      keyword: 0,
+      locStart,
+      locEnd,
+    },
+
     liquidRange: {
       type: ConcreteNodeTypes.Range,
       start: 2,
@@ -439,14 +479,13 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     lookup: 0,
+    indexLookup: 3,
     dotLookup: {
       type: ConcreteNodeTypes.String,
-      value: ([, , , node1, node2]: Node[]) =>
-        node1.sourceString + node2.sourceString,
+      value: 3,
       locStart: (nodes: Node[]) => nodes[2].source.startIdx,
       locEnd: (nodes: Node[]) => nodes[nodes.length - 1].source.endIdx,
     },
-    indexLookup: 3,
 
     liquidInlineComment: {
       type: ConcreteNodeTypes.LiquidTag,
@@ -459,6 +498,18 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     TextNode: textNode,
+
+    // Missing from ohm-js default rules. Those turn listOf rules into arrays.
+    listOf: 0,
+    nonemptyListOf(first: any, _sep: any, rest: any) {
+      const self = this as any;
+      return [first.toAST(self.args.mapping)].concat(
+        rest.toAST(self.args.mapping),
+      );
+    },
+    emptyListOf() {
+      return [];
+    },
   });
 
   return ohmAST as LiquidHtmlCST;

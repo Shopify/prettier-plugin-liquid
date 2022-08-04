@@ -81,6 +81,8 @@ function getCssDisplay(
       return 'block';
 
     case NodeTypes.LiquidVariable:
+    case NodeTypes.LiquidFilter:
+    case NodeTypes.NamedArgument:
     case NodeTypes.LiquidLiteral:
     case NodeTypes.String:
     case NodeTypes.Number:
@@ -131,6 +133,8 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
       return CSS_WHITE_SPACE_DEFAULT;
 
     case NodeTypes.LiquidVariable:
+    case NodeTypes.LiquidFilter:
+    case NodeTypes.NamedArgument:
     case NodeTypes.LiquidLiteral:
     case NodeTypes.String:
     case NodeTypes.Number:
