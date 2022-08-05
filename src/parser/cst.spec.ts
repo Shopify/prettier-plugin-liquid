@@ -253,6 +253,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         { expression: `["x"]["y"]`, name: null, lookups: ['x', 'y'] },
         { expression: `x[y]`, name: 'x', lookups: [v('y')] },
         { expression: `x[y.z]`, name: 'x', lookups: [v('y', ['z'])] },
+        { expression: `true_thing`, name: 'true_thing', lookups: [] },
+        { expression: `null_thing`, name: 'null_thing', lookups: [] },
       ].forEach(({ expression, name, lookups }) => {
         cst = toLiquidHtmlCST(`{{ ${expression} }}`);
         expectPath(cst, '0.type').to.equal('LiquidDrop');

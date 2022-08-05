@@ -118,18 +118,19 @@ LiquidHTML {
   liquidFloat = "-"? digit+ "." digit+
 
   liquidLiteral =
-    | "true"
+    ( "true"
     | "false"
     | "blank"
     | "empty"
     | "nil"
     | "null"
+    ) ~identifierCharacter
 
   liquidRange =
     "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
 
   liquidVariableLookup = variableSegment? lookup*
-  variableSegment = letter (alnum | "_" | "-")*
+  variableSegment = (letter | "_") identifierCharacter*
   lookup =
     | dotLookup
     | indexLookup
@@ -139,7 +140,7 @@ LiquidHTML {
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype
   voidElementName =
-    | caseInsensitive<"!doctype">
+    ( caseInsensitive<"!doctype">
     | caseInsensitive<"area">
     | caseInsensitive<"base">
     | caseInsensitive<"br">
@@ -156,10 +157,11 @@ LiquidHTML {
     | caseInsensitive<"source">
     | caseInsensitive<"track">
     | caseInsensitive<"wbr">
+    ) ~identifierCharacter
 
   blockName =
     // Shopify blocks
-    | "style"
+    ( "style"
     | "form"
     | "paginate"
     // Base blocks
@@ -171,6 +173,7 @@ LiquidHTML {
     | "unless"
     | "raw"
     | "tablerow"
+    ) ~identifierCharacter
 
   tagMarkup = anyExceptStar<("-%}"| "%}")>
 
@@ -180,6 +183,7 @@ LiquidHTML {
   AnyExcept<lit> = (~ lit any)
   AnyExceptPlus<lit> = (~ lit any)+
   AnyExceptStar<lit> = (~ lit any)*
+  identifierCharacter = alnum | "_" | "-"
 
   TextNode = AnyExceptPlus<openControl>
   openControl = "<" | "{{" | "{%"
