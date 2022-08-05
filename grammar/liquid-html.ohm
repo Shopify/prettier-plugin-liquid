@@ -77,7 +77,12 @@ LiquidHTML {
 
   liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
-  liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
+  liquidTag =
+    | liquidTagBaseCase
+
+  liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
+  liquidTagRule<name, markup> = "{%" "-"? space* name space? markup "-"? "%}"
+
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
   liquidDropBaseCase = anyExceptStar<("-}}" | "}}")>

@@ -376,7 +376,9 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
-    liquidTag: {
+    liquidTag: 0,
+    liquidTagBaseCase: 0,
+    liquidTagRule: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
       markup: markup(5),
