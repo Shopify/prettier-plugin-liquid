@@ -24,7 +24,7 @@ const options: SupportOptions = {
     default: true,
     description:
       'Use single quotes instead of double quotes in Liquid tags and objects.',
-    since: 'SINCE_VERSION',
+    since: '0.2.0',
   },
   singleLineLinkTags: {
     type: 'boolean',
