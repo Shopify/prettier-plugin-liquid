@@ -338,6 +338,84 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0.markup.expression.end');
       });
     });
+
+    it('should parse filters', () => {
+      interface Filter {
+        name: string;
+        args: FilterArgument[];
+      }
+      type FilterArgument = any;
+
+      const filter = (name: string, args: FilterArgument[] = []): Filter => ({ name, args });
+      const arg = (type: string, value: string) => ({ type, value });
+      const namedArg = (name: string, valueType: string) => ({
+        type: 'NamedArgument',
+        name,
+        valueType,
+      });
+      [
+        { expression: '', filters: [] },
+        { expression: `| filter1`, filters: [filter('filter1')] },
+        { expression: `| filter1 | filter2`, filters: [filter('filter1'), filter('filter2')] },
+        {
+          expression: `| filter1: 'hi', 'there'`,
+          filters: [filter('filter1', [arg('String', 'hi'), arg('String', 'there')])],
+        },
+        {
+          expression: `| filter1: key: value, kind: 'string'`,
+          filters: [
+            filter('filter1', [namedArg('key', 'VariableLookup'), namedArg('kind', 'String')]),
+          ],
+        },
+        {
+          expression: `| f1: 'hi', key: (0..1) | f2: key: value, kind: 'string'`,
+          filters: [
+            filter('f1', [arg('String', 'hi'), namedArg('key', 'Range')]),
+            filter('f2', [namedArg('key', 'VariableLookup'), namedArg('kind', 'String')]),
+          ],
+        },
+      ].forEach(({ expression, filters }) => {
+        cst = toLiquidHtmlCST(`{{ 'hello' ${expression} }}`);
+        expectPath(cst, '0.type').to.equal('LiquidDrop');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable');
+        expectPath(cst, '0.markup.rawSource').to.equal((`'hello' ` + expression).trimEnd());
+        expectPath(cst, '0.markup.filters').to.exist;
+        expectPath(cst, '0.markup.filters').to.have.lengthOf(filters.length);
+        filters.forEach((filter, i) => {
+          expectPath(cst, `0.markup.filters.${i}`).to.exist;
+          expectPath(cst, `0.markup.filters.${i}.type`).to.equal('LiquidFilter', expression);
+          expectPath(cst, `0.markup.filters.${i}.name`).to.equal(filter.name);
+          expectPath(cst, `0.markup.filters.${i}.args`).to.exist;
+          expectPath(cst, `0.markup.filters.${i}.args`).to.have.lengthOf(
+            filter.args.length,
+            expression,
+          );
+          filter.args.forEach((arg: any, j) => {
+            switch (arg.type) {
+              case 'String': {
+                expectPath(cst, `0.markup.filters.${i}.args.${j}.type`).to.equal('String');
+                expectPath(cst, `0.markup.filters.${i}.args.${j}.value`).to.equal(arg.value);
+                break;
+              }
+              case 'NamedArgument': {
+                expectPath(cst, `0.markup.filters.${i}.args`).to.not.be.empty;
+                expectPath(cst, `0.markup.filters.${i}.args.${j}.type`).to.equal('NamedArgument');
+                expectPath(cst, `0.markup.filters.${i}.args.${j}.name`).to.equal(arg.name);
+                expectPath(cst, `0.markup.filters.${i}.args.${j}.value.type`).to.equal(
+                  arg.valueType,
+                );
+                break;
+              }
+            }
+          });
+        });
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal(null);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+        expectLocation(cst, '0.markup.expression');
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {

@@ -16,8 +16,9 @@ import {
   ConcreteAttrUnquoted,
   ConcreteLiquidVariable,
   ConcreteLiquidLiteral,
-  ConcreteLiquidFilters,
+  ConcreteLiquidFilter,
   ConcreteLiquidExpression,
+  ConcreteLiquidNamedArgument,
 } from '~/parser/cst';
 import { NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
@@ -35,6 +36,8 @@ export type LiquidHtmlNode =
   | AttributeNode
   | LiquidVariable
   | LiquidExpression
+  | LiquidFilter
+  | LiquidNamedArgument
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
@@ -137,8 +140,17 @@ export type LiquidExpression =
   | LiquidRange
   | LiquidVariableLookup;
 
-// TODO
-type LiquidFilter = undefined;
+interface LiquidFilter extends ASTNode<NodeTypes.LiquidFilter> {
+  name: string;
+  args: FilterArgument[];
+}
+
+type FilterArgument = LiquidExpression | LiquidNamedArgument;
+
+interface LiquidNamedArgument extends ASTNode<NodeTypes.NamedArgument> {
+  name: string;
+  value: LiquidExpression;
+}
 
 interface LiquidString extends ASTNode<NodeTypes.String> {
   single: boolean;
@@ -638,7 +650,7 @@ function toLiquidVariable(
   return {
     type: NodeTypes.LiquidVariable,
     expression: toExpression(node.expression, source),
-    filters: toFilters(node.filters, source),
+    filters: node.filters.map((filter) => toFilter(filter, source)),
     position: position(node),
     rawSource: node.rawSource,
     source,
@@ -700,11 +712,36 @@ function toExpression(
   }
 }
 
-function toFilters(
-  filters: ConcreteLiquidFilters[],
+function toFilter(node: ConcreteLiquidFilter, source: string): LiquidFilter {
+  return {
+    type: NodeTypes.LiquidFilter,
+    name: node.name,
+    args: node.args.map((arg) => {
+      switch (arg.type) {
+        case ConcreteNodeTypes.NamedArgument: {
+          return toNamedArgument(arg, source);
+        }
+        default: {
+          return toExpression(arg, source);
+        }
+      }
+    }),
+    position: position(node),
+    source,
+  };
+}
+
+function toNamedArgument(
+  node: ConcreteLiquidNamedArgument,
   source: string,
-): LiquidFilter[] {
-  return [];
+): LiquidNamedArgument {
+  return {
+    type: NodeTypes.NamedArgument,
+    name: node.name,
+    value: toExpression(node.value, source),
+    position: position(node),
+    source,
+  };
 }
 
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {

@@ -52,12 +52,12 @@ export function printLiquidDrop(
   );
 
   if (typeof node.markup !== 'string') {
+    const whitespace = node.markup.filters.length > 0 ? line : ' ';
     return group([
       '{{',
       whitespaceStart,
-      ' ',
-      path.call(print, 'markup'),
-      ' ',
+      indent([whitespace, path.call(print, 'markup')]),
+      whitespace,
       whitespaceEnd,
       '}}',
     ]);

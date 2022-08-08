@@ -100,7 +100,7 @@ LiquidHTML {
   // because we'd otherwise positively match the following string
   // instead of falling back to the other rule:
   // {{ 'string' | some_filter }}
-  liquidVariable = liquidExpression space* &("-}}" | "}}") // liquidFilter*
+  liquidVariable = liquidExpression liquidFilter* space* &("-}}" | "}}")
 
   liquidExpression =
     | liquidString
@@ -130,12 +130,21 @@ LiquidHTML {
     "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
 
   liquidVariableLookup = variableSegment? lookup*
-  variableSegment = (letter | "_") identifierCharacter*
   lookup =
-    | dotLookup
     | indexLookup
-  dotLookup = space* "." space* variableSegment "?"?
+    | dotLookup
   indexLookup = space* "[" space* liquidExpression space* "]"
+  dotLookup = space* "." space* identifier
+
+  liquidFilter = space* "|" space* identifier (space* ":" space* filterArguments)?
+  filterSeparator = space* "," space*
+  filterArguments = listOf<filterArgument, filterSeparator>
+  filterArgument = namedArgument | positionalArgument
+  positionalArgument = liquidExpression
+  namedArgument = variableSegment space* ":" space* liquidExpression
+
+  variableSegment = (letter | "_") identifierCharacter*
+  identifier = variableSegment "?"?
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype

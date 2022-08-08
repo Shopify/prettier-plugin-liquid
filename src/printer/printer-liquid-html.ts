@@ -375,8 +375,44 @@ function printNode(
     }
 
     case NodeTypes.LiquidVariable: {
-      // TODO this is where you'll do the pipe first/last logic.
-      return [path.call(print, 'expression')];
+      const name = path.call(print, 'expression');
+      let filters: Doc = '';
+      if (node.filters.length > 0) {
+        filters = [
+          line,
+          join(
+            line,
+            path.map((p) => print(p), 'filters'),
+          ),
+        ];
+      }
+      return [name, filters];
+    }
+
+    case NodeTypes.LiquidFilter: {
+      let args: Doc[] = [];
+
+      if (node.args.length > 0) {
+        const printed = path.map((p) => print(p), 'args');
+        const shouldPrintFirstArgumentSameLine =
+          node.args[0].type !== NodeTypes.NamedArgument;
+
+        if (shouldPrintFirstArgumentSameLine) {
+          const [firstDoc, ...rest] = printed;
+          const restDoc = isEmpty(rest)
+            ? ''
+            : indent([',', line, join([',', line], rest)]);
+          args = [': ', firstDoc, restDoc];
+        } else {
+          args = [':', indent([line, join([',', line], printed)])];
+        }
+      }
+
+      return group(['| ', node.name, ...args]);
+    }
+
+    case NodeTypes.NamedArgument: {
+      return [node.name, ': ', path.call(print, 'value')];
     }
 
     case NodeTypes.TextNode: {
