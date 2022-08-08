@@ -439,6 +439,35 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0.markup');
       });
     });
+
+    it('should parse the assign tag as assign markup + liquid variable', () => {
+      [
+        {
+          expression: `x = "hi"`,
+          name: 'x',
+          expressionType: 'String',
+          expressionValue: 'hi',
+          filters: [],
+        },
+        { expression: `z = y | f`, name: 'z', expressionType: 'VariableLookup', filters: ['f'] },
+      ].forEach(({ expression, name, expressionType, expressionValue, filters }) => {
+        cst = toLiquidHtmlCST(`{% assign ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTag');
+        expectPath(cst, '0.name').to.equal('assign');
+        debugger;
+        expectPath(cst, '0.markup.type').to.equal('AssignMarkup');
+        expectPath(cst, '0.markup.name').to.equal(name);
+        expectPath(cst, '0.markup.value.expression.type').to.equal(expressionType);
+        if (expressionValue) {
+          expectPath(cst, '0.markup.value.expression.value').to.equal(expressionValue);
+        }
+        expectPath(cst, '0.markup.value.filters').to.have.lengthOf(filters.length);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal('-');
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {
@@ -470,9 +499,9 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
 
     it('should basically parse liquid tags', () => {
-      cst = toLiquidHtmlCST('{%   assign x = 1 %}{% if hi -%}{%- endif %}');
+      cst = toLiquidHtmlCST('{%   unknown x = 1 %}{% if hi -%}{%- endif %}');
       expectPath(cst, '0.type').to.equal('LiquidTag');
-      expectPath(cst, '0.name').to.equal('assign');
+      expectPath(cst, '0.name').to.equal('unknown');
       expectPath(cst, '0.markup').to.equal('x = 1');
       expectPath(cst, '0.whitespaceStart').to.equal(null);
       expectPath(cst, '0.whitespaceEnd').to.equal(null);

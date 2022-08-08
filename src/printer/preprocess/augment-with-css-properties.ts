@@ -91,6 +91,7 @@ function getCssDisplay(
     case NodeTypes.Number:
     case NodeTypes.Range:
     case NodeTypes.VariableLookup:
+    case NodeTypes.AssignMarkup:
       return 'should not be relevant';
 
     default:
@@ -144,6 +145,7 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
     case NodeTypes.Number:
     case NodeTypes.Range:
     case NodeTypes.VariableLookup:
+    case NodeTypes.AssignMarkup:
       return 'should not be relevant';
 
     default:

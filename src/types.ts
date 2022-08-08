@@ -32,6 +32,8 @@ export enum NodeTypes {
   Number = 'Number',
   Range = 'Range',
   VariableLookup = 'VariableLookup',
+
+  AssignMarkup = 'AssignMarkup',
 }
 
 export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
@@ -157,6 +159,7 @@ export type LiquidNode = Augmented<AST.LiquidNode, AllAugmentations>;
 export type ParentNode = Augmented<AST.ParentNode, AllAugmentations>;
 export type LiquidRawTag = Augmented<AST.LiquidRawTag, AllAugmentations>;
 export type LiquidTag = Augmented<AST.LiquidTag, AllAugmentations>;
+export type LiquidTagNamed = Augmented<AST.LiquidTagNamed, AllAugmentations>;
 export type LiquidBranch = Augmented<AST.LiquidBranch, AllAugmentations>;
 export type LiquidDrop = Augmented<AST.LiquidDrop, AllAugmentations>;
 export type HtmlNode = Augmented<AST.HtmlNode, AllAugmentations>;

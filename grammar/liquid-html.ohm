@@ -79,6 +79,7 @@ LiquidHTML {
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
     | liquidTagEcho
+    | liquidTagAssign
     | liquidTagBaseCase
 
   liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
@@ -86,6 +87,9 @@ LiquidHTML {
 
   liquidTagEcho = liquidTagRule<"echo", liquidTagEchoMarkup>
   liquidTagEchoMarkup = liquidVariable
+
+  liquidTagAssign = liquidTagRule<"assign", liquidTagAssignMarkup>
+  liquidTagAssignMarkup = variableSegment space* "=" space* liquidVariable
 
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase

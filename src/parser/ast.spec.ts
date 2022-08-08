@@ -311,6 +311,41 @@ describe('Unit: toLiquidHtmlAST', () => {
         expectPath(ast, 'children.0.delimiterWhitespaceStart').to.eql(undefined);
         expectPath(ast, 'children.0.delimiterWhitespaceEnd').to.eql(undefined);
         expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+        expectPosition(ast, 'children.0.markup.expression');
+      });
+    });
+
+    it('should parse assign tags', () => {
+      [
+        {
+          expression: `x = "hi"`,
+          name: 'x',
+          expressionType: 'String',
+          expressionValue: 'hi',
+          filters: [],
+        },
+        { expression: `z = y | f`, name: 'z', expressionType: 'VariableLookup', filters: ['f'] },
+      ].forEach(({ expression, name, expressionType, expressionValue, filters }) => {
+        ast = toLiquidHtmlAST(`{% assign ${expression} -%}`);
+        expectPath(ast, 'children.0').to.exist;
+        expectPath(ast, 'children.0.type').to.eql('LiquidTag');
+        expectPath(ast, 'children.0.name').to.eql('assign');
+        expectPath(ast, 'children.0.markup.type').to.eql('AssignMarkup');
+        expectPath(ast, 'children.0.markup.name').to.eql(name);
+        expectPath(ast, 'children.0.markup.value.expression.type').to.eql(expressionType);
+        if (expressionValue)
+          expectPath(ast, 'children.0.markup.value.expression.value').to.eql(expressionValue);
+        expectPath(ast, 'children.0.markup.value.filters').to.have.lengthOf(filters.length);
+        expectPath(ast, 'children.0.children').to.be.undefined;
+        expectPath(ast, 'children.0.whitespaceStart').to.eql('');
+        expectPath(ast, 'children.0.whitespaceEnd').to.eql('-');
+        expectPath(ast, 'children.0.delimiterWhitespaceStart').to.eql(undefined);
+        expectPath(ast, 'children.0.delimiterWhitespaceEnd').to.eql(undefined);
+        expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+        expectPosition(ast, 'children.0.markup.value');
+        expectPosition(ast, 'children.0.markup.value.expression');
       });
     });
   });

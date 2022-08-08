@@ -31,6 +31,8 @@ export enum ConcreteNodeTypes {
   String = 'String',
   Number = 'Number',
   Range = 'Range',
+
+  AssignMarkup = 'AssignMarkup',
 }
 
 export const LiquidLiteralValues = {
@@ -143,7 +145,9 @@ export interface ConcreteLiquidTagClose
 export type ConcreteLiquidTag =
   | ConcreteLiquidTagNamed
   | ConcreteLiquidTagBaseCase;
-export type ConcreteLiquidTagNamed = ConcreteLiquidTagEcho;
+export type ConcreteLiquidTagNamed =
+  | ConcreteLiquidTagAssign
+  | ConcreteLiquidTagEcho;
 
 export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
@@ -155,6 +159,14 @@ export interface ConcreteLiquidTagBaseCase
   extends ConcreteLiquidTagNode<string, string> {}
 export interface ConcreteLiquidTagEcho
   extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
+export interface ConcreteLiquidTagAssign
+  extends ConcreteLiquidTagNode<'assign', ConcreteLiquidTagAssignMarkup> {}
+
+export interface ConcreteLiquidTagAssignMarkup
+  extends ConcreteBasicNode<ConcreteNodeTypes.AssignMarkup> {
+  name: string;
+  value: ConcreteLiquidVariable;
+}
 
 export interface ConcreteLiquidDrop
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidDrop> {
@@ -389,20 +401,28 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidTag: 0,
     liquidTagBaseCase: 0,
     liquidTagEcho: 0,
-    liquidTagEchoMarkup: 0,
+    liquidTagAssign: 0,
     liquidTagRule: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
       markup(nodes: Node[]) {
         const markupNode = nodes[5];
         const nameNode = nodes[3];
-        if (nameNode.sourceString !== 'echo') {
-          return markupNode.sourceString.trim();
+        if (['echo', 'assign'].includes(nameNode.sourceString)) {
+          return markupNode.toAST((this as any).args.mapping);
         }
-        return markupNode.toAST((this as any).args.mapping);
+        return markupNode.sourceString.trim();
       },
       whitespaceStart: 1,
       whitespaceEnd: 6,
+      locStart,
+      locEnd,
+    },
+    liquidTagEchoMarkup: 0,
+    liquidTagAssignMarkup: {
+      type: ConcreteNodeTypes.AssignMarkup,
+      name: 0,
+      value: 4,
       locStart,
       locEnd,
     },

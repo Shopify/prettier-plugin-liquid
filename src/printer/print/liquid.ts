@@ -1,13 +1,14 @@
 import { AstPath, Doc, doc } from 'prettier';
 import {
-  LiquidTag,
+  LiquidAstPath,
   LiquidBranch,
   LiquidDrop,
-  LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
-  NodeTypes,
   LiquidPrinterArgs,
+  LiquidTag,
+  LiquidTagNamed,
+  NodeTypes,
 } from '~/types';
 import { isBranchedTag } from '~/parser/ast';
 import { assertNever } from '~/utils';
@@ -87,9 +88,55 @@ export function printLiquidDrop(
   ]);
 }
 
+function printNamedLiquidBlock(
+  path: AstPath<LiquidTagNamed>,
+  _options: LiquidParserOptions,
+  print: LiquidPrinter,
+  whitespaceStart: Doc,
+  whitespaceEnd: Doc,
+): Doc {
+  const node = path.getValue();
+
+  switch (node.name) {
+    case 'echo': {
+      const whitespace = node.markup.filters.length > 0 ? line : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        'echo',
+        ' ',
+        indent(path.call((p) => print(p), 'markup')),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
+    case 'assign': {
+      const whitespace = node.markup.value.filters.length > 0 ? line : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        node.name,
+        ' ',
+        indent(path.call((p) => print(p), 'markup')),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
 export function printLiquidBlockStart(
   path: AstPath<LiquidTag | LiquidBranch>,
-  _options: LiquidParserOptions,
+  options: LiquidParserOptions,
   print: LiquidPrinter,
   { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
@@ -107,19 +154,14 @@ export function printLiquidBlockStart(
     trailingSpaceGroupId,
   );
 
-  // TODO
   if (typeof node.markup !== 'string') {
-    const whitespace = node.markup.filters.length > 0 ? line : ' ';
-    return group([
-      '{%',
+    return printNamedLiquidBlock(
+      path as AstPath<LiquidTagNamed>,
+      options,
+      print,
       whitespaceStart,
-      ' ',
-      node.name,
-      indent([' ', path.call(print, 'markup')]),
-      whitespace,
       whitespaceEnd,
-      '%}',
-    ]);
+    );
   }
 
   const lines = markupLines(node.markup);

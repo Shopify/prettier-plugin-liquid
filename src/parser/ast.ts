@@ -21,6 +21,7 @@ import {
   ConcreteLiquidNamedArgument,
   ConcreteLiquidTagNamed,
   ConcreteLiquidTag,
+  ConcreteLiquidTagAssignMarkup,
 } from '~/parser/cst';
 import { isLiquidHtmlNode, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
@@ -41,6 +42,7 @@ export type LiquidHtmlNode =
   | LiquidExpression
   | LiquidFilter
   | LiquidNamedArgument
+  | AssignMarkup
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
@@ -91,7 +93,7 @@ export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
 }
 
 export type LiquidTag = LiquidTagNamed | LiquidTagBaseCase;
-export type LiquidTagNamed = LiquidTagEcho;
+export type LiquidTagNamed = LiquidTagAssign | LiquidTagEcho;
 
 export interface LiquidTagNode<Name, Markup>
   extends ASTNode<NodeTypes.LiquidTag> {
@@ -113,8 +115,15 @@ export interface LiquidTagNode<Name, Markup>
   blockEndPosition?: Position;
 }
 
+export interface LiquidTagAssign
+  extends LiquidTagNode<'assign', AssignMarkup> {}
 export interface LiquidTagEcho extends LiquidTagNode<'echo', LiquidVariable> {}
 export interface LiquidTagBaseCase extends LiquidTagNode<string, string> {}
+
+export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
+  name: string;
+  value: LiquidVariable;
+}
 
 export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {
   /**
@@ -682,10 +691,30 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    // default: {
-    //   return assertNever(node);
-    // }
+    case 'assign': {
+      return {
+        name: 'assign',
+        markup: toAssignMarkup(node.markup, source),
+        ...liquidTagBaseAttributes(node, source),
+      };
+    }
+    default: {
+      return assertNever(node);
+    }
   }
+}
+
+function toAssignMarkup(
+  node: ConcreteLiquidTagAssignMarkup,
+  source: string,
+): AssignMarkup {
+  return {
+    type: NodeTypes.AssignMarkup,
+    name: node.name,
+    value: toLiquidVariable(node.value, source),
+    position: position(node),
+    source,
+  };
 }
 
 function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
