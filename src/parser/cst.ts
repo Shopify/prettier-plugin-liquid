@@ -140,11 +140,21 @@ export interface ConcreteLiquidTagClose
   name: string;
 }
 
-export interface ConcreteLiquidTag
+export type ConcreteLiquidTag =
+  | ConcreteLiquidTagNamed
+  | ConcreteLiquidTagBaseCase;
+export type ConcreteLiquidTagNamed = ConcreteLiquidTagEcho;
+
+export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
-  name: string;
-  markup: string;
+  name: Name;
+  markup: Markup;
 }
+
+export interface ConcreteLiquidTagBaseCase
+  extends ConcreteLiquidTagNode<string, string> {}
+export interface ConcreteLiquidTagEcho
+  extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
 
 export interface ConcreteLiquidDrop
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidDrop> {
@@ -378,10 +388,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidTag: 0,
     liquidTagBaseCase: 0,
+    liquidTagEcho: 0,
+    liquidTagEchoMarkup: 0,
     liquidTagRule: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
-      markup: markup(5),
+      markup(nodes: Node[]) {
+        const markupNode = nodes[5];
+        const nameNode = nodes[3];
+        if (nameNode.sourceString !== 'echo') {
+          return markupNode.sourceString.trim();
+        }
+        return markupNode.toAST((this as any).args.mapping);
+      },
       whitespaceStart: 1,
       whitespaceEnd: 6,
       locStart,

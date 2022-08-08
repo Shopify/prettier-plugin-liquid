@@ -276,18 +276,43 @@ describe('Unit: toLiquidHtmlAST', () => {
     });
   });
 
-  it('should transform a basic Liquid Tag into a LiquidTag', () => {
-    ast = toLiquidHtmlAST('{% name %}{% if -%}{%- endif %}');
-    expectPath(ast, 'children.0').to.exist;
-    expectPath(ast, 'children.0.type').to.eql('LiquidTag');
-    expectPath(ast, 'children.0.name').to.eql('name');
-    expectPath(ast, 'children.0.markup').to.eql('');
-    expectPath(ast, 'children.0.children').to.be.undefined;
-    expectPath(ast, 'children.1.whitespaceStart').to.eql('');
-    expectPath(ast, 'children.1.whitespaceEnd').to.eql('-');
-    expectPath(ast, 'children.1.delimiterWhitespaceStart').to.eql('-');
-    expectPath(ast, 'children.1.delimiterWhitespaceEnd').to.eql('');
-    expectPosition(ast, 'children.0');
+  describe('Case: LiquidTag', () => {
+    it('should transform a basic Liquid Tag into a LiquidTag', () => {
+      ast = toLiquidHtmlAST('{% name %}{% if -%}{%- endif %}');
+      expectPath(ast, 'children.0').to.exist;
+      expectPath(ast, 'children.0.type').to.eql('LiquidTag');
+      expectPath(ast, 'children.0.name').to.eql('name');
+      expectPath(ast, 'children.0.markup').to.eql('');
+      expectPath(ast, 'children.0.children').to.be.undefined;
+      expectPath(ast, 'children.1.whitespaceStart').to.eql('');
+      expectPath(ast, 'children.1.whitespaceEnd').to.eql('-');
+      expectPath(ast, 'children.1.delimiterWhitespaceStart').to.eql('-');
+      expectPath(ast, 'children.1.delimiterWhitespaceEnd').to.eql('');
+      expectPosition(ast, 'children.0');
+    });
+
+    it('should parse echo tags', () => {
+      [
+        { expression: `"hi"`, expressionType: 'String', expressionValue: 'hi', filters: [] },
+        { expression: `x | f`, expressionType: 'VariableLookup', filters: ['f'] },
+      ].forEach(({ expression, expressionType, expressionValue, filters }) => {
+        ast = toLiquidHtmlAST(`{% echo ${expression} -%}`);
+        expectPath(ast, 'children.0').to.exist;
+        expectPath(ast, 'children.0.type').to.eql('LiquidTag');
+        expectPath(ast, 'children.0.name').to.eql('echo');
+        expectPath(ast, 'children.0.markup.type').to.eql('LiquidVariable');
+        expectPath(ast, 'children.0.markup.expression.type').to.eql(expressionType);
+        if (expressionValue)
+          expectPath(ast, 'children.0.markup.expression.value').to.eql(expressionValue);
+        expectPath(ast, 'children.0.markup.filters').to.have.lengthOf(filters.length);
+        expectPath(ast, 'children.0.children').to.be.undefined;
+        expectPath(ast, 'children.0.whitespaceStart').to.eql('');
+        expectPath(ast, 'children.0.whitespaceEnd').to.eql('-');
+        expectPath(ast, 'children.0.delimiterWhitespaceStart').to.eql(undefined);
+        expectPath(ast, 'children.0.delimiterWhitespaceEnd').to.eql(undefined);
+        expectPosition(ast, 'children.0');
+      });
+    });
   });
 
   it('should parse a basic text node into a TextNode', () => {

@@ -1,7 +1,3 @@
-|print-width--------------------------------------------------------------------|
-
-In children array,
-
 it should not add Whitespace Trim Characters (WTC) if the liquid tag does not
 break on a new line
 <div>{% echo 'hello' %}</div>
@@ -17,10 +13,6 @@ sensitive
 it should not add wtc if the liquid tag breaks on a new line and the
 previous/next characters were spaces
 <div> {% echo 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' %} </div>
-
---------------------------------------------------------------------------------
-
-In paragraphs,
 
 it should break next to a character, so there should be wtc
 <div>

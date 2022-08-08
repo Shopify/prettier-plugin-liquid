@@ -418,6 +418,29 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
   });
 
+  describe('Case: LiquidTag', () => {
+    it('should parse the echo tag as variables', () => {
+      [
+        { expression: `"hi"`, expressionType: 'String', expressionValue: 'hi', filters: [] },
+        { expression: `x | f`, expressionType: 'VariableLookup', filters: ['f'] },
+      ].forEach(({ expression, expressionType, expressionValue, filters }) => {
+        cst = toLiquidHtmlCST(`{% echo ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTag');
+        expectPath(cst, '0.name').to.equal('echo');
+        expectPath(cst, '0.markup.type').to.equal('LiquidVariable');
+        expectPath(cst, '0.markup.expression.type').to.equal(expressionType);
+        if (expressionValue) {
+          expectPath(cst, '0.markup.expression.value').to.equal(expressionValue);
+        }
+        expectPath(cst, '0.markup.filters').to.have.lengthOf(filters.length);
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal('-');
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
+  });
+
   describe('Case: LiquidNode', () => {
     it('should parse raw tags', () => {
       ['style', 'raw'].forEach((raw) => {

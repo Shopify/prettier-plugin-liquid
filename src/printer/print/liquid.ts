@@ -89,13 +89,12 @@ export function printLiquidDrop(
 
 export function printLiquidBlockStart(
   path: AstPath<LiquidTag | LiquidBranch>,
-  leadingSpaceGroupId: symbol | symbol[] | undefined,
-  trailingSpaceGroupId: symbol | symbol[] | undefined,
+  _options: LiquidParserOptions,
+  print: LiquidPrinter,
+  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
   if (!node.name) return '';
-
-  const lines = markupLines(node.markup);
 
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
@@ -107,6 +106,23 @@ export function printLiquidBlockStart(
     needsBlockStartTrailingWhitespaceStrippingOnBreak(node),
     trailingSpaceGroupId,
   );
+
+  // TODO
+  if (typeof node.markup !== 'string') {
+    const whitespace = node.markup.filters.length > 0 ? line : ' ';
+    return group([
+      '{%',
+      whitespaceStart,
+      ' ',
+      node.name,
+      indent([' ', path.call(print, 'markup')]),
+      whitespace,
+      whitespaceEnd,
+      '%}',
+    ]);
+  }
+
+  const lines = markupLines(node.markup);
 
   if (node.name === 'liquid') {
     return group([
@@ -147,8 +163,9 @@ export function printLiquidBlockStart(
 
 export function printLiquidBlockEnd(
   path: AstPath<LiquidTag>,
-  leadingSpaceGroupId: symbol | symbol[] | undefined,
-  trailingSpaceGroupId: symbol | symbol[] | undefined,
+  _options: LiquidParserOptions,
+  _print: LiquidPrinter,
+  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
   if (!node.children || !node.blockEndPosition) return '';
@@ -175,23 +192,24 @@ export function printLiquidTag(
   path: AstPath<LiquidTag>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
+  args: LiquidPrinterArgs,
 ): Doc {
+  const { leadingSpaceGroupId, trailingSpaceGroupId } = args;
   const node = path.getValue();
   if (!node.children || !node.blockEndPosition) {
-    return printLiquidBlockStart(
-      path,
-      leadingSpaceGroupId,
-      trailingSpaceGroupId,
-    );
+    return printLiquidBlockStart(path, options, print, args);
   }
   const tagGroupId = Symbol('tag-group');
-  const blockStart = printLiquidBlockStart(
-    path,
+  const blockStart = printLiquidBlockStart(path, options, print, {
+    ...args,
     leadingSpaceGroupId,
-    tagGroupId,
-  ); // {% if ... %}
-  const blockEnd = printLiquidBlockEnd(path, tagGroupId, trailingSpaceGroupId); // {% endif %}
+    trailingSpaceGroupId: tagGroupId,
+  }); // {% if ... %}
+  const blockEnd = printLiquidBlockEnd(path, options, print, {
+    ...args,
+    leadingSpaceGroupId: tagGroupId,
+    trailingSpaceGroupId,
+  }); // {% endif %}
 
   let body: Doc = [];
 
@@ -336,11 +354,7 @@ export function printLiquidBranch(
 
   return [
     outerLeadingWhitespace,
-    printLiquidBlockStart(
-      path as AstPath<LiquidBranch>,
-      args.leadingSpaceGroupId,
-      args.trailingSpaceGroupId,
-    ),
+    printLiquidBlockStart(path as AstPath<LiquidBranch>, options, print, args),
     indent([
       innerLeadingWhitespace(branch),
       printChildren(path, options, print, args),
