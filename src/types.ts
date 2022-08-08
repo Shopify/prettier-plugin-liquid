@@ -49,6 +49,7 @@ export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
   singleLineLinkTags: boolean;
+  liquidSingleQuote: boolean;
   indentSchema: boolean;
 };
 export type LiquidPrinterArgs = {

@@ -24,14 +24,14 @@ It should index access strings with spaces
 {{ x["y"]["hello world"] }}
 
 It should respect singleQuote
-singleQuote: true
+liquidSingleQuote: false
 {{ x["y"]["hello world"] }}
 
-It should keep single quotes if double quotes are in the string
-{{ x["y"]['He said: "hi muffin!"'] }}
+It should keep double quotes if single quotes are in the string
+{{ x["y"]["string o' strings"] }}
 
 It should support spaces inside braces
-{{ x[ "y" ][   'He said: "hi muffin!"'
+{{ x[ "y" ][  "string o' strings"
     ] }}
 
 It should support spaces outside braces

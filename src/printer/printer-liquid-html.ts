@@ -384,9 +384,9 @@ function printNode(
     }
 
     case NodeTypes.String: {
-      const preferredQuote = options.singleQuote ? `'` : `"`;
-      const attributeValueContainsQuote = node.value.includes(preferredQuote);
-      const quote = attributeValueContainsQuote
+      const preferredQuote = options.liquidSingleQuote ? `'` : `"`;
+      const valueHasQuotes = node.value.includes(preferredQuote);
+      const quote = valueHasQuotes
         ? oppositeQuotes[preferredQuote]
         : preferredQuote;
       return [quote, node.value, quote];
