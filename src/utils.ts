@@ -1,7 +1,7 @@
 import { Position } from '~/types';
 
 export function assertNever(x: never): never {
-  throw new Error(`Unexpected object: ${x}`);
+  throw new Error(`Unexpected object: ${(x as any).type}`);
 }
 
 export function locStart(node: { position: Position }) {

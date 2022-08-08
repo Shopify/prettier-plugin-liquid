@@ -36,7 +36,8 @@
     "prerelease": "scripts/prerelease",
     "prettier": "prettier --plugin . --parser=liquid-html",
     "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'",
-    "test:idempotence": "cross-env TEST_IDEMPOTENCE=true node_modules/.bin/mocha 'test/**/*.spec.ts'"
+    "test:idempotence": "cross-env TEST_IDEMPOTENCE=true node_modules/.bin/mocha 'test/**/*.spec.ts'",
+    "type-check": "tsc --noEmit"
   },
   "peerDependencies": {
     "prettier": "^2.0.0"

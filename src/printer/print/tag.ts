@@ -109,10 +109,13 @@ export function printClosingTagStartMarker(
       // if (node.hasHtmComponentClosingTag) {
       //   return '<//';
       // }
-      if (typeof node.name !== 'string') {
+      if (typeof node.name === 'string') {
+        return `</${node.name}`;
+      } else if (typeof node.name.markup === 'string') {
         return `</{{ ${node.name.markup.trim()} }}`;
+      } else {
+        return `</{{ ${node.name.markup.rawSource} }}`;
       }
-      return `</${node.name}`;
     default:
       return '';
   }
@@ -435,10 +438,13 @@ export function printOpeningTagStartMarker(node: LiquidHtmlNode | undefined) {
       // if (node.condition) {
       //   return `<!--[if ${node.condition}]><!--><${node.name}`;
       // }
-      if (typeof node.name !== 'string') {
+      if (typeof node.name === 'string') {
+        return `<${node.name}`;
+      } else if (typeof node.name.markup === 'string') {
         return `<{{ ${node.name.markup.trim()} }}`;
+      } else {
+        return `<{{ ${node.name.markup.rawSource} }}`;
       }
-      return `<${node.name}`;
     default:
       return ''; // TODO
   }

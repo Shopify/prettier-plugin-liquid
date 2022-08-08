@@ -22,6 +22,13 @@ export enum NodeTypes {
   AttrUnquoted = 'AttrUnquoted',
   AttrEmpty = 'AttrEmpty',
   TextNode = 'TextNode',
+
+  LiquidVariable = 'LiquidVariable',
+  LiquidLiteral = 'LiquidLiteral',
+  String = 'String',
+  Number = 'Number',
+  Range = 'Range',
+  VariableLookup = 'VariableLookup',
 }
 
 export const HtmlNodeTypes = [
@@ -42,11 +49,13 @@ export type LiquidAstPath = AstPath<LiquidHtmlNode>;
 export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
   singleLineLinkTags: boolean;
+  liquidSingleQuote: boolean;
   indentSchema: boolean;
 };
 export type LiquidPrinterArgs = {
   leadingSpaceGroupId?: symbol[] | symbol;
   trailingSpaceGroupId?: symbol[] | symbol;
+  truncate?: boolean;
 };
 export type LiquidPrinter = (
   path: AstPath<LiquidHtmlNode>,
@@ -159,4 +168,8 @@ export type AttrDoubleQuoted = Augmented<
 >;
 export type AttrUnquoted = Augmented<AST.AttrUnquoted, AllAugmentations>;
 export type AttrEmpty = Augmented<AST.AttrEmpty, AllAugmentations>;
+export type LiquidExpression = Augmented<
+  AST.LiquidExpression,
+  AllAugmentations
+>;
 export type TextNode = Augmented<AST.TextNode, AllAugmentations>;

@@ -80,6 +80,14 @@ function getCssDisplay(
     case NodeTypes.Document:
       return 'block';
 
+    case NodeTypes.LiquidVariable:
+    case NodeTypes.LiquidLiteral:
+    case NodeTypes.String:
+    case NodeTypes.Number:
+    case NodeTypes.Range:
+    case NodeTypes.VariableLookup:
+      return 'should not be relevant';
+
     default:
       return assertNever(node);
   }
@@ -121,6 +129,14 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
 
     case NodeTypes.Document:
       return CSS_WHITE_SPACE_DEFAULT;
+
+    case NodeTypes.LiquidVariable:
+    case NodeTypes.LiquidLiteral:
+    case NodeTypes.String:
+    case NodeTypes.Number:
+    case NodeTypes.Range:
+    case NodeTypes.VariableLookup:
+      return 'should not be relevant';
 
     default:
       return assertNever(node);

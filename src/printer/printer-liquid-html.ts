@@ -1,6 +1,7 @@
 import { Printer, AstPath, Doc, doc } from 'prettier';
 import {
   LiquidHtmlNode,
+  LiquidExpression,
   LiquidTag,
   LiquidBranch,
   LiquidDrop,
@@ -21,7 +22,6 @@ import {
   LiquidPrinterArgs,
   DocumentNode,
 } from '~/types';
-import { AttributeNodeBase } from '~/parser/ast';
 import { assertNever } from '~/utils';
 
 import { preprocess } from '~/printer/print-preprocess';
@@ -374,8 +374,74 @@ function printNode(
       ];
     }
 
+    case NodeTypes.LiquidVariable: {
+      // TODO this is where you'll do the pipe first/last logic.
+      return [path.call(print, 'expression')];
+    }
+
     case NodeTypes.TextNode: {
       return printTextNode(path as AstPath<TextNode>, options, print);
+    }
+
+    case NodeTypes.String: {
+      const preferredQuote = options.liquidSingleQuote ? `'` : `"`;
+      const valueHasQuotes = node.value.includes(preferredQuote);
+      const quote = valueHasQuotes
+        ? oppositeQuotes[preferredQuote]
+        : preferredQuote;
+      return [quote, node.value, quote];
+    }
+
+    case NodeTypes.Number: {
+      if (args.truncate) {
+        return node.value.replace(/\.\d+$/, '');
+      } else {
+        return node.value;
+      }
+    }
+
+    case NodeTypes.Range: {
+      return [
+        '(',
+        path.call((p) => print(p, { truncate: true }), 'start'),
+        '..',
+        path.call((p) => print(p, { truncate: true }), 'end'),
+        ')',
+      ];
+    }
+
+    case NodeTypes.LiquidLiteral: {
+      // We prefer nil over null.
+      if (node.keyword === 'null') {
+        return 'nil';
+      }
+      return node.keyword;
+    }
+
+    case NodeTypes.VariableLookup: {
+      const doc: Doc[] = [];
+      if (node.name) {
+        doc.push(node.name);
+      }
+      const lookups: Doc[] = path.map((lookupPath, index) => {
+        const lookup = lookupPath.getValue() as LiquidExpression;
+        switch (lookup.type) {
+          case NodeTypes.String: {
+            const value = lookup.value;
+            // We prefer direct access
+            // (for everything but stuff with dashes)
+            const isGlobalStringLookup = index === 0 && !node.name;
+            if (!isGlobalStringLookup && /^[a-z0-9_]+\??$/i.test(value)) {
+              return ['.', value];
+            }
+            return ['[', print(lookupPath), ']'];
+          }
+          default: {
+            return ['[', print(lookupPath), ']'];
+          }
+        }
+      }, 'lookups');
+      return [...doc, ...lookups];
     }
 
     default: {

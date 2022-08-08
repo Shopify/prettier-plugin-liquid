@@ -18,6 +18,14 @@ const languages: SupportLanguage[] = [
 ];
 
 const options: SupportOptions = {
+  liquidSingleQuote: {
+    type: 'boolean',
+    category: 'LIQUID',
+    default: true,
+    description:
+      'Use single quotes instead of double quotes in Liquid tags and objects.',
+    since: 'SINCE_VERSION',
+  },
   singleLineLinkTags: {
     type: 'boolean',
     category: 'HTML',

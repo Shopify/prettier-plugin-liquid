@@ -9,22 +9,32 @@ import {
   ConcreteNodeTypes,
   ConcreteTextNode,
   LiquidHtmlCST,
-  LiquidHtmlConcreteNode,
   toLiquidHtmlCST,
   ConcreteHtmlSelfClosingElement,
   ConcreteAttrSingleQuoted,
   ConcreteAttrDoubleQuoted,
   ConcreteAttrUnquoted,
+  ConcreteLiquidVariable,
+  ConcreteLiquidLiteral,
+  ConcreteLiquidFilters,
+  ConcreteLiquidExpression,
 } from '~/parser/cst';
 import { NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
+
+interface HasPosition {
+  locStart: number;
+  locEnd: number;
+}
 
 export type LiquidHtmlNode =
   | DocumentNode
   | LiquidNode
   | HtmlNode
   | AttributeNode
+  | LiquidVariable
+  | LiquidExpression
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
@@ -109,9 +119,49 @@ export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   /**
    * The body of the drop. May contain filters. Not trimmed.
    */
-  markup: string;
+  markup: string | LiquidVariable;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
+}
+
+interface LiquidVariable extends ASTNode<NodeTypes.LiquidVariable> {
+  expression: LiquidExpression;
+  filters: LiquidFilter[];
+  rawSource: string;
+}
+
+export type LiquidExpression =
+  | LiquidString
+  | LiquidNumber
+  | LiquidLiteral
+  | LiquidRange
+  | LiquidVariableLookup;
+
+// TODO
+type LiquidFilter = undefined;
+
+interface LiquidString extends ASTNode<NodeTypes.String> {
+  single: boolean;
+  value: string;
+}
+
+interface LiquidNumber extends ASTNode<NodeTypes.Number> {
+  value: string;
+}
+
+interface LiquidRange extends ASTNode<NodeTypes.Range> {
+  start: LiquidExpression;
+  end: LiquidExpression;
+}
+
+interface LiquidLiteral extends ASTNode<NodeTypes.LiquidLiteral> {
+  keyword: ConcreteLiquidLiteral['keyword'];
+  value: ConcreteLiquidLiteral['value'];
+}
+
+interface LiquidVariableLookup extends ASTNode<NodeTypes.VariableLookup> {
+  name: string | null;
+  lookups: LiquidExpression[];
 }
 
 export type HtmlNode =
@@ -333,8 +383,13 @@ function getName(
   switch (node.type) {
     case NodeTypes.HtmlElement:
     case ConcreteNodeTypes.HtmlTagClose:
-      if (typeof node.name === 'string') return node.name;
-      return `{{${node.name.markup.trim()}}}`;
+      if (typeof node.name === 'string') {
+        return node.name;
+      } else if (typeof node.name.markup === 'string') {
+        return `{{${node.name.markup.trim()}}}`;
+      } else {
+        return `{{${node.name.markup.rawSource}}}`;
+      }
     default:
       return node.name;
   }
@@ -565,12 +620,91 @@ function toName(name: string | ConcreteLiquidDrop, source: string) {
 function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
   return {
     type: NodeTypes.LiquidDrop,
-    markup: node.markup,
+    markup:
+      typeof node.markup === 'string'
+        ? node.markup
+        : toLiquidVariable(node.markup, source),
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     position: position(node),
     source,
   };
+}
+
+function toLiquidVariable(
+  node: ConcreteLiquidVariable,
+  source: string,
+): LiquidVariable {
+  return {
+    type: NodeTypes.LiquidVariable,
+    expression: toExpression(node.expression, source),
+    filters: toFilters(node.filters, source),
+    position: position(node),
+    rawSource: node.rawSource,
+    source,
+  };
+}
+
+function toExpression(
+  node: ConcreteLiquidExpression,
+  source: string,
+): LiquidExpression {
+  switch (node.type) {
+    case ConcreteNodeTypes.String: {
+      return {
+        type: NodeTypes.String,
+        position: position(node),
+        single: node.single,
+        value: node.value,
+        source,
+      };
+    }
+    case ConcreteNodeTypes.Number: {
+      return {
+        type: NodeTypes.Number,
+        position: position(node),
+        value: node.value,
+        source,
+      };
+    }
+    case ConcreteNodeTypes.LiquidLiteral: {
+      return {
+        type: NodeTypes.LiquidLiteral,
+        position: position(node),
+        value: node.value,
+        keyword: node.keyword,
+        source,
+      };
+    }
+    case ConcreteNodeTypes.Range: {
+      return {
+        type: NodeTypes.Range,
+        start: toExpression(node.start, source),
+        end: toExpression(node.end, source),
+        position: position(node),
+        source,
+      };
+    }
+    case ConcreteNodeTypes.VariableLookup: {
+      return {
+        type: NodeTypes.VariableLookup,
+        name: node.name,
+        lookups: node.lookups.map((lookup) => toExpression(lookup, source)),
+        position: position(node),
+        source,
+      };
+    }
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
+function toFilters(
+  filters: ConcreteLiquidFilters[],
+  source: string,
+): LiquidFilter[] {
+  return [];
 }
 
 function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
@@ -614,9 +748,7 @@ function toHtmlSelfClosingElement(
   };
 }
 
-function position(
-  node: LiquidHtmlConcreteNode | ConcreteAttributeNode,
-): Position {
+function position(node: HasPosition): Position {
   return {
     start: node.locStart,
     end: node.locEnd,
