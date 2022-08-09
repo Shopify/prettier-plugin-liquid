@@ -607,7 +607,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     it('should parse tag open / close', () => {
       BLOCKS.forEach((block: string) => {
         cst = toLiquidHtmlCST(`{% ${block} args -%}{%- end${block} %}`);
-        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen', block);
         expectPath(cst, '0.name').to.equal(block);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');

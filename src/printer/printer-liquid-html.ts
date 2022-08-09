@@ -241,7 +241,7 @@ function printNode(
       const shouldSkipFirstLine =
         !node.source[node.blockStartPosition.end].match(/\r|\n/);
       const body =
-        lines.length > 0 && lines[0] !== ''
+        lines.length > 0 && lines[0].trim() !== ''
           ? [
               indent([
                 hardline,
@@ -326,6 +326,10 @@ function printNode(
           ),
           blockEnd,
         ];
+      }
+
+      if (body.length === 1 && body[0].trim() === '') {
+        return [blockStart, hardline, blockEnd];
       }
 
       return [

@@ -41,7 +41,7 @@ When there's a TextNode child, it should format the children as a paragraph
 <div>
 {% if a %}
 hello {{ world }}!
-{% else if b %}
+{% elsif b %}
 {% if x %}Greetings{% else %}Hello{% endif %}, friend!
 {% endif %}
 </div>
@@ -52,7 +52,7 @@ line.
 {% if a %}
 <div>Hello</div>
 <div>content</div>
-{% else if b %}
+{% elsif b %}
 {% if greeting %}
 <div>hello</div>
 {% endif %}
