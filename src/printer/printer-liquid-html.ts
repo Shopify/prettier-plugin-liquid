@@ -378,6 +378,33 @@ function printNode(
       return [node.name, ' = ', path.call(print, 'value')];
     }
 
+    case NodeTypes.RenderMarkup: {
+      const snippet = path.call(print, 'snippet');
+      const doc: Doc = [snippet];
+      if (node.variable) {
+        const whitespace = node.alias ? line : ' ';
+        doc.push(whitespace, path.call(print, 'variable'));
+      }
+      if (node.alias) {
+        doc.push(' ', 'as', ' ', node.alias);
+      }
+      if (node.args.length > 0) {
+        doc.push(
+          ',',
+          line,
+          join(
+            [',', line],
+            path.map((p) => print(p), 'args'),
+          ),
+        );
+      }
+      return doc;
+    }
+
+    case NodeTypes.RenderVariableExpression: {
+      return [node.kind, ' ', path.call(print, 'name')];
+    }
+
     case NodeTypes.LiquidVariable: {
       const name = path.call(print, 'expression');
       let filters: Doc = '';

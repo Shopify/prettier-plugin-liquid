@@ -34,6 +34,8 @@ export enum NodeTypes {
   VariableLookup = 'VariableLookup',
 
   AssignMarkup = 'AssignMarkup',
+  RenderMarkup = 'RenderMarkup',
+  RenderVariableExpression = 'RenderVariableExpression',
 }
 
 export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {

@@ -348,6 +348,96 @@ describe('Unit: toLiquidHtmlAST', () => {
         expectPosition(ast, 'children.0.markup.value.expression');
       });
     });
+
+    it('should parse render tags', () => {
+      [
+        {
+          expression: `"snippet"`,
+          snippetType: 'String',
+          alias: null,
+          renderVariableExpression: null,
+          namedArguments: [],
+        },
+        {
+          expression: `"snippet" as foo`,
+          snippetType: 'String',
+          alias: 'foo',
+          renderVariableExpression: null,
+          namedArguments: [],
+        },
+        {
+          expression: `"snippet" with "string" as foo`,
+          snippetType: 'String',
+          alias: 'foo',
+          renderVariableExpression: {
+            kind: 'with',
+            name: {
+              type: 'String',
+            },
+          },
+          namedArguments: [],
+        },
+        {
+          expression: `"snippet" for products as product`,
+          snippetType: 'String',
+          alias: 'product',
+          renderVariableExpression: {
+            kind: 'for',
+            name: {
+              type: 'VariableLookup',
+            },
+          },
+          namedArguments: [],
+        },
+        {
+          expression: `variable with "string" as foo, key1: val1, key2: "hi"`,
+          snippetType: 'VariableLookup',
+          alias: 'foo',
+          renderVariableExpression: {
+            kind: 'with',
+            name: {
+              type: 'String',
+            },
+          },
+          namedArguments: [
+            { name: 'key1', valueType: 'VariableLookup' },
+            { name: 'key2', valueType: 'String' },
+          ],
+        },
+      ].forEach(({ expression, snippetType, renderVariableExpression, alias, namedArguments }) => {
+        ast = toLiquidHtmlAST(`{% render ${expression} -%}`);
+        expectPath(ast, 'children.0.type').to.equal('LiquidTag');
+        expectPath(ast, 'children.0.name').to.equal('render');
+        expectPath(ast, 'children.0.markup.type').to.equal('RenderMarkup');
+        expectPath(ast, 'children.0.markup.snippet.type').to.equal(snippetType);
+        if (renderVariableExpression) {
+          expectPath(ast, 'children.0.markup.variable.type').to.equal('RenderVariableExpression');
+          expectPath(ast, 'children.0.markup.variable.kind').to.equal(
+            renderVariableExpression.kind,
+          );
+          expectPath(ast, 'children.0.markup.variable.name.type').to.equal(
+            renderVariableExpression.name.type,
+          );
+          expectPosition(ast, 'children.0.markup.variable');
+          expectPosition(ast, 'children.0.markup.variable.name');
+        } else {
+          expectPath(ast, 'children.0.markup.variable').to.equal(null);
+        }
+        expectPath(ast, 'children.0.markup.alias').to.equal(alias);
+        expectPath(ast, 'children.0.markup.args').to.have.lengthOf(namedArguments.length);
+        namedArguments.forEach(({ name, valueType }, i) => {
+          expectPath(ast, `children.0.markup.args.${i}.type`).to.equal('NamedArgument');
+          expectPath(ast, `children.0.markup.args.${i}.name`).to.equal(name);
+          expectPath(ast, `children.0.markup.args.${i}.value.type`).to.equal(valueType);
+          expectPosition(ast, `children.0.markup.args.${i}`);
+          expectPosition(ast, `children.0.markup.args.${i}.value`);
+        });
+        expectPath(ast, 'children.0.whitespaceStart').to.equal('');
+        expectPath(ast, 'children.0.whitespaceEnd').to.equal('-');
+        expectPosition(ast, 'children.0');
+        expectPosition(ast, 'children.0.markup');
+      });
+    });
   });
 
   it('should parse a basic text node into a TextNode', () => {

@@ -33,6 +33,8 @@ export enum ConcreteNodeTypes {
   Range = 'Range',
 
   AssignMarkup = 'AssignMarkup',
+  RenderMarkup = 'RenderMarkup',
+  RenderVariableExpression = 'RenderVariableExpression',
 }
 
 export const LiquidLiteralValues = {
@@ -147,7 +149,9 @@ export type ConcreteLiquidTag =
   | ConcreteLiquidTagBaseCase;
 export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagAssign
-  | ConcreteLiquidTagEcho;
+  | ConcreteLiquidTagEcho
+  | ConcreteLiquidTagRender
+  | ConcreteLiquidTagInclude;
 
 export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
@@ -159,13 +163,32 @@ export interface ConcreteLiquidTagBaseCase
   extends ConcreteLiquidTagNode<string, string> {}
 export interface ConcreteLiquidTagEcho
   extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
+
 export interface ConcreteLiquidTagAssign
   extends ConcreteLiquidTagNode<'assign', ConcreteLiquidTagAssignMarkup> {}
-
 export interface ConcreteLiquidTagAssignMarkup
   extends ConcreteBasicNode<ConcreteNodeTypes.AssignMarkup> {
   name: string;
   value: ConcreteLiquidVariable;
+}
+
+export interface ConcreteLiquidTagRender
+  extends ConcreteLiquidTagNode<'render', ConcreteLiquidTagRenderMarkup> {}
+export interface ConcreteLiquidTagInclude
+  extends ConcreteLiquidTagNode<'include', ConcreteLiquidTagRenderMarkup> {}
+
+export interface ConcreteLiquidTagRenderMarkup
+  extends ConcreteBasicNode<ConcreteNodeTypes.RenderMarkup> {
+  snippet: ConcreteStringLiteral | ConcreteLiquidVariableLookup;
+  alias: string | null;
+  variable: ConcreteRenderVariableExpression | null;
+  args: ConcreteLiquidNamedArgument[];
+}
+
+export interface ConcreteRenderVariableExpression
+  extends ConcreteBasicNode<ConcreteNodeTypes.RenderVariableExpression> {
+  kind: 'for' | 'with';
+  name: ConcreteLiquidExpression;
 }
 
 export interface ConcreteLiquidDrop
@@ -402,13 +425,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidTagBaseCase: 0,
     liquidTagEcho: 0,
     liquidTagAssign: 0,
+    liquidTagRender: 0,
+    liquidTagInclude: 0,
     liquidTagRule: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
       markup(nodes: Node[]) {
         const markupNode = nodes[5];
         const nameNode = nodes[3];
-        if (['echo', 'assign'].includes(nameNode.sourceString)) {
+        if (
+          ['echo', 'assign', 'render', 'include'].includes(
+            nameNode.sourceString,
+          )
+        ) {
           return markupNode.toAST((this as any).args.mapping);
         }
         return markupNode.sourceString.trim();
@@ -426,6 +455,25 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+    liquidTagRenderMarkup: {
+      type: ConcreteNodeTypes.RenderMarkup,
+      snippet: 0,
+      variable: 1,
+      alias: 2,
+      args: 4,
+      locStart,
+      locEnd,
+    },
+    snippetExpression: 0,
+    renderVariableExpression: {
+      type: ConcreteNodeTypes.RenderVariableExpression,
+      kind: 1,
+      name: 3,
+      locStart,
+      locEnd,
+    },
+    renderAliasExpression: 3,
+    renderArguments: 0,
 
     liquidDrop: {
       type: ConcreteNodeTypes.LiquidDrop,
@@ -473,6 +521,8 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       type: ConcreteNodeTypes.NamedArgument,
       name: 0,
       value: 4,
+      locStart,
+      locEnd,
     },
 
     liquidString: 0,
@@ -522,6 +572,13 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       type: ConcreteNodeTypes.VariableLookup,
       name: 0,
       lookups: 1,
+      locStart,
+      locEnd,
+    },
+    variableSegmentAsLookup: {
+      type: ConcreteNodeTypes.VariableLookup,
+      name: 0,
+      lookups: () => [],
       locStart,
       locEnd,
     },

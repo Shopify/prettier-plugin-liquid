@@ -22,6 +22,8 @@ import {
   ConcreteLiquidTagNamed,
   ConcreteLiquidTag,
   ConcreteLiquidTagAssignMarkup,
+  ConcreteLiquidTagRenderMarkup,
+  ConcreteRenderVariableExpression,
 } from '~/parser/cst';
 import { isLiquidHtmlNode, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
@@ -43,6 +45,8 @@ export type LiquidHtmlNode =
   | LiquidFilter
   | LiquidNamedArgument
   | AssignMarkup
+  | RenderMarkup
+  | RenderVariableExpression
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
@@ -93,7 +97,11 @@ export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
 }
 
 export type LiquidTag = LiquidTagNamed | LiquidTagBaseCase;
-export type LiquidTagNamed = LiquidTagAssign | LiquidTagEcho;
+export type LiquidTagNamed =
+  | LiquidTagAssign
+  | LiquidTagEcho
+  | LiquidTagInclude
+  | LiquidTagRender;
 
 export interface LiquidTagNode<Name, Markup>
   extends ASTNode<NodeTypes.LiquidTag> {
@@ -115,14 +123,31 @@ export interface LiquidTagNode<Name, Markup>
   blockEndPosition?: Position;
 }
 
-export interface LiquidTagAssign
-  extends LiquidTagNode<'assign', AssignMarkup> {}
 export interface LiquidTagEcho extends LiquidTagNode<'echo', LiquidVariable> {}
 export interface LiquidTagBaseCase extends LiquidTagNode<string, string> {}
 
+export interface LiquidTagAssign
+  extends LiquidTagNode<'assign', AssignMarkup> {}
 export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
   name: string;
   value: LiquidVariable;
+}
+export interface LiquidTagRender
+  extends LiquidTagNode<'render', RenderMarkup> {}
+export interface LiquidTagInclude
+  extends LiquidTagNode<'include', RenderMarkup> {}
+
+export interface RenderMarkup extends ASTNode<NodeTypes.RenderMarkup> {
+  snippet: LiquidString | LiquidVariableLookup;
+  alias: string | null;
+  variable: RenderVariableExpression | null;
+  args: LiquidNamedArgument[];
+}
+
+export interface RenderVariableExpression
+  extends ASTNode<NodeTypes.RenderVariableExpression> {
+  kind: 'for' | 'with';
+  name: LiquidExpression;
 }
 
 export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {
@@ -698,6 +723,14 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
       };
     }
+    case 'include':
+    case 'render': {
+      return {
+        name: node.name,
+        markup: toRenderMarkup(node.markup, source),
+        ...liquidTagBaseAttributes(node, source),
+      };
+    }
     default: {
       return assertNever(node);
     }
@@ -712,6 +745,37 @@ function toAssignMarkup(
     type: NodeTypes.AssignMarkup,
     name: node.name,
     value: toLiquidVariable(node.value, source),
+    position: position(node),
+    source,
+  };
+}
+
+function toRenderMarkup(
+  node: ConcreteLiquidTagRenderMarkup,
+  source: string,
+): RenderMarkup {
+  return {
+    type: NodeTypes.RenderMarkup,
+    snippet: toExpression(node.snippet, source) as
+      | LiquidString
+      | LiquidVariableLookup,
+    alias: node.alias,
+    variable: toRenderVariableExpression(node.variable, source),
+    args: node.args.map((arg) => toNamedArgument(arg, source)),
+    position: position(node),
+    source,
+  };
+}
+
+function toRenderVariableExpression(
+  node: ConcreteRenderVariableExpression | null,
+  source: string,
+): RenderVariableExpression | null {
+  if (!node) return null;
+  return {
+    type: NodeTypes.RenderVariableExpression,
+    kind: node.kind,
+    name: toExpression(node.name, source),
     position: position(node),
     source,
   };
