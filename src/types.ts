@@ -22,6 +22,7 @@ export enum NodeTypes {
   AttrUnquoted = 'AttrUnquoted',
   AttrEmpty = 'AttrEmpty',
   TextNode = 'TextNode',
+  YAMLFrontmatter = 'YAMLFrontmatter',
 
   LiquidVariable = 'LiquidVariable',
   LiquidFilter = 'LiquidFilter',

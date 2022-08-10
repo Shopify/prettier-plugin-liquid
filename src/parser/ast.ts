@@ -31,6 +31,7 @@ interface HasPosition {
 
 export type LiquidHtmlNode =
   | DocumentNode
+  | YAMLFrontmatter
   | LiquidNode
   | HtmlNode
   | AttributeNode
@@ -43,6 +44,10 @@ export type LiquidHtmlNode =
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
   children: LiquidHtmlNode[];
   name: '#document';
+}
+
+export interface YAMLFrontmatter extends ASTNode<NodeTypes.YAMLFrontmatter> {
+  body: string;
 }
 
 export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop | LiquidBranch;
@@ -568,6 +573,16 @@ export function cstToAst(
         abstractNode.value = value;
         abstractNode.attributePosition = toAttributePosition(node, value);
         builder.push(abstractNode);
+        break;
+      }
+
+      case ConcreteNodeTypes.YAMLFrontmatter: {
+        builder.push({
+          type: NodeTypes.YAMLFrontmatter,
+          body: node.body,
+          position: position(node),
+          source,
+        });
         break;
       }
 

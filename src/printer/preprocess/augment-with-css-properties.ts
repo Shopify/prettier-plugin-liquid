@@ -80,6 +80,9 @@ function getCssDisplay(
     case NodeTypes.Document:
       return 'block';
 
+    case NodeTypes.YAMLFrontmatter:
+      return 'block';
+
     case NodeTypes.LiquidVariable:
     case NodeTypes.LiquidFilter:
     case NodeTypes.NamedArgument:
@@ -110,6 +113,7 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
     case NodeTypes.TextNode:
       return CSS_WHITE_SPACE_DEFAULT;
 
+    case NodeTypes.YAMLFrontmatter:
     case NodeTypes.LiquidRawTag:
       return 'pre';
 

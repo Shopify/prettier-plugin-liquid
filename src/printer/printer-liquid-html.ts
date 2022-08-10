@@ -419,6 +419,10 @@ function printNode(
       return printTextNode(path as AstPath<TextNode>, options, print);
     }
 
+    case NodeTypes.YAMLFrontmatter: {
+      return ['---', hardline, node.body, '---'];
+    }
+
     case NodeTypes.String: {
       const preferredQuote = options.liquidSingleQuote ? `'` : `"`;
       const valueHasQuotes = node.value.includes(preferredQuote);
