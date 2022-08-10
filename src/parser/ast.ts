@@ -102,7 +102,8 @@ export type LiquidTagNamed =
   | LiquidTagAssign
   | LiquidTagEcho
   | LiquidTagInclude
-  | LiquidTagRender;
+  | LiquidTagRender
+  | LiquidTagSection;
 
 export interface LiquidTagNode<Name, Markup>
   extends ASTNode<NodeTypes.LiquidTag> {
@@ -124,8 +125,8 @@ export interface LiquidTagNode<Name, Markup>
   blockEndPosition?: Position;
 }
 
-export interface LiquidTagEcho extends LiquidTagNode<'echo', LiquidVariable> {}
 export interface LiquidTagBaseCase extends LiquidTagNode<string, string> {}
+export interface LiquidTagEcho extends LiquidTagNode<'echo', LiquidVariable> {}
 
 export interface LiquidTagAssign
   extends LiquidTagNode<'assign', AssignMarkup> {}
@@ -137,6 +138,9 @@ export interface LiquidTagRender
   extends LiquidTagNode<'render', RenderMarkup> {}
 export interface LiquidTagInclude
   extends LiquidTagNode<'include', RenderMarkup> {}
+
+export interface LiquidTagSection
+  extends LiquidTagNode<'section', LiquidString> {}
 
 export interface RenderMarkup extends ASTNode<NodeTypes.RenderMarkup> {
   snippet: LiquidString | LiquidVariableLookup;
@@ -729,6 +733,13 @@ function toNamedLiquidTag(
       return {
         name: node.name,
         markup: toRenderMarkup(node.markup, source),
+        ...liquidTagBaseAttributes(node, source),
+      };
+    }
+    case 'section': {
+      return {
+        name: node.name,
+        markup: toExpression(node.markup, source) as LiquidString,
         ...liquidTagBaseAttributes(node, source),
       };
     }

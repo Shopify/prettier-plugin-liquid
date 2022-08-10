@@ -150,8 +150,9 @@ export type ConcreteLiquidTag =
 export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagAssign
   | ConcreteLiquidTagEcho
+  | ConcreteLiquidTagInclude
   | ConcreteLiquidTagRender
-  | ConcreteLiquidTagInclude;
+  | ConcreteLiquidTagSection;
 
 export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
@@ -163,6 +164,8 @@ export interface ConcreteLiquidTagBaseCase
   extends ConcreteLiquidTagNode<string, string> {}
 export interface ConcreteLiquidTagEcho
   extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
+export interface ConcreteLiquidTagSection
+  extends ConcreteLiquidTagNode<'section', ConcreteStringLiteral> {}
 
 export interface ConcreteLiquidTagAssign
   extends ConcreteLiquidTagNode<'assign', ConcreteLiquidTagAssignMarkup> {}
@@ -427,6 +430,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidTagAssign: 0,
     liquidTagRender: 0,
     liquidTagInclude: 0,
+    liquidTagSection: 0,
     liquidTagRule: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
@@ -434,7 +438,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
         const markupNode = nodes[5];
         const nameNode = nodes[3];
         if (
-          ['echo', 'assign', 'render', 'include'].includes(
+          ['echo', 'assign', 'render', 'include', 'section'].includes(
             nameNode.sourceString,
           )
         ) {
@@ -448,6 +452,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
     liquidTagEchoMarkup: 0,
+    liquidTagSectionMarkup: 0,
     liquidTagAssignMarkup: {
       type: ConcreteNodeTypes.AssignMarkup,
       name: 0,
@@ -455,6 +460,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
     liquidTagRenderMarkup: {
       type: ConcreteNodeTypes.RenderMarkup,
       snippet: 0,

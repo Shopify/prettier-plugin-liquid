@@ -97,35 +97,28 @@ function printNamedLiquidBlock(
 ): Doc {
   const node = path.getValue();
 
+  const tag = (whitespace: Doc) =>
+    group([
+      '{%',
+      whitespaceStart,
+      ' ',
+      node.name,
+      ' ',
+      indent(path.call((p) => print(p), 'markup')),
+      whitespace,
+      whitespaceEnd,
+      '%}',
+    ]);
+
   switch (node.name) {
     case 'echo': {
       const whitespace = node.markup.filters.length > 0 ? line : ' ';
-      return group([
-        '{%',
-        whitespaceStart,
-        ' ',
-        'echo',
-        ' ',
-        indent(path.call((p) => print(p), 'markup')),
-        whitespace,
-        whitespaceEnd,
-        '%}',
-      ]);
+      return tag(whitespace);
     }
 
     case 'assign': {
       const whitespace = node.markup.value.filters.length > 0 ? line : ' ';
-      return group([
-        '{%',
-        whitespaceStart,
-        ' ',
-        node.name,
-        ' ',
-        indent(path.call((p) => print(p), 'markup')),
-        whitespace,
-        whitespaceEnd,
-        '%}',
-      ]);
+      return tag(whitespace);
     }
 
     case 'include':
@@ -135,17 +128,11 @@ function printNamedLiquidBlock(
         markup.args.length > 0 || (markup.variable && markup.alias)
           ? line
           : ' ';
-      return group([
-        '{%',
-        whitespaceStart,
-        ' ',
-        node.name,
-        ' ',
-        indent(path.call((p) => print(p), 'markup')),
-        whitespace,
-        whitespaceEnd,
-        '%}',
-      ]);
+      return tag(whitespace);
+    }
+
+    case 'section': {
+      return tag(' ');
     }
 
     default: {
