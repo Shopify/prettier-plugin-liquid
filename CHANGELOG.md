@@ -1,4 +1,9 @@
 
+0.2.1 / 2022-08-10
+==================
+
+  * Add partial support for Liquid inside YAML frontmatter ([#71](https://github.com/Shopify/prettier-plugin-liquid/issues/71))
+
 0.2.0 / 2022-08-08
 ==================
 
