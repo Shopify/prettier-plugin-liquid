@@ -1,6 +1,9 @@
 LiquidHTML {
   Node
-    = (HtmlNode | liquidNode | TextNode)*
+    = yamlFrontmatter? (HtmlNode | liquidNode | TextNode)*
+
+  yamlFrontmatter =
+    "---" newline anyExceptStar<"---"> "---" newline
 
   HtmlNode =
     | HtmlComment
@@ -198,4 +201,5 @@ LiquidHTML {
   openControl = "<" | "{{" | "{%"
   controls = "\u{007F}".."\u{009F}"
   noncharacters = "\u{FDD0}".."\u{FDEF}"
+  newline = "\r"? "\n"
 }

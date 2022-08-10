@@ -21,6 +21,7 @@ export enum ConcreteNodeTypes {
   LiquidTagOpen = 'LiquidTagOpen',
   LiquidTagClose = 'LiquidTagClose',
   TextNode = 'TextNode',
+  YAMLFrontmatter = 'YAMLFrontmatter',
 
   LiquidVariable = 'LiquidVariable',
   LiquidFilter = 'LiquidFilter',
@@ -223,10 +224,16 @@ export interface ConcreteTextNode
   value: string;
 }
 
+export interface ConcreteYamlFrontmatterNode
+  extends ConcreteBasicNode<ConcreteNodeTypes.YAMLFrontmatter> {
+  body: string;
+}
+
 export type LiquidHtmlConcreteNode =
   | ConcreteHtmlNode
   | ConcreteLiquidNode
-  | ConcreteTextNode;
+  | ConcreteTextNode
+  | ConcreteYamlFrontmatterNode;
 
 export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
 
@@ -498,6 +505,23 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     TextNode: textNode,
+
+    yamlFrontmatter: {
+      type: ConcreteNodeTypes.YAMLFrontmatter,
+      body: 2,
+      locStart,
+      locEnd,
+    },
+
+    Node(frontmatter: Node, nodes: Node) {
+      const self = this as any;
+      const frontmatterNode =
+        frontmatter.sourceString.length === 0
+          ? []
+          : [frontmatter.toAST(self.args.mapping)];
+
+      return frontmatterNode.concat(nodes.toAST(self.args.mapping));
+    },
 
     // Missing from ohm-js default rules. Those turn listOf rules into arrays.
     listOf: 0,

@@ -8,7 +8,8 @@ import { LiquidParserOptions } from '../src/types';
 const PARAGRAPH_SPLITTER =
   /(?:\r?\n){2,}(?=\/\/|It|When|If|focus|debug|skip|<)/i;
 
-const TEST_MESSAGE = /^(\/\/|It|When|If|focus|debug|skip)[^<{]*/i;
+const TEST_MESSAGE =
+  /^(\/\/|It|When|If|focus|debug|skip)((\s|\S)(?!<)(?!{)(?!---))*./i;
 
 function testMessage(input: string, actual: string) {
   return [
@@ -39,19 +40,20 @@ export function assertFormattedEqualsFixed(
 ) {
   const source = readFile(dirname, 'index.liquid');
   const expectedResults = readFile(dirname, 'fixed.liquid');
+  const trimEnd = (s: string) => s.trimEnd();
 
-  const chunks = source.split(PARAGRAPH_SPLITTER);
-  const expectedChunks = expectedResults.split(PARAGRAPH_SPLITTER);
+  const chunks = source.split(PARAGRAPH_SPLITTER).map(trimEnd);
+  const expectedChunks = expectedResults.split(PARAGRAPH_SPLITTER).map(trimEnd);
 
   for (let i = 0; i < chunks.length; i++) {
     const src = chunks[i];
     const testConfig = getTestSetup(src, i);
     const test = () => {
       const testOptions = merge(options, testConfig.prettierOptions);
-      const input = src.replace(TEST_MESSAGE, '');
+      const input = src.replace(TEST_MESSAGE, '').trimStart();
       if (testConfig.debug) debug(input, testOptions);
       let actual = format(input, testOptions).trimEnd();
-      let expected = expectedChunks[i].replace(TEST_MESSAGE, '').trimEnd();
+      let expected = expectedChunks[i].replace(TEST_MESSAGE, '').trimStart();
 
       if (TEST_IDEMPOTENCE) {
         actual = format(actual, testOptions).trimEnd();
