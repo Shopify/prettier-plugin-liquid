@@ -75,7 +75,8 @@ LiquidHTML {
   LiquidNode = liquidNode
   liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag | liquidInlineComment
 
-  liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
+  liquidTagOpen = liquidTagOpenBaseCase
+  liquidTagOpenBaseCase = liquidTagOpenRule<blockName, tagMarkup>
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
     | liquidTagEcho
@@ -85,8 +86,13 @@ LiquidHTML {
     | liquidTagSection
     | liquidTagBaseCase
 
+  // These two are the same but transformed differently
+  liquidTagRule<name, markup> =
+    "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+  liquidTagOpenRule<name, markup> =
+    "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+
   liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
-  liquidTagRule<name, markup> = "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
 
   liquidTagEcho = liquidTagRule<"echo", liquidTagEchoMarkup>
   liquidTagEchoMarkup = liquidVariable

@@ -405,10 +405,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       blockEndLocEnd: (tokens: Node[]) => tokens[16].source.endIdx,
     },
 
-    liquidTagOpen: {
+    liquidTagOpen: 0,
+    liquidTagOpenBaseCase: 0,
+    liquidTagOpenRule: {
       type: ConcreteNodeTypes.LiquidTagOpen,
       name: 3,
-      markup: markup(5),
+      markup(nodes: Node[]) {
+        const markupNode = nodes[5];
+        // const nameNode = nodes[3];
+        // if ([].includes(nameNode.sourceString)) {
+        //   return markupNode.toAST((this as any).args.mapping);
+        // }
+        return markupNode.sourceString.trim();
+      },
       whitespaceStart: 1,
       whitespaceEnd: 6,
       locStart,
