@@ -20,7 +20,7 @@ import {
   ConcreteLiquidExpression,
   ConcreteLiquidNamedArgument,
 } from '~/parser/cst';
-import { NodeTypes, Position } from '~/types';
+import { isLiquidHtmlNode, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
 
@@ -812,21 +812,19 @@ export function walk(
   fn: (ast: LiquidHtmlNode, parentNode: LiquidHtmlNode | undefined) => void,
   parentNode?: LiquidHtmlNode,
 ) {
-  for (const key of ['children', 'attributes']) {
-    if (key in ast) {
-      (ast as any)[key].forEach((node: LiquidHtmlNode) => walk(node, fn, ast));
+  for (const key of Object.keys(ast)) {
+    if (
+      ['parentNode', 'prev', 'next', 'firstChild', 'lastChild'].includes(key)
+    ) {
+      continue;
     }
-  }
-
-  if ('value' in ast) {
-    if (Array.isArray(ast.value)) {
-      ast.value.forEach((node) => walk(node, fn, ast));
-    }
-  }
-
-  if ('name' in ast) {
-    if (ast.name && typeof ast.name !== 'string' && ast.name.type) {
-      fn(ast.name, ast);
+    const value = (ast as any)[key];
+    if (Array.isArray(value)) {
+      value
+        .filter(isLiquidHtmlNode)
+        .forEach((node: LiquidHtmlNode) => walk(node, fn, ast));
+    } else if (isLiquidHtmlNode(value)) {
+      walk(value, fn, ast);
     }
   }
 

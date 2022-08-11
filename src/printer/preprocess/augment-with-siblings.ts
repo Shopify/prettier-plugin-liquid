@@ -4,9 +4,8 @@ import {
   LiquidHtmlNode,
   WithParent,
   WithSiblings,
+  isLiquidHtmlNode,
 } from '~/types';
-
-const COLLECTION_KEYS = ['children', 'attributes', 'value'];
 
 export function prev(node: AugmentedNode<WithParent>) {
   if (!node.parentNode) return;
@@ -23,22 +22,21 @@ export function next(node: AugmentedNode<WithParent>) {
 function parentCollection(
   node: AugmentedNode<WithParent>,
 ): AugmentedNode<WithParent>[] {
-  if (
-    !node.parentNode ||
-    ('name' in node.parentNode && node.parentNode.name === node)
-  ) {
+  if (!node.parentNode) {
     return [];
   }
 
-  for (const key of COLLECTION_KEYS) {
+  for (const key of Object.keys(node.parentNode)) {
     // can't figure out the typing for this and I am done wasting my time.
-    if (
-      key in node.parentNode &&
-      Array.isArray((node as any).parentNode[key])
-    ) {
-      if ((node as any).parentNode[key].indexOf(node) !== -1) {
-        return (node as any).parentNode[key];
+    const parentValue = (node as any).parentNode[key];
+    if (Array.isArray(parentValue)) {
+      if (parentValue.indexOf(node) !== -1) {
+        return parentValue;
       }
+    }
+
+    if (isLiquidHtmlNode(parentValue) && parentValue === node) {
+      return [];
     }
   }
 

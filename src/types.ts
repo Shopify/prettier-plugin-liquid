@@ -34,6 +34,15 @@ export enum NodeTypes {
   VariableLookup = 'VariableLookup',
 }
 
+export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'type' in value &&
+    NodeTypes.hasOwnProperty(value.type)
+  );
+}
+
 export const HtmlNodeTypes = [
   NodeTypes.HtmlElement,
   NodeTypes.HtmlRawNode,

@@ -26,6 +26,9 @@ export const augmentWithWhitespaceHelpers: Augment<RequiredAugmentations> = (
   _options,
   node,
 ) => {
+  if (node.cssDisplay === 'should not be relevant') {
+    return;
+  }
   const augmentations: WithWhitespaceHelpers = {
     isDanglingWhitespaceSensitive: isDanglingWhitespaceSensitiveNode(node),
     isIndentationSensitive: isIndentationSensitiveNode(node),

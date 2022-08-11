@@ -9,7 +9,7 @@ export const augmentWithParent: Augment<{}> = (_options, node, parentNode) => {
 
   // Adding lazy property for debugging. Not added to the
   // types so that we don't use it officially.
-  Object.defineProperty(node, 'rawSource', {
+  Object.defineProperty(node, '_rawSource', {
     get() {
       return this.source.slice(this.position.start, this.position.end);
     },
