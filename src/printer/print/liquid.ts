@@ -8,6 +8,7 @@ import {
   LiquidPrinterArgs,
   LiquidTag,
   LiquidTagNamed,
+  NamedTags,
   NodeTypes,
 } from '~/types';
 import { isBranchedTag } from '~/parser/ast';
@@ -111,18 +112,18 @@ function printNamedLiquidBlock(
     ]);
 
   switch (node.name) {
-    case 'echo': {
+    case NamedTags.echo: {
       const whitespace = node.markup.filters.length > 0 ? line : ' ';
       return tag(whitespace);
     }
 
-    case 'assign': {
+    case NamedTags.assign: {
       const whitespace = node.markup.value.filters.length > 0 ? line : ' ';
       return tag(whitespace);
     }
 
-    case 'include':
-    case 'render': {
+    case NamedTags.include:
+    case NamedTags.render: {
       const markup = node.markup;
       const whitespace =
         markup.args.length > 0 || (markup.variable && markup.alias)
@@ -131,7 +132,7 @@ function printNamedLiquidBlock(
       return tag(whitespace);
     }
 
-    case 'section': {
+    case NamedTags.section: {
       return tag(' ');
     }
 

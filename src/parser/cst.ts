@@ -3,6 +3,7 @@ import { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
+import { NamedTags } from '~/types';
 
 export enum ConcreteNodeTypes {
   HtmlComment = 'HtmlComment',
@@ -163,12 +164,15 @@ export interface ConcreteLiquidTagNode<Name, Markup>
 export interface ConcreteLiquidTagBaseCase
   extends ConcreteLiquidTagNode<string, string> {}
 export interface ConcreteLiquidTagEcho
-  extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
+  extends ConcreteLiquidTagNode<NamedTags.echo, ConcreteLiquidVariable> {}
 export interface ConcreteLiquidTagSection
-  extends ConcreteLiquidTagNode<'section', ConcreteStringLiteral> {}
+  extends ConcreteLiquidTagNode<NamedTags.section, ConcreteStringLiteral> {}
 
 export interface ConcreteLiquidTagAssign
-  extends ConcreteLiquidTagNode<'assign', ConcreteLiquidTagAssignMarkup> {}
+  extends ConcreteLiquidTagNode<
+    NamedTags.assign,
+    ConcreteLiquidTagAssignMarkup
+  > {}
 export interface ConcreteLiquidTagAssignMarkup
   extends ConcreteBasicNode<ConcreteNodeTypes.AssignMarkup> {
   name: string;
@@ -176,9 +180,15 @@ export interface ConcreteLiquidTagAssignMarkup
 }
 
 export interface ConcreteLiquidTagRender
-  extends ConcreteLiquidTagNode<'render', ConcreteLiquidTagRenderMarkup> {}
+  extends ConcreteLiquidTagNode<
+    NamedTags.render,
+    ConcreteLiquidTagRenderMarkup
+  > {}
 export interface ConcreteLiquidTagInclude
-  extends ConcreteLiquidTagNode<'include', ConcreteLiquidTagRenderMarkup> {}
+  extends ConcreteLiquidTagNode<
+    NamedTags.include,
+    ConcreteLiquidTagRenderMarkup
+  > {}
 
 export interface ConcreteLiquidTagRenderMarkup
   extends ConcreteBasicNode<ConcreteNodeTypes.RenderMarkup> {
@@ -446,11 +456,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       markup(nodes: Node[]) {
         const markupNode = nodes[5];
         const nameNode = nodes[3];
-        if (
-          ['echo', 'assign', 'render', 'include', 'section'].includes(
-            nameNode.sourceString,
-          )
-        ) {
+        if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
           return markupNode.toAST((this as any).args.mapping);
         }
         return markupNode.sourceString.trim();

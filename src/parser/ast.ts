@@ -25,10 +25,10 @@ import {
   ConcreteLiquidTagRenderMarkup,
   ConcreteRenderVariableExpression,
 } from '~/parser/cst';
-import { isLiquidHtmlNode, NodeTypes, Position } from '~/types';
+import { isLiquidHtmlNode, NamedTags, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
-import { TAGS_WITHOUT_MARKUP } from './grammar';
+import { TAGS_WITHOUT_MARKUP } from '~/parser/grammar';
 
 interface HasPosition {
   locStart: number;
@@ -126,21 +126,22 @@ export interface LiquidTagNode<Name, Markup>
 }
 
 export interface LiquidTagBaseCase extends LiquidTagNode<string, string> {}
-export interface LiquidTagEcho extends LiquidTagNode<'echo', LiquidVariable> {}
+export interface LiquidTagEcho
+  extends LiquidTagNode<NamedTags.echo, LiquidVariable> {}
 
 export interface LiquidTagAssign
-  extends LiquidTagNode<'assign', AssignMarkup> {}
+  extends LiquidTagNode<NamedTags.assign, AssignMarkup> {}
 export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
   name: string;
   value: LiquidVariable;
 }
 export interface LiquidTagRender
-  extends LiquidTagNode<'render', RenderMarkup> {}
+  extends LiquidTagNode<NamedTags.render, RenderMarkup> {}
 export interface LiquidTagInclude
-  extends LiquidTagNode<'include', RenderMarkup> {}
+  extends LiquidTagNode<NamedTags.include, RenderMarkup> {}
 
 export interface LiquidTagSection
-  extends LiquidTagNode<'section', LiquidString> {}
+  extends LiquidTagNode<NamedTags.section, LiquidString> {}
 
 export interface RenderMarkup extends ASTNode<NodeTypes.RenderMarkup> {
   snippet: LiquidString | LiquidVariableLookup;
@@ -714,29 +715,29 @@ function toNamedLiquidTag(
   source: string,
 ): LiquidTagNamed {
   switch (node.name) {
-    case 'echo': {
+    case NamedTags.echo: {
       return {
-        name: 'echo',
+        name: NamedTags.echo,
         markup: toLiquidVariable(node.markup, source),
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    case 'assign': {
+    case NamedTags.assign: {
       return {
-        name: 'assign',
+        name: NamedTags.assign,
         markup: toAssignMarkup(node.markup, source),
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    case 'include':
-    case 'render': {
+    case NamedTags.include:
+    case NamedTags.render: {
       return {
         name: node.name,
         markup: toRenderMarkup(node.markup, source),
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    case 'section': {
+    case NamedTags.section: {
       return {
         name: node.name,
         markup: toExpression(node.markup, source) as LiquidString,
