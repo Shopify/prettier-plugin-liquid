@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { LiquidHtmlCST, toLiquidHtmlCST } from '~/parser/cst';
 import { BLOCKS, VOID_ELEMENTS } from '~/parser/grammar';
+import { NamedTags } from '~/types';
 import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlCST(text)', () => {
@@ -557,6 +558,26 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     });
   });
 
+  describe('Case: LiquidTagOpen', () => {
+    it('should parse the form tag open markup as arguments', () => {
+      [
+        { expression: `product`, args: [{ type: 'VariableLookup' }] },
+        { expression: `"product"`, args: [{ type: 'String' }] },
+      ].forEach(({ expression, args }) => {
+        cst = toLiquidHtmlCST(`{% form ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.name').to.equal('form');
+        expectPath(cst, '0.markup').to.have.lengthOf(args.length, expression);
+        args.forEach((arg, i) => {
+          expectPath(cst, `0.markup.${i}.type`).to.equal(arg.type);
+          expectLocation(cst, `0.markup.${i}`);
+        });
+        expectPath(cst, '0.whitespaceEnd').to.equal('-');
+        expectLocation(cst, '0');
+      });
+    });
+  });
+
   describe('Case: LiquidNode', () => {
     it('should parse raw tags', () => {
       ['style', 'raw'].forEach((raw) => {
@@ -611,7 +632,9 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.name').to.equal(block);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectPath(cst, '0.markup').to.equal('args');
+        if (!NamedTags.hasOwnProperty(block)) {
+          expectPath(cst, '0.markup').to.equal('args');
+        }
         expectPath(cst, '1.type').to.equal('LiquidTagClose');
         expectPath(cst, '1.name').to.equal(block);
         expectPath(cst, '1.whitespaceStart').to.equal('-');

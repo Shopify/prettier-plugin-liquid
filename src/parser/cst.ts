@@ -134,11 +134,22 @@ export interface ConcreteLiquidRawTag
   blockEndLocEnd: number;
 }
 
-export interface ConcreteLiquidTagOpen
+export type ConcreteLiquidTagOpen =
+  | ConcreteLiquidTagOpenBaseCase
+  | ConcreteLiquidTagOpenNamed;
+export type ConcreteLiquidTagOpenNamed = ConcreteLiquidTagOpenForm;
+
+export interface ConcreteLiquidTagOpenNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagOpen> {
-  name: string;
-  markup: string;
+  name: Name;
+  markup: Markup;
 }
+
+export interface ConcreteLiquidTagOpenBaseCase
+  extends ConcreteLiquidTagOpenNode<string, string> {}
+
+export interface ConcreteLiquidTagOpenForm
+  extends ConcreteLiquidTagOpenNode<NamedTags.form, ConcreteLiquidArgument[]> {}
 
 export interface ConcreteLiquidTagClose
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagClose> {
@@ -422,10 +433,10 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       name: 3,
       markup(nodes: Node[]) {
         const markupNode = nodes[5];
-        // const nameNode = nodes[3];
-        // if ([].includes(nameNode.sourceString)) {
-        //   return markupNode.toAST((this as any).args.mapping);
-        // }
+        const nameNode = nodes[3];
+        if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
+          return markupNode.toAST((this as any).args.mapping);
+        }
         return markupNode.sourceString.trim();
       },
       whitespaceStart: 1,
@@ -433,6 +444,9 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
+    liquidTagOpenForm: 0,
+    liquidTagOpenFormMarkup: 0,
 
     liquidTagClose: {
       type: ConcreteNodeTypes.LiquidTagClose,

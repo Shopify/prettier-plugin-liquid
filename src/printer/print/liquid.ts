@@ -136,6 +136,27 @@ function printNamedLiquidBlock(
       return tag(' ');
     }
 
+    case NamedTags.form: {
+      const args = node.markup;
+      const whitespace = args.length > 1 ? line : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        node.name,
+        ' ',
+        indent([
+          join(
+            [',', line],
+            path.map((p) => print(p), 'markup'),
+          ),
+        ]),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
     default: {
       return assertNever(node);
     }

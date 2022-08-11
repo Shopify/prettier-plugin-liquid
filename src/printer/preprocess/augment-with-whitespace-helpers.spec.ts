@@ -151,7 +151,7 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
       const firstChilds = [
         '{{ drop -}}',
         '{% if true %}world{% endif -%}',
-        '{% form %}...{% endform -%}',
+        '{% form "cart" %}...{% endform -%}',
         '{% assign x = true -%}',
       ];
       const secondChilds = [
@@ -201,7 +201,7 @@ describe('Module: augmentWithWhitespaceHelpers', () => {
         'hello world',
         '{{ drop }}',
         '{% if true %}world{% endif %}',
-        '{% form %}...{% endform %}',
+        '{% form "cart" %}...{% endform %}',
         '{% assign x = true %}',
       ];
 

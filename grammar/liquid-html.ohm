@@ -75,8 +75,9 @@ LiquidHTML {
   LiquidNode = liquidNode
   liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag | liquidInlineComment
 
-  liquidTagOpen = liquidTagOpenBaseCase
-  liquidTagOpenBaseCase = liquidTagOpenRule<blockName, tagMarkup>
+  liquidTagOpen =
+    | liquidTagOpenForm
+    | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
     | liquidTagEcho
@@ -111,6 +112,11 @@ LiquidHTML {
   renderVariableExpression = space+ ("for" | "with") space+ liquidExpression
   renderAliasExpression = space+ "as" space+ variableSegment
   renderArguments = listOf<namedArgument, argumentSeparatorOptionalComma>
+
+  liquidTagOpenBaseCase = liquidTagOpenRule<blockName, tagMarkup>
+
+  liquidTagOpenForm = liquidTagOpenRule<"form", liquidTagOpenFormMarkup>
+  liquidTagOpenFormMarkup = arguments space*
 
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
