@@ -535,8 +535,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
         }
       },
     },
-    filterArguments: 0,
-    filterArgument: 0,
+    arguments: 0,
     positionalArgument: 0,
     namedArgument: {
       type: ConcreteNodeTypes.NamedArgument,
@@ -640,6 +639,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
           : [frontmatter.toAST(self.args.mapping)];
 
       return frontmatterNode.concat(nodes.toAST(self.args.mapping));
+    },
+
+    orderedListOf: 0,
+    nonemptyOrderedListOf: 0,
+    nonemptyOrderedListOfBoth(
+      nonemptyListOfA: Node,
+      _sep: Node,
+      nonemptyListOfB: Node,
+    ) {
+      const self = this as any;
+      return nonemptyListOfA
+        .toAST(self.args.mapping)
+        .concat(nonemptyListOfB.toAST(self.args.mapping));
     },
 
     // Missing from ohm-js default rules. Those turn listOf rules into arrays.

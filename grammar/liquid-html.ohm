@@ -173,14 +173,14 @@ LiquidHTML {
   indexLookup = space* "[" space* liquidExpression space* "]"
   dotLookup = space* "." space* identifier
 
-  liquidFilter = space* "|" space* identifier (space* ":" space* filterArguments)?
-  filterArguments = listOf<filterArgument, argumentSeparator>
-  filterArgument = namedArgument | positionalArgument
-  positionalArgument = liquidExpression
-  namedArgument = variableSegment space* ":" space* liquidExpression
+  liquidFilter = space* "|" space* identifier (space* ":" space* arguments)?
 
+  arguments = nonemptyOrderedListOf<positionalArgument, namedArgument, argumentSeparator>
   argumentSeparator = space* "," space*
   argumentSeparatorOptionalComma = space* ","? space*
+  positionalArgument = liquidExpression ~(space* ":")
+  namedArgument = variableSegment space* ":" space* liquidExpression
+
   variableSegment = (letter | "_") identifierCharacter*
   variableSegmentAsLookup = variableSegment
   identifier = variableSegment "?"?
@@ -230,6 +230,16 @@ LiquidHTML {
   AnyExceptPlus<lit> = (~ lit any)+
   AnyExceptStar<lit> = (~ lit any)*
   identifierCharacter = alnum | "_" | "-"
+
+  orderedListOf<a, b, sep> =
+    | nonemptyOrderedListOf<a, b, sep>
+    | emptyListOf<a, sep>
+  nonemptyOrderedListOf<a, b, sep> =
+    | nonemptyListOf<b, sep>
+    | nonemptyOrderedListOfBoth<a, b, sep>
+    | nonemptyListOf<a, sep>
+  nonemptyOrderedListOfBoth<a, b, sep> =
+    nonemptyListOf<a, sep> (sep nonemptyListOf<b, sep>)
 
   TextNode = AnyExceptPlus<openControl>
   openControl = "<" | "{{" | "{%"
