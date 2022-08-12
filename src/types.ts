@@ -34,6 +34,7 @@ export enum NodeTypes {
   VariableLookup = 'VariableLookup',
 
   AssignMarkup = 'AssignMarkup',
+  PaginateMarkup = 'PaginateMarkup',
   RenderMarkup = 'RenderMarkup',
   RenderVariableExpression = 'RenderVariableExpression',
 }
@@ -55,6 +56,7 @@ export enum NamedTags {
   render = 'render',
   include = 'include',
   form = 'form',
+  paginate = 'paginate',
 }
 
 export const HtmlNodeTypes = [

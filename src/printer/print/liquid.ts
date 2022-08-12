@@ -157,6 +157,10 @@ function printNamedLiquidBlock(
       ]);
     }
 
+    case NamedTags.paginate: {
+      return tag(line);
+    }
+
     default: {
       return assertNever(node);
     }

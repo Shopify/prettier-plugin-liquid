@@ -35,6 +35,7 @@ export enum ConcreteNodeTypes {
 
   AssignMarkup = 'AssignMarkup',
   RenderMarkup = 'RenderMarkup',
+  PaginateMarkup = 'PaginateMarkup',
   RenderVariableExpression = 'RenderVariableExpression',
 }
 
@@ -137,7 +138,9 @@ export interface ConcreteLiquidRawTag
 export type ConcreteLiquidTagOpen =
   | ConcreteLiquidTagOpenBaseCase
   | ConcreteLiquidTagOpenNamed;
-export type ConcreteLiquidTagOpenNamed = ConcreteLiquidTagOpenForm;
+export type ConcreteLiquidTagOpenNamed =
+  | ConcreteLiquidTagOpenForm
+  | ConcreteLiquidTagOpenPaginate;
 
 export interface ConcreteLiquidTagOpenNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagOpen> {
@@ -150,6 +153,19 @@ export interface ConcreteLiquidTagOpenBaseCase
 
 export interface ConcreteLiquidTagOpenForm
   extends ConcreteLiquidTagOpenNode<NamedTags.form, ConcreteLiquidArgument[]> {}
+
+export interface ConcreteLiquidTagOpenPaginate
+  extends ConcreteLiquidTagOpenNode<
+    NamedTags.paginate,
+    ConcretePaginateMarkup
+  > {}
+
+export interface ConcretePaginateMarkup
+  extends ConcreteBasicNode<ConcreteNodeTypes.PaginateMarkup> {
+  collection: ConcreteLiquidExpression;
+  pageSize: ConcreteLiquidExpression;
+  args: ConcreteLiquidNamedArgument[] | null;
+}
 
 export interface ConcreteLiquidTagClose
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagClose> {
@@ -447,6 +463,15 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidTagOpenForm: 0,
     liquidTagOpenFormMarkup: 0,
+    liquidTagOpenPaginate: 0,
+    liquidTagOpenPaginateMarkup: {
+      type: ConcreteNodeTypes.PaginateMarkup,
+      collection: 0,
+      pageSize: 4,
+      args: 6,
+      locStart,
+      locEnd,
+    },
 
     liquidTagClose: {
       type: ConcreteNodeTypes.LiquidTagClose,
@@ -508,7 +533,6 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
     renderAliasExpression: 3,
-    renderArguments: 0,
 
     liquidDrop: {
       type: ConcreteNodeTypes.LiquidDrop,
@@ -550,6 +574,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       },
     },
     arguments: 0,
+    tagArguments: 0,
     positionalArgument: 0,
     namedArgument: {
       type: ConcreteNodeTypes.NamedArgument,

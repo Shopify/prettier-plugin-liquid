@@ -27,6 +27,7 @@ import {
   ConcreteLiquidTagOpenNamed,
   ConcreteLiquidTagOpen,
   ConcreteLiquidArgument,
+  ConcretePaginateMarkup,
 } from '~/parser/cst';
 import { isLiquidHtmlNode, NamedTags, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
@@ -50,6 +51,7 @@ export type LiquidHtmlNode =
   | LiquidNamedArgument
   | AssignMarkup
   | RenderMarkup
+  | PaginateMarkup
   | RenderVariableExpression
   | TextNode;
 
@@ -106,6 +108,7 @@ export type LiquidTagNamed =
   | LiquidTagEcho
   | LiquidTagForm
   | LiquidTagInclude
+  | LiquidTagPaginate
   | LiquidTagRender
   | LiquidTagSection;
 
@@ -142,6 +145,15 @@ export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
 
 export interface LiquidTagForm
   extends LiquidTagNode<NamedTags.form, LiquidArgument[]> {}
+
+export interface LiquidTagPaginate
+  extends LiquidTagNode<NamedTags.paginate, PaginateMarkup> {}
+export interface PaginateMarkup extends ASTNode<NodeTypes.PaginateMarkup> {
+  collection: LiquidExpression;
+  pageSize: LiquidExpression;
+  args: LiquidNamedArgument[];
+}
+
 export interface LiquidTagRender
   extends LiquidTagNode<NamedTags.render, RenderMarkup> {}
 export interface LiquidTagInclude
@@ -730,6 +742,7 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
       };
     }
+
     case NamedTags.assign: {
       return {
         name: NamedTags.assign,
@@ -737,6 +750,7 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
       };
     }
+
     case NamedTags.include:
     case NamedTags.render: {
       return {
@@ -745,6 +759,7 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
       };
     }
+
     case NamedTags.section: {
       return {
         name: node.name,
@@ -752,10 +767,20 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
       };
     }
+
     case NamedTags.form: {
       return {
         name: node.name,
         markup: node.markup.map((arg) => toLiquidArgument(arg, source)),
+        children: [],
+        ...liquidTagBaseAttributes(node, source),
+      };
+    }
+
+    case NamedTags.paginate: {
+      return {
+        name: node.name,
+        markup: toPaginateMarkup(node.markup, source),
         children: [],
         ...liquidTagBaseAttributes(node, source),
       };
@@ -776,6 +801,20 @@ function toAssignMarkup(
     name: node.name,
     value: toLiquidVariable(node.value, source),
     position: position(node),
+    source,
+  };
+}
+
+function toPaginateMarkup(
+  node: ConcretePaginateMarkup,
+  source: string,
+): PaginateMarkup {
+  return {
+    type: NodeTypes.PaginateMarkup,
+    collection: toExpression(node.collection, source),
+    pageSize: toExpression(node.pageSize, source),
+    position: position(node),
+    args: node.args ? node.args.map((arg) => toNamedArgument(arg, source)) : [],
     source,
   };
 }
