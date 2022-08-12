@@ -128,6 +128,26 @@ function printNamedLiquidBlock(
       ]);
     }
 
+    case 'include':
+    case 'render': {
+      const markup = node.markup;
+      const whitespace =
+        markup.args.length > 0 || (markup.variable && markup.alias)
+          ? line
+          : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        node.name,
+        ' ',
+        indent(path.call((p) => print(p), 'markup')),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
     default: {
       return assertNever(node);
     }

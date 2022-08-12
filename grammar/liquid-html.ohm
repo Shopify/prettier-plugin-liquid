@@ -80,6 +80,8 @@ LiquidHTML {
   liquidTag =
     | liquidTagEcho
     | liquidTagAssign
+    | liquidTagRender
+    | liquidTagInclude
     | liquidTagBaseCase
 
   liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
@@ -90,6 +92,15 @@ LiquidHTML {
 
   liquidTagAssign = liquidTagRule<"assign", liquidTagAssignMarkup>
   liquidTagAssignMarkup = variableSegment space* "=" space* liquidVariable
+
+  liquidTagInclude = liquidTagRule<"include", liquidTagRenderMarkup>
+  liquidTagRender = liquidTagRule<"render", liquidTagRenderMarkup>
+  liquidTagRenderMarkup =
+    snippetExpression renderVariableExpression? renderAliasExpression? (argumentSeparatorOptionalComma renderArguments) space*
+  snippetExpression = liquidString | variableSegmentAsLookup
+  renderVariableExpression = space+ ("for" | "with") space+ liquidExpression
+  renderAliasExpression = space+ "as" space+ variableSegment
+  renderArguments = listOf<namedArgument, argumentSeparatorOptionalComma>
 
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
@@ -153,13 +164,15 @@ LiquidHTML {
   dotLookup = space* "." space* identifier
 
   liquidFilter = space* "|" space* identifier (space* ":" space* filterArguments)?
-  filterSeparator = space* "," space*
-  filterArguments = listOf<filterArgument, filterSeparator>
+  filterArguments = listOf<filterArgument, argumentSeparator>
   filterArgument = namedArgument | positionalArgument
   positionalArgument = liquidExpression
   namedArgument = variableSegment space* ":" space* liquidExpression
 
+  argumentSeparator = space* "," space*
+  argumentSeparatorOptionalComma = space* ","? space*
   variableSegment = (letter | "_") identifierCharacter*
+  variableSegmentAsLookup = variableSegment
   identifier = variableSegment "?"?
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
