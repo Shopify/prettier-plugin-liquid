@@ -1,13 +1,14 @@
 import { AstPath, Doc, doc } from 'prettier';
 import {
-  LiquidTag,
+  LiquidAstPath,
   LiquidBranch,
   LiquidDrop,
-  LiquidAstPath,
   LiquidParserOptions,
   LiquidPrinter,
-  NodeTypes,
   LiquidPrinterArgs,
+  LiquidTag,
+  LiquidTagNamed,
+  NodeTypes,
 } from '~/types';
 import { isBranchedTag } from '~/parser/ast';
 import { assertNever } from '~/utils';
@@ -87,15 +88,60 @@ export function printLiquidDrop(
   ]);
 }
 
+function printNamedLiquidBlock(
+  path: AstPath<LiquidTagNamed>,
+  _options: LiquidParserOptions,
+  print: LiquidPrinter,
+  whitespaceStart: Doc,
+  whitespaceEnd: Doc,
+): Doc {
+  const node = path.getValue();
+
+  switch (node.name) {
+    case 'echo': {
+      const whitespace = node.markup.filters.length > 0 ? line : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        'echo',
+        ' ',
+        indent(path.call((p) => print(p), 'markup')),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
+    case 'assign': {
+      const whitespace = node.markup.value.filters.length > 0 ? line : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        node.name,
+        ' ',
+        indent(path.call((p) => print(p), 'markup')),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
+    default: {
+      return assertNever(node);
+    }
+  }
+}
+
 export function printLiquidBlockStart(
   path: AstPath<LiquidTag | LiquidBranch>,
-  leadingSpaceGroupId: symbol | symbol[] | undefined,
-  trailingSpaceGroupId: symbol | symbol[] | undefined,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
   if (!node.name) return '';
-
-  const lines = markupLines(node.markup);
 
   const whitespaceStart = getWhitespaceTrim(
     node.whitespaceStart,
@@ -107,6 +153,18 @@ export function printLiquidBlockStart(
     needsBlockStartTrailingWhitespaceStrippingOnBreak(node),
     trailingSpaceGroupId,
   );
+
+  if (typeof node.markup !== 'string') {
+    return printNamedLiquidBlock(
+      path as AstPath<LiquidTagNamed>,
+      options,
+      print,
+      whitespaceStart,
+      whitespaceEnd,
+    );
+  }
+
+  const lines = markupLines(node.markup);
 
   if (node.name === 'liquid') {
     return group([
@@ -147,8 +205,9 @@ export function printLiquidBlockStart(
 
 export function printLiquidBlockEnd(
   path: AstPath<LiquidTag>,
-  leadingSpaceGroupId: symbol | symbol[] | undefined,
-  trailingSpaceGroupId: symbol | symbol[] | undefined,
+  _options: LiquidParserOptions,
+  _print: LiquidPrinter,
+  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
   if (!node.children || !node.blockEndPosition) return '';
@@ -175,23 +234,24 @@ export function printLiquidTag(
   path: AstPath<LiquidTag>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
+  args: LiquidPrinterArgs,
 ): Doc {
+  const { leadingSpaceGroupId, trailingSpaceGroupId } = args;
   const node = path.getValue();
   if (!node.children || !node.blockEndPosition) {
-    return printLiquidBlockStart(
-      path,
-      leadingSpaceGroupId,
-      trailingSpaceGroupId,
-    );
+    return printLiquidBlockStart(path, options, print, args);
   }
   const tagGroupId = Symbol('tag-group');
-  const blockStart = printLiquidBlockStart(
-    path,
+  const blockStart = printLiquidBlockStart(path, options, print, {
+    ...args,
     leadingSpaceGroupId,
-    tagGroupId,
-  ); // {% if ... %}
-  const blockEnd = printLiquidBlockEnd(path, tagGroupId, trailingSpaceGroupId); // {% endif %}
+    trailingSpaceGroupId: tagGroupId,
+  }); // {% if ... %}
+  const blockEnd = printLiquidBlockEnd(path, options, print, {
+    ...args,
+    leadingSpaceGroupId: tagGroupId,
+    trailingSpaceGroupId,
+  }); // {% endif %}
 
   let body: Doc = [];
 
@@ -336,11 +396,7 @@ export function printLiquidBranch(
 
   return [
     outerLeadingWhitespace,
-    printLiquidBlockStart(
-      path as AstPath<LiquidBranch>,
-      args.leadingSpaceGroupId,
-      args.trailingSpaceGroupId,
-    ),
+    printLiquidBlockStart(path as AstPath<LiquidBranch>, options, print, args),
     indent([
       innerLeadingWhitespace(branch),
       printChildren(path, options, print, args),

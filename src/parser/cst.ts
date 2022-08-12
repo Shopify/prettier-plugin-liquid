@@ -31,6 +31,8 @@ export enum ConcreteNodeTypes {
   String = 'String',
   Number = 'Number',
   Range = 'Range',
+
+  AssignMarkup = 'AssignMarkup',
 }
 
 export const LiquidLiteralValues = {
@@ -140,10 +142,30 @@ export interface ConcreteLiquidTagClose
   name: string;
 }
 
-export interface ConcreteLiquidTag
+export type ConcreteLiquidTag =
+  | ConcreteLiquidTagNamed
+  | ConcreteLiquidTagBaseCase;
+export type ConcreteLiquidTagNamed =
+  | ConcreteLiquidTagAssign
+  | ConcreteLiquidTagEcho;
+
+export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
+  name: Name;
+  markup: Markup;
+}
+
+export interface ConcreteLiquidTagBaseCase
+  extends ConcreteLiquidTagNode<string, string> {}
+export interface ConcreteLiquidTagEcho
+  extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
+export interface ConcreteLiquidTagAssign
+  extends ConcreteLiquidTagNode<'assign', ConcreteLiquidTagAssignMarkup> {}
+
+export interface ConcreteLiquidTagAssignMarkup
+  extends ConcreteBasicNode<ConcreteNodeTypes.AssignMarkup> {
   name: string;
-  markup: string;
+  value: ConcreteLiquidVariable;
 }
 
 export interface ConcreteLiquidDrop
@@ -376,12 +398,31 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
-    liquidTag: {
+    liquidTag: 0,
+    liquidTagBaseCase: 0,
+    liquidTagEcho: 0,
+    liquidTagAssign: 0,
+    liquidTagRule: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
-      markup: markup(5),
+      markup(nodes: Node[]) {
+        const markupNode = nodes[5];
+        const nameNode = nodes[3];
+        if (['echo', 'assign'].includes(nameNode.sourceString)) {
+          return markupNode.toAST((this as any).args.mapping);
+        }
+        return markupNode.sourceString.trim();
+      },
       whitespaceStart: 1,
       whitespaceEnd: 6,
+      locStart,
+      locEnd,
+    },
+    liquidTagEchoMarkup: 0,
+    liquidTagAssignMarkup: {
+      type: ConcreteNodeTypes.AssignMarkup,
+      name: 0,
+      value: 4,
       locStart,
       locEnd,
     },

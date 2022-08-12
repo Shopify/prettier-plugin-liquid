@@ -374,6 +374,10 @@ function printNode(
       ];
     }
 
+    case NodeTypes.AssignMarkup: {
+      return [node.name, ' = ', path.call(print, 'value')];
+    }
+
     case NodeTypes.LiquidVariable: {
       const name = path.call(print, 'expression');
       let filters: Doc = '';

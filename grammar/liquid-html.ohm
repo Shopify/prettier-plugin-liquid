@@ -77,7 +77,20 @@ LiquidHTML {
 
   liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
-  liquidTag = "{%" "-"? space* liquidTagName space? tagMarkup "-"? "%}"
+  liquidTag =
+    | liquidTagEcho
+    | liquidTagAssign
+    | liquidTagBaseCase
+
+  liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
+  liquidTagRule<name, markup> = "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+
+  liquidTagEcho = liquidTagRule<"echo", liquidTagEchoMarkup>
+  liquidTagEchoMarkup = liquidVariable
+
+  liquidTagAssign = liquidTagRule<"assign", liquidTagAssignMarkup>
+  liquidTagAssignMarkup = variableSegment space* "=" space* liquidVariable
+
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
   liquidDropBaseCase = anyExceptStar<("-}}" | "}}")>
@@ -103,7 +116,7 @@ LiquidHTML {
   // because we'd otherwise positively match the following string
   // instead of falling back to the other rule:
   // {{ 'string' | some_filter }}
-  liquidVariable = liquidExpression liquidFilter* space* &("-}}" | "}}")
+  liquidVariable = liquidExpression liquidFilter* space* &("-}}" | "}}" | "-%}" | "%}")
 
   liquidExpression =
     | liquidString
