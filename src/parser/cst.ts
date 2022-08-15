@@ -704,6 +704,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     emptyListOf() {
       return [];
     },
+    empty: () => null,
   });
 
   return ohmAST as LiquidHtmlCST;

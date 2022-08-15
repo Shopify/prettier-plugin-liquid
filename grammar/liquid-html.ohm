@@ -176,7 +176,9 @@ LiquidHTML {
   liquidRange =
     "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
 
-  liquidVariableLookup = variableSegment? lookup*
+  liquidVariableLookup =
+    | variableSegment lookup*
+    | empty lookup+
   lookup =
     | indexLookup
     | dotLookup
@@ -257,4 +259,5 @@ LiquidHTML {
   controls = "\u{007F}".."\u{009F}"
   noncharacters = "\u{FDD0}".."\u{FDEF}"
   newline = "\r"? "\n"
+  empty = /* nothing */
 }
