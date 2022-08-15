@@ -161,6 +161,17 @@ function printNamedLiquidBlock(
       return tag(line);
     }
 
+    case NamedTags.if:
+    case NamedTags.unless: {
+      const whitespace = [
+        NodeTypes.Comparison,
+        NodeTypes.LogicalExpression,
+      ].includes(node.markup.type)
+        ? line
+        : ' ';
+      return tag(whitespace);
+    }
+
     default: {
       return assertNever(node);
     }

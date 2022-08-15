@@ -32,6 +32,8 @@ export enum NodeTypes {
   Number = 'Number',
   Range = 'Range',
   VariableLookup = 'VariableLookup',
+  Comparison = 'Comparison',
+  LogicalExpression = 'LogicalExpression',
 
   AssignMarkup = 'AssignMarkup',
   PaginateMarkup = 'PaginateMarkup',
@@ -57,6 +59,18 @@ export enum NamedTags {
   include = 'include',
   form = 'form',
   paginate = 'paginate',
+  if = 'if',
+  unless = 'unless',
+}
+
+export enum Comparators {
+  CONTAINS = 'contains',
+  EQUAL = '==',
+  GREATER_THAN = '>',
+  GREATER_THAN_OR_EQUAL = '>=',
+  LESS_THAN = '<',
+  LESS_THAN_OR_EQUAL = '<=',
+  NOT_EQUAL = '!=',
 }
 
 export const HtmlNodeTypes = [

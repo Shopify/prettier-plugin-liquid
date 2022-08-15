@@ -28,8 +28,16 @@ import {
   ConcreteLiquidTagOpen,
   ConcreteLiquidArgument,
   ConcretePaginateMarkup,
+  ConcreteLiquidCondition,
+  ConcreteLiquidComparison,
 } from '~/parser/cst';
-import { isLiquidHtmlNode, NamedTags, NodeTypes, Position } from '~/types';
+import {
+  Comparators,
+  isLiquidHtmlNode,
+  NamedTags,
+  NodeTypes,
+  Position,
+} from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
 import { TAGS_WITHOUT_MARKUP } from '~/parser/grammar';
@@ -53,6 +61,8 @@ export type LiquidHtmlNode =
   | RenderMarkup
   | PaginateMarkup
   | RenderVariableExpression
+  | LiquidLogicalExpression
+  | LiquidComparison
   | TextNode;
 
 export interface DocumentNode extends ASTNode<NodeTypes.Document> {
@@ -107,10 +117,12 @@ export type LiquidTagNamed =
   | LiquidTagAssign
   | LiquidTagEcho
   | LiquidTagForm
+  | LiquidTagIf
   | LiquidTagInclude
   | LiquidTagPaginate
   | LiquidTagRender
-  | LiquidTagSection;
+  | LiquidTagSection
+  | LiquidTagUnless;
 
 export interface LiquidTagNode<Name, Markup>
   extends ASTNode<NodeTypes.LiquidTag> {
@@ -145,6 +157,30 @@ export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
 
 export interface LiquidTagForm
   extends LiquidTagNode<NamedTags.form, LiquidArgument[]> {}
+
+export interface LiquidTagIf extends LiquidTagConditional<NamedTags.if> {}
+export interface LiquidTagUnless
+  extends LiquidTagConditional<NamedTags.unless> {}
+export interface LiquidTagConditional<Name>
+  extends LiquidTagNode<Name, LiquidConditionalExpression> {}
+
+export type LiquidConditionalExpression =
+  | LiquidLogicalExpression
+  | LiquidComparison
+  | LiquidExpression;
+
+export interface LiquidLogicalExpression
+  extends ASTNode<NodeTypes.LogicalExpression> {
+  relation: 'and' | 'or';
+  left: LiquidConditionalExpression;
+  right: LiquidConditionalExpression;
+}
+
+export interface LiquidComparison extends ASTNode<NodeTypes.Comparison> {
+  comparator: Comparators;
+  left: LiquidConditionalExpression;
+  right: LiquidConditionalExpression;
+}
 
 export interface LiquidTagPaginate
   extends LiquidTagNode<NamedTags.paginate, PaginateMarkup> {}
@@ -786,6 +822,16 @@ function toNamedLiquidTag(
       };
     }
 
+    case NamedTags.if:
+    case NamedTags.unless: {
+      return {
+        name: node.name,
+        markup: toConditionalExpression(node.markup, source),
+        children: [],
+        ...liquidTagBaseAttributes(node, source),
+      };
+    }
+
     default: {
       return assertNever(node);
     }
@@ -845,6 +891,56 @@ function toRenderVariableExpression(
     type: NodeTypes.RenderVariableExpression,
     kind: node.kind,
     name: toExpression(node.name, source),
+    position: position(node),
+    source,
+  };
+}
+
+function toConditionalExpression(
+  nodes: ConcreteLiquidCondition[],
+  source: string,
+): LiquidConditionalExpression {
+  if (nodes.length === 1) {
+    return toComparisonOrExpression(nodes[0], source);
+  }
+
+  const [first, second] = nodes;
+  const [, ...rest] = nodes;
+  return {
+    type: NodeTypes.LogicalExpression,
+    relation: second.relation as 'and' | 'or',
+    left: toComparisonOrExpression(first, source),
+    right: toConditionalExpression(rest, source),
+    position: {
+      start: first.locStart,
+      end: nodes[nodes.length - 1].locEnd,
+    },
+    source,
+  };
+}
+
+function toComparisonOrExpression(
+  node: ConcreteLiquidCondition,
+  source: string,
+): LiquidComparison | LiquidExpression {
+  const expression = node.expression;
+  switch (expression.type) {
+    case ConcreteNodeTypes.Comparison:
+      return toComparison(expression, source);
+    default:
+      return toExpression(expression, source);
+  }
+}
+
+function toComparison(
+  node: ConcreteLiquidComparison,
+  source: string,
+): LiquidComparison {
+  return {
+    type: NodeTypes.Comparison,
+    comparator: node.comparator,
+    left: toExpression(node.left, source),
+    right: toExpression(node.right, source),
     position: position(node),
     source,
   };

@@ -438,6 +438,85 @@ describe('Unit: toLiquidHtmlAST', () => {
         expectPosition(ast, 'children.0.markup');
       });
     });
+
+    it('should parse conditional tags into conditional expressions', () => {
+      ['if', 'unless'].forEach((tagName) => {
+        [
+          {
+            expression: 'a',
+            markup: {
+              type: 'VariableLookup',
+            },
+          },
+          {
+            expression: 'a and "string"',
+            markup: {
+              type: 'LogicalExpression',
+              relation: 'and',
+              left: { type: 'VariableLookup' },
+              right: { type: 'String' },
+            },
+          },
+          {
+            expression: 'a and "string" or a<1',
+            markup: {
+              type: 'LogicalExpression',
+              relation: 'and',
+              left: { type: 'VariableLookup' },
+              right: {
+                type: 'LogicalExpression',
+                relation: 'or',
+                left: { type: 'String' },
+                right: {
+                  type: 'Comparison',
+                  comparator: '<',
+                  left: { type: 'VariableLookup' },
+                  right: { type: 'Number' },
+                },
+              },
+            },
+          },
+        ].forEach(({ expression, markup }) => {
+          ast = toLiquidHtmlAST(`{% ${tagName} ${expression} -%}`);
+          expectPath(ast, 'children.0.type').to.equal('LiquidTag');
+          expectPath(ast, 'children.0.name').to.equal(tagName);
+          let cursor: any = markup;
+          let prefix = '';
+          while (cursor) {
+            switch (cursor.type) {
+              case 'LogicalExpression': {
+                expectPath(ast, `children.0.markup${prefix}.type`).to.equal(cursor.type);
+                expectPath(ast, `children.0.markup${prefix}.relation`).to.equal(cursor.relation);
+                expectPath(ast, `children.0.markup${prefix}.left.type`).to.equal(cursor.left.type);
+                cursor = cursor.right;
+                prefix = prefix + '.right';
+                break;
+              }
+              case 'Comparison': {
+                expectPath(ast, `children.0.markup${prefix}.type`).to.equal(cursor.type);
+                expectPath(ast, `children.0.markup${prefix}.comparator`).to.equal(
+                  cursor.comparator,
+                );
+                expectPath(ast, `children.0.markup${prefix}.left.type`).to.equal(cursor.left.type);
+                expectPath(ast, `children.0.markup${prefix}.right.type`).to.equal(
+                  cursor.right.type,
+                );
+                cursor = cursor.right;
+                prefix = prefix + '.right';
+                break;
+              }
+              default: {
+                expectPath(ast, `children.0.markup${prefix}.type`).to.equal(cursor.type);
+                cursor = null;
+                break;
+              }
+            }
+          }
+
+          expectPosition(ast, 'children.0');
+        });
+      });
+    });
   });
 
   it('should parse a basic text node into a TextNode', () => {

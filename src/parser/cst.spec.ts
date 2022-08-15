@@ -621,6 +621,61 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0.markup');
       });
     });
+
+    it('should parse the if and unless tag arguments as a list of conditions', () => {
+      ['if', 'unless'].forEach((tagName) => {
+        [
+          {
+            expression: 'a',
+            conditions: [{ relation: null, conditional: { type: 'VariableLookup' } }],
+          },
+          {
+            expression: 'a and "string"',
+            conditions: [
+              { relation: null, conditional: { type: 'VariableLookup' } },
+              { relation: 'and', conditional: { type: 'String' } },
+            ],
+          },
+          {
+            expression: 'a and "string" or a<1',
+            conditions: [
+              { relation: null, conditional: { type: 'VariableLookup' } },
+              { relation: 'and', conditional: { type: 'String' } },
+              {
+                relation: 'or',
+                conditional: {
+                  type: 'Comparison',
+                  comparator: '<',
+                  left: { type: 'VariableLookup' },
+                  right: { type: 'Number' },
+                },
+              },
+            ],
+          },
+        ].forEach(({ expression, conditions }) => {
+          cst = toLiquidHtmlCST(`{% ${tagName} ${expression} -%}`);
+          expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+          expectPath(cst, '0.name').to.equal(tagName);
+          expectPath(cst, '0.markup').to.have.lengthOf(conditions.length);
+          conditions.forEach(({ relation, conditional }, i) => {
+            expectPath(cst, `0.markup.${i}.type`).to.equal('Condition');
+            expectPath(cst, `0.markup.${i}.relation`).to.equal(relation);
+            expectPath(cst, `0.markup.${i}.expression.type`).to.equal(conditional.type);
+            if (conditional.type === 'Comparison') {
+              expectPath(cst, `0.markup.${i}.expression.comparator`).to.equal(
+                conditional.comparator,
+              );
+              expectPath(cst, `0.markup.${i}.expression.left.type`).to.equal(conditional.left.type);
+              expectPath(cst, `0.markup.${i}.expression.right.type`).to.equal(
+                conditional.right.type,
+              );
+            }
+            expectLocation(cst, `0.markup.${i}`);
+          });
+          expectLocation(cst, '0');
+        });
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {
@@ -660,7 +715,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '0.whitespaceEnd').to.equal(null);
       expectPath(cst, '1.type').to.equal('LiquidTagOpen');
       expectPath(cst, '1.name').to.equal('if');
-      expectPath(cst, '1.markup').to.equal('hi');
       expectPath(cst, '1.whitespaceStart').to.equal(null);
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
       expectPath(cst, '2.type').to.equal('LiquidTagClose');

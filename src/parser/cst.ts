@@ -3,7 +3,7 @@ import { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
-import { NamedTags } from '~/types';
+import { Comparators, NamedTags } from '~/types';
 
 export enum ConcreteNodeTypes {
   HtmlComment = 'HtmlComment',
@@ -32,6 +32,8 @@ export enum ConcreteNodeTypes {
   String = 'String',
   Number = 'Number',
   Range = 'Range',
+  Comparison = 'Comparison',
+  Condition = 'Condition',
 
   AssignMarkup = 'AssignMarkup',
   RenderMarkup = 'RenderMarkup',
@@ -139,6 +141,8 @@ export type ConcreteLiquidTagOpen =
   | ConcreteLiquidTagOpenBaseCase
   | ConcreteLiquidTagOpenNamed;
 export type ConcreteLiquidTagOpenNamed =
+  | ConcreteLiquidTagOpenIf
+  | ConcreteLiquidTagOpenUnless
   | ConcreteLiquidTagOpenForm
   | ConcreteLiquidTagOpenPaginate;
 
@@ -150,6 +154,27 @@ export interface ConcreteLiquidTagOpenNode<Name, Markup>
 
 export interface ConcreteLiquidTagOpenBaseCase
   extends ConcreteLiquidTagOpenNode<string, string> {}
+
+export interface ConcreteLiquidTagOpenIf
+  extends ConcreteLiquidTagOpenNode<NamedTags.if, ConcreteLiquidCondition[]> {}
+export interface ConcreteLiquidTagOpenUnless
+  extends ConcreteLiquidTagOpenNode<
+    NamedTags.unless,
+    ConcreteLiquidCondition[]
+  > {}
+
+export interface ConcreteLiquidCondition
+  extends ConcreteBasicNode<ConcreteNodeTypes.Condition> {
+  relation: 'and' | 'or' | null;
+  expression: ConcreteLiquidComparison | ConcreteLiquidExpression;
+}
+
+export interface ConcreteLiquidComparison
+  extends ConcreteBasicNode<ConcreteNodeTypes.Comparison> {
+  comparator: Comparators;
+  left: ConcreteLiquidExpression;
+  right: ConcreteLiquidExpression;
+}
 
 export interface ConcreteLiquidTagOpenForm
   extends ConcreteLiquidTagOpenNode<NamedTags.form, ConcreteLiquidArgument[]> {}
@@ -469,6 +494,24 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       collection: 0,
       pageSize: 4,
       args: 6,
+      locStart,
+      locEnd,
+    },
+    liquidTagOpenIf: 0,
+    liquidTagOpenUnless: 0,
+    liquidTagOpenConditionalMarkup: 0,
+    condition: {
+      type: ConcreteNodeTypes.Condition,
+      relation: 0,
+      expression: 2,
+      locStart,
+      locEnd,
+    },
+    comparison: {
+      type: ConcreteNodeTypes.Comparison,
+      comparator: 2,
+      left: 0,
+      right: 4,
       locStart,
       locEnd,
     },
