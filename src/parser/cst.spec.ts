@@ -455,7 +455,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(`{% assign ${expression} -%}`);
         expectPath(cst, '0.type').to.equal('LiquidTag');
         expectPath(cst, '0.name').to.equal('assign');
-        debugger;
         expectPath(cst, '0.markup.type').to.equal('AssignMarkup');
         expectPath(cst, '0.markup.name').to.equal(name);
         expectPath(cst, '0.markup.value.expression.type').to.equal(expressionType);
@@ -622,8 +621,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
-    it('should parse the if and unless tag arguments as a list of conditions', () => {
-      ['if', 'unless'].forEach((tagName) => {
+    it('should parse the if, unless and elsif tag arguments as a list of conditions', () => {
+      ['if', 'unless', 'elsif'].forEach((tagName) => {
         [
           {
             expression: 'a',
@@ -654,7 +653,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           },
         ].forEach(({ expression, conditions }) => {
           cst = toLiquidHtmlCST(`{% ${tagName} ${expression} -%}`);
-          expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+          expectPath(cst, '0.type').to.equal(tagName === 'elsif' ? 'LiquidTag' : 'LiquidTagOpen');
           expectPath(cst, '0.name').to.equal(tagName);
           expectPath(cst, '0.markup').to.have.lengthOf(conditions.length);
           conditions.forEach(({ relation, conditional }, i) => {

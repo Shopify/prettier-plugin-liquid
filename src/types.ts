@@ -52,14 +52,15 @@ export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
 
 // These are officially supported with special node types
 export enum NamedTags {
-  echo = 'echo',
-  section = 'section',
   assign = 'assign',
-  render = 'render',
-  include = 'include',
+  echo = 'echo',
+  elsif = 'elsif',
   form = 'form',
-  paginate = 'paginate',
   if = 'if',
+  include = 'include',
+  paginate = 'paginate',
+  render = 'render',
+  section = 'section',
   unless = 'unless',
 }
 
@@ -189,6 +190,10 @@ export type LiquidRawTag = Augmented<AST.LiquidRawTag, AllAugmentations>;
 export type LiquidTag = Augmented<AST.LiquidTag, AllAugmentations>;
 export type LiquidTagNamed = Augmented<AST.LiquidTagNamed, AllAugmentations>;
 export type LiquidBranch = Augmented<AST.LiquidBranch, AllAugmentations>;
+export type LiquidBranchNamed = Augmented<
+  AST.LiquidBranchNamed,
+  AllAugmentations
+>;
 export type LiquidDrop = Augmented<AST.LiquidDrop, AllAugmentations>;
 export type HtmlNode = Augmented<AST.HtmlNode, AllAugmentations>;
 export type HtmlTag = Exclude<HtmlNode, HtmlComment>;

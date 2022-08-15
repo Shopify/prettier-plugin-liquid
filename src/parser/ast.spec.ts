@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { toLiquidHtmlAST, LiquidHtmlNode } from '~/parser/ast';
-import { LiquidHTMLASTParsingError } from '~/parser/errors';
 import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlAST', () => {
@@ -650,7 +649,7 @@ describe('Unit: toLiquidHtmlAST', () => {
 
     expectPath(ast, 'children.0.children.1.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.1.name').to.eql('elsif');
-    expectPath(ast, 'children.0.children.1.markup').to.eql('B');
+    expectPath(ast, 'children.0.children.1.markup.type').to.eql('VariableLookup');
     expectPath(ast, 'children.0.children.1.children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.children.1.children.0.value').to.eql('B');
 

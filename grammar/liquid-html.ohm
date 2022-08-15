@@ -85,6 +85,7 @@ LiquidHTML {
   liquidTag =
     | liquidTagEcho
     | liquidTagAssign
+    | liquidTagElsif
     | liquidTagRender
     | liquidTagInclude
     | liquidTagSection
@@ -122,6 +123,8 @@ LiquidHTML {
 
   liquidTagOpenIf = liquidTagOpenRule<"if", liquidTagOpenConditionalMarkup>
   liquidTagOpenUnless = liquidTagOpenRule<"unless", liquidTagOpenConditionalMarkup>
+  liquidTagElsif = liquidTagRule<"elsif", liquidTagOpenConditionalMarkup>
+
   liquidTagOpenConditionalMarkup = nonemptyListOf<condition, conditionSeparator> space*
   conditionSeparator = &logicalOperator
   condition = logicalOperator? space* (comparison | liquidExpression) space*

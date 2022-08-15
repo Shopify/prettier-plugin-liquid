@@ -161,6 +161,8 @@ export interface LiquidTagForm
 export interface LiquidTagIf extends LiquidTagConditional<NamedTags.if> {}
 export interface LiquidTagUnless
   extends LiquidTagConditional<NamedTags.unless> {}
+export interface LiquidBranchElsif
+  extends LiquidBranchNode<NamedTags.elsif, LiquidConditionalExpression> {}
 export interface LiquidTagConditional<Name>
   extends LiquidTagNode<Name, LiquidConditionalExpression> {}
 
@@ -211,21 +213,32 @@ export interface RenderVariableExpression
   name: LiquidExpression;
 }
 
-export interface LiquidBranch extends ASTNode<NodeTypes.LiquidBranch> {
+export type LiquidBranch =
+  | LiquidBranchUnnamed
+  | LiquidBranchBaseCase
+  | LiquidBranchNamed;
+export type LiquidBranchNamed = LiquidBranchElsif;
+
+interface LiquidBranchNode<Name, Markup>
+  extends ASTNode<NodeTypes.LiquidBranch> {
   /**
    * e.g. else, elsif, when | null when in the main branch
    */
-  name: string | null;
+  name: Name;
 
   /**
    * The body of the branch tag. May contain arguments. Excludes the name of the tag. Left trimmed.
    */
-  markup: string;
+  markup: Markup;
   children: LiquidHtmlNode[];
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
   blockStartPosition: Position;
 }
+
+export interface LiquidBranchUnnamed extends LiquidBranchNode<null, string> {}
+export interface LiquidBranchBaseCase
+  extends LiquidBranchNode<string, string> {}
 
 export interface LiquidDrop extends ASTNode<NodeTypes.LiquidDrop> {
   /**
@@ -366,8 +379,9 @@ export function isBranchedTag(node: LiquidHtmlNode) {
 }
 
 // Not exported because you can use node.type === NodeTypes.LiquidBranch.
-// TODO signature is a hack.
-function isBranchTag(node: LiquidHtmlNode): node is LiquidTagBaseCase {
+function isLiquidBranchDisguisedAsTag(
+  node: LiquidHtmlNode,
+): node is LiquidTagBaseCase {
   return (
     node.type === NodeTypes.LiquidTag &&
     ['else', 'elsif', 'when'].includes(node.name)
@@ -419,41 +433,22 @@ class ASTBuilder {
     this.cursor.push('children');
 
     if (isBranchedTag(node)) {
-      this.open({
-        type: NodeTypes.LiquidBranch,
-        name: null,
-        markup: '',
-        position: {
-          start: node.position.end,
-          end: node.position.end,
-        },
-        blockStartPosition: {
-          start: node.position.end,
-          end: node.position.end,
-        },
-        children: [],
-        whitespaceStart: '',
-        whitespaceEnd: '',
-        source: this.source,
-      });
+      this.open(toUnnamedLiquidBranch(node, this.source));
     }
   }
 
   push(node: LiquidHtmlNode) {
-    if (node.type === NodeTypes.LiquidTag && isBranchTag(node)) {
+    if (
+      node.type === NodeTypes.LiquidTag &&
+      isLiquidBranchDisguisedAsTag(node)
+    ) {
       this.cursor.pop();
       this.cursor.pop();
-      this.open({
-        name: node.name,
-        type: NodeTypes.LiquidBranch,
-        markup: node.markup,
-        position: { ...node.position },
-        children: [],
-        blockStartPosition: { ...node.position },
-        whitespaceStart: node.whitespaceStart,
-        whitespaceEnd: node.whitespaceEnd,
-        source: this.source,
-      });
+      this.open(toNamedLiquidBranchBaseCase(node, this.source));
+    } else if (node.type === NodeTypes.LiquidBranch) {
+      this.cursor.pop();
+      this.cursor.pop();
+      this.open(node);
     } else {
       if (this.parent?.type === NodeTypes.LiquidBranch) {
         this.parent.position.end = node.position.end;
@@ -744,11 +739,26 @@ function liquidTagBaseAttributes(
   };
 }
 
+function liquidBranchBaseAttributes(
+  node: ConcreteLiquidTag,
+  source: string,
+): Omit<LiquidBranch, 'name' | 'markup'> {
+  return {
+    type: NodeTypes.LiquidBranch,
+    children: [],
+    position: position(node),
+    whitespaceStart: node.whitespaceStart ?? '',
+    whitespaceEnd: node.whitespaceEnd ?? '',
+    blockStartPosition: position(node),
+    source,
+  };
+}
+
 function toLiquidTag(
   node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
   source: string,
   { isBlockTag } = { isBlockTag: false },
-): LiquidTag {
+): LiquidTag | LiquidBranch {
   if (typeof node.markup !== 'string') {
     return toNamedLiquidTag(node as ConcreteLiquidTagNamed, source);
   } else if (isBlockTag) {
@@ -769,66 +779,74 @@ function toLiquidTag(
 function toNamedLiquidTag(
   node: ConcreteLiquidTagNamed | ConcreteLiquidTagOpenNamed,
   source: string,
-): LiquidTagNamed {
+): LiquidTagNamed | LiquidBranchNamed {
   switch (node.name) {
     case NamedTags.echo: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: NamedTags.echo,
         markup: toLiquidVariable(node.markup, source),
-        ...liquidTagBaseAttributes(node, source),
       };
     }
 
     case NamedTags.assign: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: NamedTags.assign,
         markup: toAssignMarkup(node.markup, source),
-        ...liquidTagBaseAttributes(node, source),
       };
     }
 
     case NamedTags.include:
     case NamedTags.render: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: toRenderMarkup(node.markup, source),
-        ...liquidTagBaseAttributes(node, source),
       };
     }
 
     case NamedTags.section: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: toExpression(node.markup, source) as LiquidString,
-        ...liquidTagBaseAttributes(node, source),
       };
     }
 
     case NamedTags.form: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: node.markup.map((arg) => toLiquidArgument(arg, source)),
         children: [],
-        ...liquidTagBaseAttributes(node, source),
       };
     }
 
     case NamedTags.paginate: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: toPaginateMarkup(node.markup, source),
         children: [],
-        ...liquidTagBaseAttributes(node, source),
       };
     }
 
     case NamedTags.if:
     case NamedTags.unless: {
       return {
+        ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: toConditionalExpression(node.markup, source),
         children: [],
-        ...liquidTagBaseAttributes(node, source),
+      };
+    }
+
+    case NamedTags.elsif: {
+      return {
+        ...liquidBranchBaseAttributes(node, source),
+        name: node.name,
+        markup: toConditionalExpression(node.markup, source),
       };
     }
 
@@ -836,6 +854,46 @@ function toNamedLiquidTag(
       return assertNever(node);
     }
   }
+}
+
+function toNamedLiquidBranchBaseCase(
+  node: LiquidTagBaseCase,
+  source: string,
+): LiquidBranchBaseCase {
+  return {
+    name: node.name,
+    type: NodeTypes.LiquidBranch,
+    markup: node.markup,
+    position: { ...node.position },
+    children: [],
+    blockStartPosition: { ...node.position },
+    whitespaceStart: node.whitespaceStart,
+    whitespaceEnd: node.whitespaceEnd,
+    source,
+  };
+}
+
+function toUnnamedLiquidBranch(
+  parentNode: LiquidHtmlNode,
+  source: string,
+): LiquidBranchUnnamed {
+  return {
+    type: NodeTypes.LiquidBranch,
+    name: null,
+    markup: '',
+    position: {
+      start: parentNode.position.end,
+      end: parentNode.position.end, // tmp value
+    },
+    blockStartPosition: {
+      start: parentNode.position.end,
+      end: parentNode.position.end,
+    },
+    children: [],
+    whitespaceStart: '',
+    whitespaceEnd: '',
+    source,
+  };
 }
 
 function toAssignMarkup(

@@ -162,6 +162,8 @@ export interface ConcreteLiquidTagOpenUnless
     NamedTags.unless,
     ConcreteLiquidCondition[]
   > {}
+export interface ConcreteLiquidTagElsif
+  extends ConcreteLiquidTagNode<NamedTags.elsif, ConcreteLiquidCondition[]> {}
 
 export interface ConcreteLiquidCondition
   extends ConcreteBasicNode<ConcreteNodeTypes.Condition> {
@@ -203,14 +205,15 @@ export type ConcreteLiquidTag =
 export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagAssign
   | ConcreteLiquidTagEcho
+  | ConcreteLiquidTagElsif
   | ConcreteLiquidTagInclude
   | ConcreteLiquidTagRender
   | ConcreteLiquidTagSection;
 
 export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
-  name: Name;
   markup: Markup;
+  name: Name;
 }
 
 export interface ConcreteLiquidTagBaseCase
@@ -499,6 +502,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
     liquidTagOpenIf: 0,
     liquidTagOpenUnless: 0,
+    liquidTagElsif: 0,
     liquidTagOpenConditionalMarkup: 0,
     condition: {
       type: ConcreteNodeTypes.Condition,
