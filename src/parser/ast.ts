@@ -115,6 +115,7 @@ export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
 export type LiquidTag = LiquidTagNamed | LiquidTagBaseCase;
 export type LiquidTagNamed =
   | LiquidTagAssign
+  | LiquidTagCase
   | LiquidTagEcho
   | LiquidTagForm
   | LiquidTagIf
@@ -154,6 +155,9 @@ export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
   name: string;
   value: LiquidVariable;
 }
+
+export interface LiquidTagCase
+  extends LiquidTagNode<NamedTags.case, LiquidExpression> {}
 
 export interface LiquidTagForm
   extends LiquidTagNode<NamedTags.form, LiquidArgument[]> {}
@@ -847,6 +851,15 @@ function toNamedLiquidTag(
         ...liquidBranchBaseAttributes(node, source),
         name: node.name,
         markup: toConditionalExpression(node.markup, source),
+      };
+    }
+
+    case NamedTags.case: {
+      return {
+        ...liquidTagBaseAttributes(node, source),
+        name: node.name,
+        markup: toExpression(node.markup, source),
+        children: [],
       };
     }
 

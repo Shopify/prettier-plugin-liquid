@@ -576,6 +576,20 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it('should parse case arguments as a singular liquid expression', () => {
+      [
+        { expression: `"string"`, type: 'String' },
+        { expression: `var.lookup`, type: 'VariableLookup' },
+      ].forEach(({ expression, type }) => {
+        cst = toLiquidHtmlCST(`{% case ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.name').to.equal('case');
+        expectPath(cst, '0.markup.type').to.equal(type);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
+
     it('should parse the paginate tag open markup as arguments', () => {
       [
         {

@@ -1,0 +1,8 @@
+It should never break on case expression
+printWidth: 1
+{% case  "name"  %} {% endcase %}
+{% case true %} {% endcase %}
+{%case var.lookup %} {% endcase %}
+{%- case
+var.lookup
+-%} {% endcase %}

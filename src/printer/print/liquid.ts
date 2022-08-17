@@ -174,6 +174,10 @@ function printNamedLiquidBlock(
       return tag(whitespace);
     }
 
+    case NamedTags.case: {
+      return tag(' ');
+    }
+
     default: {
       return assertNever(node);
     }

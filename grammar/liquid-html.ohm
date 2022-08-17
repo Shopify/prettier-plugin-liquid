@@ -76,10 +76,11 @@ LiquidHTML {
   liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag | liquidInlineComment
 
   liquidTagOpen =
+    | liquidTagOpenCase
     | liquidTagOpenForm
     | liquidTagOpenIf
-    | liquidTagOpenUnless
     | liquidTagOpenPaginate
+    | liquidTagOpenUnless
     | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
@@ -120,6 +121,9 @@ LiquidHTML {
 
   liquidTagOpenForm = liquidTagOpenRule<"form", liquidTagOpenFormMarkup>
   liquidTagOpenFormMarkup = arguments space*
+
+  liquidTagOpenCase = liquidTagOpenRule<"case", liquidTagOpenCaseMarkup>
+  liquidTagOpenCaseMarkup = liquidExpression space*
 
   liquidTagOpenIf = liquidTagOpenRule<"if", liquidTagOpenConditionalMarkup>
   liquidTagOpenUnless = liquidTagOpenRule<"unless", liquidTagOpenConditionalMarkup>
