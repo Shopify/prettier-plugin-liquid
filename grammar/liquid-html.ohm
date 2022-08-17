@@ -114,7 +114,7 @@ LiquidHTML {
     | liquidRawTagImpl<"schema">
     | liquidRawTagImpl<"style">
   liquidRawTagImpl<name> =
-    "{%" "-"? space* name space* "-"? "%}"
+    "{%" "-"? space* name space* tagMarkup "-"? "%}"
     anyExceptStar<liquidRawTagClose<name>>
     "{%" "-"? space* "end" name space* "-"? "%}"
   liquidRawTagClose<name> =
@@ -199,8 +199,7 @@ LiquidHTML {
 
   blockName =
     // Shopify blocks
-    ( "style"
-    | "form"
+    ( "form"
     | "paginate"
     // Base blocks
     | "capture"
@@ -209,7 +208,6 @@ LiquidHTML {
     | "ifchanged"
     | "if"
     | "unless"
-    | "raw"
     | "tablerow"
     ) ~identifierCharacter
 

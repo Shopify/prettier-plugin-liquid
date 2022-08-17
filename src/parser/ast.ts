@@ -28,6 +28,7 @@ import {
 import { isLiquidHtmlNode, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
+import { TAGS_WITHOUT_MARKUP } from './grammar';
 
 interface HasPosition {
   locStart: number;
@@ -482,7 +483,7 @@ export function cstToAst(
       case ConcreteNodeTypes.LiquidTagOpen: {
         builder.open({
           type: NodeTypes.LiquidTag,
-          markup: node.markup,
+          markup: markup(node.name, node.markup),
           position: position(node),
           children: [],
           name: node.name,
@@ -699,7 +700,7 @@ function toLiquidTag(node: ConcreteLiquidTag, source: string): LiquidTag {
   }
   return {
     name: node.name,
-    markup: node.markup,
+    markup: markup(node.name, node.markup),
     ...liquidTagBaseAttributes(node, source),
   };
 }
@@ -935,6 +936,11 @@ function toHtmlSelfClosingElement(
     blockStartPosition: position(node),
     source,
   };
+}
+
+function markup(name: string, markup: string) {
+  if (TAGS_WITHOUT_MARKUP.includes(name)) return '';
+  return markup;
 }
 
 function position(node: HasPosition): Position {

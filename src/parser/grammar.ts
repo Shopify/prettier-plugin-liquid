@@ -15,3 +15,14 @@ export const VOID_ELEMENTS = (
 ).voidElementName.body.factors[0].terms.map(
   (x: any) => x.args[0].obj,
 ) as string[];
+
+export const TAGS_WITHOUT_MARKUP = [
+  'style',
+  'schema',
+  'javascript',
+  'else',
+  'break',
+  'continue',
+  'comment',
+  'raw',
+];
