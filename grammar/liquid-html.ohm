@@ -84,12 +84,13 @@ LiquidHTML {
     | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
-    | liquidTagEcho
     | liquidTagAssign
+    | liquidTagEcho
     | liquidTagElsif
-    | liquidTagRender
     | liquidTagInclude
+    | liquidTagRender
     | liquidTagSection
+    | liquidTagWhen
     | liquidTagBaseCase
 
   // These two are the same but transformed differently
@@ -124,6 +125,10 @@ LiquidHTML {
 
   liquidTagOpenCase = liquidTagOpenRule<"case", liquidTagOpenCaseMarkup>
   liquidTagOpenCaseMarkup = liquidExpression space*
+
+  liquidTagWhen = liquidTagRule<"when", liquidTagWhenMarkup>
+  liquidTagWhenMarkup = nonemptyListOf<liquidExpression, whenMarkupSep> space*
+  whenMarkupSep = space* ("," | "or" ~identifier) space*
 
   liquidTagOpenIf = liquidTagOpenRule<"if", liquidTagOpenConditionalMarkup>
   liquidTagOpenUnless = liquidTagOpenRule<"unless", liquidTagOpenConditionalMarkup>

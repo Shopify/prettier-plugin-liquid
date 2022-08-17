@@ -158,6 +158,8 @@ export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
 
 export interface LiquidTagCase
   extends LiquidTagNode<NamedTags.case, LiquidExpression> {}
+export interface LiquidBranchWhen
+  extends LiquidBranchNode<NamedTags.when, LiquidExpression[]> {}
 
 export interface LiquidTagForm
   extends LiquidTagNode<NamedTags.form, LiquidArgument[]> {}
@@ -221,7 +223,7 @@ export type LiquidBranch =
   | LiquidBranchUnnamed
   | LiquidBranchBaseCase
   | LiquidBranchNamed;
-export type LiquidBranchNamed = LiquidBranchElsif;
+export type LiquidBranchNamed = LiquidBranchElsif | LiquidBranchWhen;
 
 interface LiquidBranchNode<Name, Markup>
   extends ASTNode<NodeTypes.LiquidBranch> {
@@ -860,6 +862,14 @@ function toNamedLiquidTag(
         name: node.name,
         markup: toExpression(node.markup, source),
         children: [],
+      };
+    }
+
+    case NamedTags.when: {
+      return {
+        ...liquidBranchBaseAttributes(node, source),
+        name: node.name,
+        markup: node.markup.map((arg) => toExpression(arg, source)),
       };
     }
 

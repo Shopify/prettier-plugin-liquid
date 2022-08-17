@@ -660,7 +660,7 @@ describe('Unit: toLiquidHtmlAST', () => {
   });
 
   it('should parse liquid case as branches', () => {
-    ast = toLiquidHtmlAST(`{% case A %}{% when A %}A{% when B %}B{% else %}C{% endcase %}`);
+    ast = toLiquidHtmlAST(`{% case A %}{% when A %}A{% when "B" %}B{% else %}C{% endcase %}`);
     expectPath(ast, 'children.0').to.exist;
     expectPath(ast, 'children.0.type').to.eql('LiquidTag');
     expectPath(ast, 'children.0.name').to.eql('case');
@@ -675,13 +675,14 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0.children.1').to.exist;
     expectPath(ast, 'children.0.children.1.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.1.name').to.eql('when');
-    expectPath(ast, 'children.0.children.1.markup').to.eql('A');
+    expectPath(ast, 'children.0.children.1.markup').to.have.lengthOf(1);
+    expectPath(ast, 'children.0.children.1.markup.0.type').to.equal('VariableLookup');
     expectPath(ast, 'children.0.children.1.children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.children.1.children.0.value').to.eql('A');
 
     expectPath(ast, 'children.0.children.2.type').to.eql('LiquidBranch');
     expectPath(ast, 'children.0.children.2.name').to.eql('when');
-    expectPath(ast, 'children.0.children.2.markup').to.eql('B');
+    expectPath(ast, 'children.0.children.2.markup.0.type').to.equal('String');
     expectPath(ast, 'children.0.children.2.children.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.children.2.children.0.value').to.eql('B');
 

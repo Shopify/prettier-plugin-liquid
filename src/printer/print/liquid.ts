@@ -112,6 +112,24 @@ function printNamedLiquidBlock(
       '%}',
     ]);
 
+  const tagWithArrayMarkup = (whitespace: Doc) =>
+    group([
+      '{%',
+      whitespaceStart,
+      ' ',
+      node.name,
+      ' ',
+      indent([
+        join(
+          [',', line],
+          path.map((p) => print(p), 'markup'),
+        ),
+      ]),
+      whitespace,
+      whitespaceEnd,
+      '%}',
+    ]);
+
   switch (node.name) {
     case NamedTags.echo: {
       const whitespace = node.markup.filters.length > 0 ? line : ' ';
@@ -138,24 +156,8 @@ function printNamedLiquidBlock(
     }
 
     case NamedTags.form: {
-      const args = node.markup;
-      const whitespace = args.length > 1 ? line : ' ';
-      return group([
-        '{%',
-        whitespaceStart,
-        ' ',
-        node.name,
-        ' ',
-        indent([
-          join(
-            [',', line],
-            path.map((p) => print(p), 'markup'),
-          ),
-        ]),
-        whitespace,
-        whitespaceEnd,
-        '%}',
-      ]);
+      const whitespace = node.markup.length > 1 ? line : ' ';
+      return tagWithArrayMarkup(whitespace);
     }
 
     case NamedTags.paginate: {
@@ -176,6 +178,11 @@ function printNamedLiquidBlock(
 
     case NamedTags.case: {
       return tag(' ');
+    }
+
+    case NamedTags.when: {
+      const whitespace = node.markup.length > 1 ? line : ' ';
+      return tagWithArrayMarkup(whitespace);
     }
 
     default: {

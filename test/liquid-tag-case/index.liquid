@@ -6,3 +6,15 @@ printWidth: 1
 {%- case
 var.lookup
 -%} {% endcase %}
+
+It should break and indent when statements, and not break the when
+printWidth: 1
+{% case candy.type %} {% when "gummy bears" %} yum! {% endcase %}
+
+It should break on when comma syntax
+printWidth: 1
+{% case candy.type %} {% when "gummy bears", "chocolate" %} yum! {% endcase %}
+
+It should break on when or syntax (and prefer commas)
+printWidth: 1
+{% case candy.type %} {% when "gummy bears" or "chocolate" or "chips" %} yum! {% else %} ok! {% endcase %}

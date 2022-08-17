@@ -158,6 +158,8 @@ export interface ConcreteLiquidTagOpenBaseCase
 
 export interface ConcreteLiquidTagOpenCase
   extends ConcreteLiquidTagOpenNode<NamedTags.case, ConcreteLiquidExpression> {}
+export interface ConcreteLiquidTagWhen
+  extends ConcreteLiquidTagNode<NamedTags.when, ConcreteLiquidExpression[]> {}
 
 export interface ConcreteLiquidTagOpenIf
   extends ConcreteLiquidTagOpenNode<NamedTags.if, ConcreteLiquidCondition[]> {}
@@ -212,7 +214,8 @@ export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagElsif
   | ConcreteLiquidTagInclude
   | ConcreteLiquidTagRender
-  | ConcreteLiquidTagSection;
+  | ConcreteLiquidTagSection
+  | ConcreteLiquidTagWhen;
 
 export interface ConcreteLiquidTagNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTag> {
@@ -506,6 +509,8 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
     liquidTagOpenCase: 0,
     liquidTagOpenCaseMarkup: 0,
+    liquidTagWhen: 0,
+    liquidTagWhenMarkup: 0,
     liquidTagOpenIf: 0,
     liquidTagOpenUnless: 0,
     liquidTagElsif: 0,

@@ -63,6 +63,7 @@ export enum NamedTags {
   render = 'render',
   section = 'section',
   unless = 'unless',
+  when = 'when',
 }
 
 export enum Comparators {
