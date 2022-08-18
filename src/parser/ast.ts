@@ -30,6 +30,7 @@ import {
   ConcretePaginateMarkup,
   ConcreteLiquidCondition,
   ConcreteLiquidComparison,
+  ConcreteLiquidTagForMarkup,
 } from '~/parser/cst';
 import {
   Comparators,
@@ -58,6 +59,7 @@ export type LiquidHtmlNode =
   | LiquidFilter
   | LiquidNamedArgument
   | AssignMarkup
+  | ForMarkup
   | RenderMarkup
   | PaginateMarkup
   | RenderVariableExpression
@@ -118,6 +120,7 @@ export type LiquidTagNamed =
   | LiquidTagCase
   | LiquidTagEcho
   | LiquidTagForm
+  | LiquidTagFor
   | LiquidTagIf
   | LiquidTagInclude
   | LiquidTagPaginate
@@ -163,6 +166,14 @@ export interface LiquidBranchWhen
 
 export interface LiquidTagForm
   extends LiquidTagNode<NamedTags.form, LiquidArgument[]> {}
+
+export interface LiquidTagFor extends LiquidTagNode<NamedTags.for, ForMarkup> {}
+export interface ForMarkup extends ASTNode<NodeTypes.ForMarkup> {
+  variableName: string;
+  collection: LiquidExpression;
+  reversed: boolean;
+  args: LiquidNamedArgument[];
+}
 
 export interface LiquidTagIf extends LiquidTagConditional<NamedTags.if> {}
 export interface LiquidTagUnless
@@ -829,6 +840,15 @@ function toNamedLiquidTag(
       };
     }
 
+    case NamedTags.for: {
+      return {
+        ...liquidTagBaseAttributes(node, source),
+        name: node.name,
+        markup: toForMarkup(node.markup, source),
+        children: [],
+      };
+    }
+
     case NamedTags.paginate: {
       return {
         ...liquidTagBaseAttributes(node, source),
@@ -927,6 +947,21 @@ function toAssignMarkup(
     type: NodeTypes.AssignMarkup,
     name: node.name,
     value: toLiquidVariable(node.value, source),
+    position: position(node),
+    source,
+  };
+}
+
+function toForMarkup(
+  node: ConcreteLiquidTagForMarkup,
+  source: string,
+): ForMarkup {
+  return {
+    type: NodeTypes.ForMarkup,
+    variableName: node.variableName,
+    collection: toExpression(node.collection, source),
+    args: node.args.map((arg) => toNamedArgument(arg, source)),
+    reversed: !!node.reversed,
     position: position(node),
     source,
   };

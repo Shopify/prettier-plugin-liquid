@@ -78,6 +78,7 @@ LiquidHTML {
   liquidTagOpen =
     | liquidTagOpenCase
     | liquidTagOpenForm
+    | liquidTagOpenFor
     | liquidTagOpenIf
     | liquidTagOpenPaginate
     | liquidTagOpenUnless
@@ -122,6 +123,12 @@ LiquidHTML {
 
   liquidTagOpenForm = liquidTagOpenRule<"form", liquidTagOpenFormMarkup>
   liquidTagOpenFormMarkup = arguments space*
+
+  liquidTagOpenFor = liquidTagOpenRule<"for", liquidTagOpenForMarkup>
+  liquidTagOpenForMarkup =
+    variableSegment space* "in" space* liquidExpression
+    (space* "reversed")? argumentSeparatorOptionalComma
+    tagArguments space*
 
   liquidTagOpenCase = liquidTagOpenRule<"case", liquidTagOpenCaseMarkup>
   liquidTagOpenCaseMarkup = liquidExpression space*

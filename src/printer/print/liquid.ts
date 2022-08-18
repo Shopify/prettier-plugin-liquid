@@ -99,7 +99,7 @@ function printNamedLiquidBlock(
 ): Doc {
   const node = path.getValue();
 
-  const tag = (whitespace: Doc) =>
+  const tag = (trailingWhitespace: Doc) =>
     group([
       '{%',
       whitespaceStart,
@@ -107,7 +107,7 @@ function printNamedLiquidBlock(
       node.name,
       ' ',
       indent(path.call((p) => print(p), 'markup')),
-      whitespace,
+      trailingWhitespace,
       whitespaceEnd,
       '%}',
     ]);
@@ -132,23 +132,24 @@ function printNamedLiquidBlock(
 
   switch (node.name) {
     case NamedTags.echo: {
-      const whitespace = node.markup.filters.length > 0 ? line : ' ';
-      return tag(whitespace);
+      const trailingWhitespace = node.markup.filters.length > 0 ? line : ' ';
+      return tag(trailingWhitespace);
     }
 
     case NamedTags.assign: {
-      const whitespace = node.markup.value.filters.length > 0 ? line : ' ';
-      return tag(whitespace);
+      const trailingWhitespace =
+        node.markup.value.filters.length > 0 ? line : ' ';
+      return tag(trailingWhitespace);
     }
 
     case NamedTags.include:
     case NamedTags.render: {
       const markup = node.markup;
-      const whitespace =
+      const trailingWhitespace =
         markup.args.length > 0 || (markup.variable && markup.alias)
           ? line
           : ' ';
-      return tag(whitespace);
+      return tag(trailingWhitespace);
     }
 
     case NamedTags.section: {
@@ -156,8 +157,14 @@ function printNamedLiquidBlock(
     }
 
     case NamedTags.form: {
-      const whitespace = node.markup.length > 1 ? line : ' ';
-      return tagWithArrayMarkup(whitespace);
+      const trailingWhitespace = node.markup.length > 1 ? line : ' ';
+      return tagWithArrayMarkup(trailingWhitespace);
+    }
+
+    case NamedTags.for: {
+      const trailingWhitespace =
+        node.markup.reversed || node.markup.args.length > 0 ? line : ' ';
+      return tag(trailingWhitespace);
     }
 
     case NamedTags.paginate: {
@@ -167,13 +174,13 @@ function printNamedLiquidBlock(
     case NamedTags.if:
     case NamedTags.elsif:
     case NamedTags.unless: {
-      const whitespace = [
+      const trailingWhitespace = [
         NodeTypes.Comparison,
         NodeTypes.LogicalExpression,
       ].includes(node.markup.type)
         ? line
         : ' ';
-      return tag(whitespace);
+      return tag(trailingWhitespace);
     }
 
     case NamedTags.case: {
@@ -181,8 +188,8 @@ function printNamedLiquidBlock(
     }
 
     case NamedTags.when: {
-      const whitespace = node.markup.length > 1 ? line : ' ';
-      return tagWithArrayMarkup(whitespace);
+      const trailingWhitespace = node.markup.length > 1 ? line : ' ';
+      return tagWithArrayMarkup(trailingWhitespace);
     }
 
     default: {

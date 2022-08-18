@@ -36,6 +36,7 @@ export enum NodeTypes {
   LogicalExpression = 'LogicalExpression',
 
   AssignMarkup = 'AssignMarkup',
+  ForMarkup = 'ForMarkup',
   PaginateMarkup = 'PaginateMarkup',
   RenderMarkup = 'RenderMarkup',
   RenderVariableExpression = 'RenderVariableExpression',
@@ -57,6 +58,7 @@ export enum NamedTags {
   echo = 'echo',
   elsif = 'elsif',
   form = 'form',
+  for = 'for',
   if = 'if',
   include = 'include',
   paginate = 'paginate',

@@ -576,6 +576,61 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it('should parse the for tag open markup as ForMarkup', () => {
+      [
+        {
+          expression: `product in all_products`,
+          variableName: 'product',
+          collection: { type: 'VariableLookup' },
+          reversed: null,
+          args: [],
+        },
+        {
+          expression: `product in all_products reversed`,
+          variableName: 'product',
+          collection: { type: 'VariableLookup' },
+          reversed: 'reversed',
+          args: [],
+        },
+        {
+          expression: `product in all_products limit: 10`,
+          variableName: 'product',
+          collection: { type: 'VariableLookup' },
+          reversed: null,
+          args: [{ type: 'NamedArgument', name: 'limit', value: { type: 'Number' } }],
+        },
+        {
+          expression: `product in all_products reversed limit: 10 offset:var`,
+          variableName: 'product',
+          collection: { type: 'VariableLookup' },
+          reversed: 'reversed',
+          args: [
+            { type: 'NamedArgument', name: 'limit', value: { type: 'Number' } },
+            { type: 'NamedArgument', name: 'offset', value: { type: 'VariableLookup' } },
+          ],
+        },
+      ].forEach(({ expression, variableName, collection, reversed, args }) => {
+        cst = toLiquidHtmlCST(`{% for ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.name').to.equal('for');
+        expectPath(cst, '0.markup.type').to.equal('ForMarkup');
+        expectPath(cst, '0.markup.variableName').to.equal(variableName);
+        expectPath(cst, '0.markup.collection.type').to.equal(collection.type);
+        expectPath(cst, '0.markup.reversed').to.equal(reversed);
+        expectPath(cst, '0.markup.args').to.have.lengthOf(args.length);
+        args.forEach((arg, i) => {
+          expectPath(cst, `0.markup.args.${i}.type`).to.equal(arg.type);
+          expectPath(cst, `0.markup.args.${i}.name`).to.equal(arg.name);
+          expectPath(cst, `0.markup.args.${i}.value.type`).to.equal(arg.value.type);
+          expectLocation(cst, `0.markup.args.${i}`);
+          expectLocation(cst, `0.markup.args.${i}.value`);
+        });
+        expectPath(cst, '0.whitespaceEnd').to.equal('-');
+        expectLocation(cst, '0');
+        expectLocation(cst, `0.markup`);
+      });
+    });
+
     it('should parse case arguments as a singular liquid expression', () => {
       [
         { expression: `"string"`, type: 'String' },

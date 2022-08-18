@@ -36,6 +36,7 @@ export enum ConcreteNodeTypes {
   Condition = 'Condition',
 
   AssignMarkup = 'AssignMarkup',
+  ForMarkup = 'ForMarkup',
   RenderMarkup = 'RenderMarkup',
   PaginateMarkup = 'PaginateMarkup',
   RenderVariableExpression = 'RenderVariableExpression',
@@ -145,6 +146,7 @@ export type ConcreteLiquidTagOpenNamed =
   | ConcreteLiquidTagOpenIf
   | ConcreteLiquidTagOpenUnless
   | ConcreteLiquidTagOpenForm
+  | ConcreteLiquidTagOpenFor
   | ConcreteLiquidTagOpenPaginate;
 
 export interface ConcreteLiquidTagOpenNode<Name, Markup>
@@ -186,6 +188,19 @@ export interface ConcreteLiquidComparison
 
 export interface ConcreteLiquidTagOpenForm
   extends ConcreteLiquidTagOpenNode<NamedTags.form, ConcreteLiquidArgument[]> {}
+
+export interface ConcreteLiquidTagOpenFor
+  extends ConcreteLiquidTagOpenNode<
+    NamedTags.for,
+    ConcreteLiquidTagForMarkup
+  > {}
+export interface ConcreteLiquidTagForMarkup
+  extends ConcreteBasicNode<ConcreteNodeTypes.ForMarkup> {
+  variableName: string;
+  collection: ConcreteLiquidExpression;
+  reversed: 'reversed' | null;
+  args: ConcreteLiquidNamedArgument[];
+}
 
 export interface ConcreteLiquidTagOpenPaginate
   extends ConcreteLiquidTagOpenNode<
@@ -498,6 +513,16 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidTagOpenForm: 0,
     liquidTagOpenFormMarkup: 0,
+    liquidTagOpenFor: 0,
+    liquidTagOpenForMarkup: {
+      type: ConcreteNodeTypes.ForMarkup,
+      variableName: 0,
+      collection: 4,
+      reversed: 6,
+      args: 8,
+      locStart,
+      locEnd,
+    },
     liquidTagOpenPaginate: 0,
     liquidTagOpenPaginateMarkup: {
       type: ConcreteNodeTypes.PaginateMarkup,

@@ -382,6 +382,26 @@ function printNode(
       return [node.name, ' = ', path.call(print, 'value')];
     }
 
+    case NodeTypes.ForMarkup: {
+      const doc = [node.variableName, ' in ', path.call(print, 'collection')];
+
+      if (node.reversed) {
+        doc.push(line, 'reversed');
+      }
+
+      if (node.args.length > 0) {
+        doc.push([
+          line,
+          join(
+            line,
+            path.map((p) => print(p), 'args'),
+          ),
+        ]);
+      }
+
+      return doc;
+    }
+
     case NodeTypes.PaginateMarkup: {
       const doc = [
         path.call(print, 'collection'),
