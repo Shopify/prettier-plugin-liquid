@@ -61,6 +61,7 @@ export enum NamedTags {
   for = 'for',
   if = 'if',
   include = 'include',
+  layout = 'layout',
   paginate = 'paginate',
   tablerow = 'tablerow',
   render = 'render',

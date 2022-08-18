@@ -125,6 +125,7 @@ export type LiquidTagNamed =
   | LiquidTagInclude
   | LiquidTagPaginate
   | LiquidTagRender
+  | LiquidTagLayout
   | LiquidTagSection
   | LiquidTagTablerow
   | LiquidTagUnless;
@@ -220,6 +221,8 @@ export interface LiquidTagInclude
 
 export interface LiquidTagSection
   extends LiquidTagNode<NamedTags.section, LiquidString> {}
+export interface LiquidTagLayout
+  extends LiquidTagNode<NamedTags.layout, LiquidExpression> {}
 
 export interface RenderMarkup extends ASTNode<NodeTypes.RenderMarkup> {
   snippet: LiquidString | LiquidVariableLookup;
@@ -827,6 +830,7 @@ function toNamedLiquidTag(
       };
     }
 
+    case NamedTags.layout:
     case NamedTags.section: {
       return {
         ...liquidTagBaseAttributes(node, source),
