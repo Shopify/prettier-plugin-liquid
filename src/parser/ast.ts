@@ -126,6 +126,7 @@ export type LiquidTagNamed =
   | LiquidTagPaginate
   | LiquidTagRender
   | LiquidTagSection
+  | LiquidTagTablerow
   | LiquidTagUnless;
 
 export interface LiquidTagNode<Name, Markup>
@@ -174,6 +175,9 @@ export interface ForMarkup extends ASTNode<NodeTypes.ForMarkup> {
   reversed: boolean;
   args: LiquidNamedArgument[];
 }
+
+export interface LiquidTagTablerow
+  extends LiquidTagNode<NamedTags.tablerow, ForMarkup> {}
 
 export interface LiquidTagIf extends LiquidTagConditional<NamedTags.if> {}
 export interface LiquidTagUnless
@@ -840,6 +844,7 @@ function toNamedLiquidTag(
       };
     }
 
+    case NamedTags.tablerow:
     case NamedTags.for: {
       return {
         ...liquidTagBaseAttributes(node, source),

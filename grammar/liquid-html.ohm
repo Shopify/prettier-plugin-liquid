@@ -79,6 +79,7 @@ LiquidHTML {
     | liquidTagOpenCase
     | liquidTagOpenForm
     | liquidTagOpenFor
+    | liquidTagOpenTablerow
     | liquidTagOpenIf
     | liquidTagOpenPaginate
     | liquidTagOpenUnless
@@ -129,6 +130,9 @@ LiquidHTML {
     variableSegment space* "in" space* liquidExpression
     (space* "reversed")? argumentSeparatorOptionalComma
     tagArguments space*
+
+  // It's the same, the difference is support for different named arguments
+  liquidTagOpenTablerow = liquidTagOpenRule<"tablerow", liquidTagOpenForMarkup>
 
   liquidTagOpenCase = liquidTagOpenRule<"case", liquidTagOpenCaseMarkup>
   liquidTagOpenCaseMarkup = liquidExpression space*

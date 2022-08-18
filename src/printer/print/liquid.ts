@@ -161,6 +161,7 @@ function printNamedLiquidBlock(
       return tagWithArrayMarkup(trailingWhitespace);
     }
 
+    case NamedTags.tablerow:
     case NamedTags.for: {
       const trailingWhitespace =
         node.markup.reversed || node.markup.args.length > 0 ? line : ' ';

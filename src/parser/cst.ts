@@ -147,7 +147,8 @@ export type ConcreteLiquidTagOpenNamed =
   | ConcreteLiquidTagOpenUnless
   | ConcreteLiquidTagOpenForm
   | ConcreteLiquidTagOpenFor
-  | ConcreteLiquidTagOpenPaginate;
+  | ConcreteLiquidTagOpenPaginate
+  | ConcreteLiquidTagOpenTablerow;
 
 export interface ConcreteLiquidTagOpenNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagOpen> {
@@ -201,6 +202,12 @@ export interface ConcreteLiquidTagForMarkup
   reversed: 'reversed' | null;
   args: ConcreteLiquidNamedArgument[];
 }
+
+export interface ConcreteLiquidTagOpenTablerow
+  extends ConcreteLiquidTagOpenNode<
+    NamedTags.tablerow,
+    ConcreteLiquidTagForMarkup
+  > {}
 
 export interface ConcreteLiquidTagOpenPaginate
   extends ConcreteLiquidTagOpenNode<
@@ -523,6 +530,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+    liquidTagOpenTablerow: 0,
     liquidTagOpenPaginate: 0,
     liquidTagOpenPaginateMarkup: {
       type: ConcreteNodeTypes.PaginateMarkup,
