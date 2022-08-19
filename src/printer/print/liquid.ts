@@ -8,6 +8,7 @@ import {
   LiquidPrinterArgs,
   LiquidTag,
   LiquidTagNamed,
+  LiquidBranchNamed,
   NamedTags,
   NodeTypes,
 } from '~/types';
@@ -90,7 +91,7 @@ export function printLiquidDrop(
 }
 
 function printNamedLiquidBlock(
-  path: AstPath<LiquidTagNamed>,
+  path: AstPath<LiquidTagNamed | LiquidBranchNamed>,
   _options: LiquidParserOptions,
   print: LiquidPrinter,
   whitespaceStart: Doc,
@@ -161,6 +162,18 @@ function printNamedLiquidBlock(
       return tag(line);
     }
 
+    case NamedTags.if:
+    case NamedTags.elsif:
+    case NamedTags.unless: {
+      const whitespace = [
+        NodeTypes.Comparison,
+        NodeTypes.LogicalExpression,
+      ].includes(node.markup.type)
+        ? line
+        : ' ';
+      return tag(whitespace);
+    }
+
     default: {
       return assertNever(node);
     }
@@ -189,7 +202,7 @@ export function printLiquidBlockStart(
 
   if (typeof node.markup !== 'string') {
     return printNamedLiquidBlock(
-      path as AstPath<LiquidTagNamed>,
+      path as AstPath<LiquidTagNamed | LiquidBranchNamed>,
       options,
       print,
       whitespaceStart,

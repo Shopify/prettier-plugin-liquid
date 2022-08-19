@@ -95,6 +95,8 @@ function getCssDisplay(
     case NodeTypes.PaginateMarkup:
     case NodeTypes.RenderMarkup:
     case NodeTypes.RenderVariableExpression:
+    case NodeTypes.LogicalExpression:
+    case NodeTypes.Comparison:
       return 'should not be relevant';
 
     default:
@@ -152,6 +154,8 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
     case NodeTypes.PaginateMarkup:
     case NodeTypes.RenderMarkup:
     case NodeTypes.RenderVariableExpression:
+    case NodeTypes.LogicalExpression:
+    case NodeTypes.Comparison:
       return 'should not be relevant';
 
     default:

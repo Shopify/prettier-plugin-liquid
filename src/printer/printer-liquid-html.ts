@@ -431,6 +431,23 @@ function printNode(
       return [node.kind, ' ', path.call(print, 'name')];
     }
 
+    case NodeTypes.LogicalExpression: {
+      return [
+        path.call(print, 'left'),
+        line,
+        node.relation,
+        ' ',
+        path.call(print, 'right'),
+      ];
+    }
+
+    case NodeTypes.Comparison: {
+      return group([
+        path.call(print, 'left'),
+        indent([line, node.comparator, ' ', path.call(print, 'right')]),
+      ]);
+    }
+
     case NodeTypes.LiquidVariable: {
       const name = path.call(print, 'expression');
       let filters: Doc = '';

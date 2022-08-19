@@ -77,12 +77,15 @@ LiquidHTML {
 
   liquidTagOpen =
     | liquidTagOpenForm
+    | liquidTagOpenIf
+    | liquidTagOpenUnless
     | liquidTagOpenPaginate
     | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
     | liquidTagEcho
     | liquidTagAssign
+    | liquidTagElsif
     | liquidTagRender
     | liquidTagInclude
     | liquidTagSection
@@ -117,6 +120,24 @@ LiquidHTML {
 
   liquidTagOpenForm = liquidTagOpenRule<"form", liquidTagOpenFormMarkup>
   liquidTagOpenFormMarkup = arguments space*
+
+  liquidTagOpenIf = liquidTagOpenRule<"if", liquidTagOpenConditionalMarkup>
+  liquidTagOpenUnless = liquidTagOpenRule<"unless", liquidTagOpenConditionalMarkup>
+  liquidTagElsif = liquidTagRule<"elsif", liquidTagOpenConditionalMarkup>
+
+  liquidTagOpenConditionalMarkup = nonemptyListOf<condition, conditionSeparator> space*
+  conditionSeparator = &logicalOperator
+  condition = logicalOperator? space* (comparison | liquidExpression) space*
+  logicalOperator = ("and" | "or") ~identifier
+  comparison = liquidExpression space* comparator space* liquidExpression
+  comparator =
+    ( "=="
+    | "!="
+    | ">"
+    | "<"
+    | ">="
+    | "<=")
+    | ("contains" ~identifier)
 
   liquidTagOpenPaginate = liquidTagOpenRule<"paginate", liquidTagOpenPaginateMarkup>
   liquidTagOpenPaginateMarkup =
@@ -176,7 +197,9 @@ LiquidHTML {
   liquidRange =
     "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
 
-  liquidVariableLookup = variableSegment? lookup*
+  liquidVariableLookup =
+    | variableSegment lookup*
+    | empty lookup+
   lookup =
     | indexLookup
     | dotLookup
@@ -257,4 +280,5 @@ LiquidHTML {
   controls = "\u{007F}".."\u{009F}"
   noncharacters = "\u{FDD0}".."\u{FDEF}"
   newline = "\r"? "\n"
+  empty = /* nothing */
 }
