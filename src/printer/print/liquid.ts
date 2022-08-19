@@ -168,6 +168,8 @@ function printNamedLiquidBlock(
       return tag(trailingWhitespace);
     }
 
+    case NamedTags.increment:
+    case NamedTags.decrement:
     case NamedTags.layout:
     case NamedTags.section: {
       return tag(' ');

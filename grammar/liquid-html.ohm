@@ -88,12 +88,14 @@ LiquidHTML {
   liquidTag =
     | liquidTagAssign
     | liquidTagCycle
+    | liquidTagDecrement
     | liquidTagEcho
     | liquidTagElsif
     | liquidTagInclude
+    | liquidTagIncrement
+    | liquidTagLayout
     | liquidTagRender
     | liquidTagSection
-    | liquidTagLayout
     | liquidTagWhen
     | liquidTagBaseCase
 
@@ -113,6 +115,10 @@ LiquidHTML {
 
   liquidTagCycle = liquidTagRule<"cycle", liquidTagCycleMarkup>
   liquidTagCycleMarkup = (liquidExpression ":")? space* nonemptyListOf<liquidExpression, argumentSeparator> space*
+
+  liquidTagIncrement = liquidTagRule<"increment", liquidTagIncrementMarkup>
+  liquidTagDecrement = liquidTagRule<"decrement", liquidTagIncrementMarkup>
+  liquidTagIncrementMarkup = variableSegmentAsLookup space*
 
   liquidTagSection = liquidTagRule<"section", liquidTagSectionMarkup>
   liquidTagSectionMarkup = liquidString space*
