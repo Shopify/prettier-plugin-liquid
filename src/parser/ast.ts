@@ -24,11 +24,14 @@ import {
   ConcreteLiquidTagAssignMarkup,
   ConcreteLiquidTagRenderMarkup,
   ConcreteRenderVariableExpression,
+  ConcreteLiquidTagOpenNamed,
+  ConcreteLiquidTagOpen,
+  ConcreteLiquidArgument,
 } from '~/parser/cst';
-import { isLiquidHtmlNode, NodeTypes, Position } from '~/types';
+import { isLiquidHtmlNode, NamedTags, NodeTypes, Position } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
-import { TAGS_WITHOUT_MARKUP } from './grammar';
+import { TAGS_WITHOUT_MARKUP } from '~/parser/grammar';
 
 interface HasPosition {
   locStart: number;
@@ -101,6 +104,7 @@ export type LiquidTag = LiquidTagNamed | LiquidTagBaseCase;
 export type LiquidTagNamed =
   | LiquidTagAssign
   | LiquidTagEcho
+  | LiquidTagForm
   | LiquidTagInclude
   | LiquidTagRender
   | LiquidTagSection;
@@ -126,21 +130,25 @@ export interface LiquidTagNode<Name, Markup>
 }
 
 export interface LiquidTagBaseCase extends LiquidTagNode<string, string> {}
-export interface LiquidTagEcho extends LiquidTagNode<'echo', LiquidVariable> {}
+export interface LiquidTagEcho
+  extends LiquidTagNode<NamedTags.echo, LiquidVariable> {}
 
 export interface LiquidTagAssign
-  extends LiquidTagNode<'assign', AssignMarkup> {}
+  extends LiquidTagNode<NamedTags.assign, AssignMarkup> {}
 export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
   name: string;
   value: LiquidVariable;
 }
+
+export interface LiquidTagForm
+  extends LiquidTagNode<NamedTags.form, LiquidArgument[]> {}
 export interface LiquidTagRender
-  extends LiquidTagNode<'render', RenderMarkup> {}
+  extends LiquidTagNode<NamedTags.render, RenderMarkup> {}
 export interface LiquidTagInclude
-  extends LiquidTagNode<'include', RenderMarkup> {}
+  extends LiquidTagNode<NamedTags.include, RenderMarkup> {}
 
 export interface LiquidTagSection
-  extends LiquidTagNode<'section', LiquidString> {}
+  extends LiquidTagNode<NamedTags.section, LiquidString> {}
 
 export interface RenderMarkup extends ASTNode<NodeTypes.RenderMarkup> {
   snippet: LiquidString | LiquidVariableLookup;
@@ -195,10 +203,10 @@ export type LiquidExpression =
 
 interface LiquidFilter extends ASTNode<NodeTypes.LiquidFilter> {
   name: string;
-  args: FilterArgument[];
+  args: LiquidArgument[];
 }
 
-type FilterArgument = LiquidExpression | LiquidNamedArgument;
+type LiquidArgument = LiquidExpression | LiquidNamedArgument;
 
 interface LiquidNamedArgument extends ASTNode<NodeTypes.NamedArgument> {
   name: string;
@@ -485,17 +493,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.LiquidTagOpen: {
-        builder.open({
-          type: NodeTypes.LiquidTag,
-          markup: markup(node.name, node.markup),
-          position: position(node),
-          children: [],
-          name: node.name,
-          whitespaceStart: node.whitespaceStart ?? '',
-          whitespaceEnd: node.whitespaceEnd ?? '',
-          blockStartPosition: position(node),
-          source,
-        });
+        builder.open(toLiquidTag(node, source, { isBlockTag: true }));
         break;
       }
 
@@ -685,7 +683,7 @@ function toName(name: string | ConcreteLiquidDrop, source: string) {
 }
 
 function liquidTagBaseAttributes(
-  node: ConcreteLiquidTag,
+  node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
   source: string,
 ): Omit<LiquidTag, 'name' | 'markup'> {
   return {
@@ -698,9 +696,20 @@ function liquidTagBaseAttributes(
   };
 }
 
-function toLiquidTag(node: ConcreteLiquidTag, source: string): LiquidTag {
+function toLiquidTag(
+  node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
+  source: string,
+  { isBlockTag } = { isBlockTag: false },
+): LiquidTag {
   if (typeof node.markup !== 'string') {
     return toNamedLiquidTag(node as ConcreteLiquidTagNamed, source);
+  } else if (isBlockTag) {
+    return {
+      name: node.name,
+      markup: markup(node.name, node.markup),
+      children: isBlockTag ? [] : undefined,
+      ...liquidTagBaseAttributes(node, source),
+    };
   }
   return {
     name: node.name,
@@ -710,39 +719,48 @@ function toLiquidTag(node: ConcreteLiquidTag, source: string): LiquidTag {
 }
 
 function toNamedLiquidTag(
-  node: ConcreteLiquidTagNamed,
+  node: ConcreteLiquidTagNamed | ConcreteLiquidTagOpenNamed,
   source: string,
 ): LiquidTagNamed {
   switch (node.name) {
-    case 'echo': {
+    case NamedTags.echo: {
       return {
-        name: 'echo',
+        name: NamedTags.echo,
         markup: toLiquidVariable(node.markup, source),
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    case 'assign': {
+    case NamedTags.assign: {
       return {
-        name: 'assign',
+        name: NamedTags.assign,
         markup: toAssignMarkup(node.markup, source),
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    case 'include':
-    case 'render': {
+    case NamedTags.include:
+    case NamedTags.render: {
       return {
         name: node.name,
         markup: toRenderMarkup(node.markup, source),
         ...liquidTagBaseAttributes(node, source),
       };
     }
-    case 'section': {
+    case NamedTags.section: {
       return {
         name: node.name,
         markup: toExpression(node.markup, source) as LiquidString,
         ...liquidTagBaseAttributes(node, source),
       };
     }
+    case NamedTags.form: {
+      return {
+        name: node.name,
+        markup: node.markup.map((arg) => toLiquidArgument(arg, source)),
+        children: [],
+        ...liquidTagBaseAttributes(node, source),
+      };
+    }
+
     default: {
       return assertNever(node);
     }
@@ -880,19 +898,24 @@ function toFilter(node: ConcreteLiquidFilter, source: string): LiquidFilter {
   return {
     type: NodeTypes.LiquidFilter,
     name: node.name,
-    args: node.args.map((arg) => {
-      switch (arg.type) {
-        case ConcreteNodeTypes.NamedArgument: {
-          return toNamedArgument(arg, source);
-        }
-        default: {
-          return toExpression(arg, source);
-        }
-      }
-    }),
+    args: node.args.map((arg) => toLiquidArgument(arg, source)),
     position: position(node),
     source,
   };
+}
+
+function toLiquidArgument(
+  node: ConcreteLiquidArgument,
+  source: string,
+): LiquidArgument {
+  switch (node.type) {
+    case ConcreteNodeTypes.NamedArgument: {
+      return toNamedArgument(node, source);
+    }
+    default: {
+      return toExpression(node, source);
+    }
+  }
 }
 
 function toNamedArgument(

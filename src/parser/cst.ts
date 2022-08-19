@@ -3,6 +3,7 @@ import { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { liquidHtmlGrammar } from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
+import { NamedTags } from '~/types';
 
 export enum ConcreteNodeTypes {
   HtmlComment = 'HtmlComment',
@@ -133,11 +134,22 @@ export interface ConcreteLiquidRawTag
   blockEndLocEnd: number;
 }
 
-export interface ConcreteLiquidTagOpen
+export type ConcreteLiquidTagOpen =
+  | ConcreteLiquidTagOpenBaseCase
+  | ConcreteLiquidTagOpenNamed;
+export type ConcreteLiquidTagOpenNamed = ConcreteLiquidTagOpenForm;
+
+export interface ConcreteLiquidTagOpenNode<Name, Markup>
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagOpen> {
-  name: string;
-  markup: string;
+  name: Name;
+  markup: Markup;
 }
+
+export interface ConcreteLiquidTagOpenBaseCase
+  extends ConcreteLiquidTagOpenNode<string, string> {}
+
+export interface ConcreteLiquidTagOpenForm
+  extends ConcreteLiquidTagOpenNode<NamedTags.form, ConcreteLiquidArgument[]> {}
 
 export interface ConcreteLiquidTagClose
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidTagClose> {
@@ -163,12 +175,15 @@ export interface ConcreteLiquidTagNode<Name, Markup>
 export interface ConcreteLiquidTagBaseCase
   extends ConcreteLiquidTagNode<string, string> {}
 export interface ConcreteLiquidTagEcho
-  extends ConcreteLiquidTagNode<'echo', ConcreteLiquidVariable> {}
+  extends ConcreteLiquidTagNode<NamedTags.echo, ConcreteLiquidVariable> {}
 export interface ConcreteLiquidTagSection
-  extends ConcreteLiquidTagNode<'section', ConcreteStringLiteral> {}
+  extends ConcreteLiquidTagNode<NamedTags.section, ConcreteStringLiteral> {}
 
 export interface ConcreteLiquidTagAssign
-  extends ConcreteLiquidTagNode<'assign', ConcreteLiquidTagAssignMarkup> {}
+  extends ConcreteLiquidTagNode<
+    NamedTags.assign,
+    ConcreteLiquidTagAssignMarkup
+  > {}
 export interface ConcreteLiquidTagAssignMarkup
   extends ConcreteBasicNode<ConcreteNodeTypes.AssignMarkup> {
   name: string;
@@ -176,9 +191,15 @@ export interface ConcreteLiquidTagAssignMarkup
 }
 
 export interface ConcreteLiquidTagRender
-  extends ConcreteLiquidTagNode<'render', ConcreteLiquidTagRenderMarkup> {}
+  extends ConcreteLiquidTagNode<
+    NamedTags.render,
+    ConcreteLiquidTagRenderMarkup
+  > {}
 export interface ConcreteLiquidTagInclude
-  extends ConcreteLiquidTagNode<'include', ConcreteLiquidTagRenderMarkup> {}
+  extends ConcreteLiquidTagNode<
+    NamedTags.include,
+    ConcreteLiquidTagRenderMarkup
+  > {}
 
 export interface ConcreteLiquidTagRenderMarkup
   extends ConcreteBasicNode<ConcreteNodeTypes.RenderMarkup> {
@@ -405,15 +426,27 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       blockEndLocEnd: (tokens: Node[]) => tokens[16].source.endIdx,
     },
 
-    liquidTagOpen: {
+    liquidTagOpen: 0,
+    liquidTagOpenBaseCase: 0,
+    liquidTagOpenRule: {
       type: ConcreteNodeTypes.LiquidTagOpen,
       name: 3,
-      markup: markup(5),
+      markup(nodes: Node[]) {
+        const markupNode = nodes[5];
+        const nameNode = nodes[3];
+        if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
+          return markupNode.toAST((this as any).args.mapping);
+        }
+        return markupNode.sourceString.trim();
+      },
       whitespaceStart: 1,
       whitespaceEnd: 6,
       locStart,
       locEnd,
     },
+
+    liquidTagOpenForm: 0,
+    liquidTagOpenFormMarkup: 0,
 
     liquidTagClose: {
       type: ConcreteNodeTypes.LiquidTagClose,
@@ -437,11 +470,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       markup(nodes: Node[]) {
         const markupNode = nodes[5];
         const nameNode = nodes[3];
-        if (
-          ['echo', 'assign', 'render', 'include', 'section'].includes(
-            nameNode.sourceString,
-          )
-        ) {
+        if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
           return markupNode.toAST((this as any).args.mapping);
         }
         return markupNode.sourceString.trim();
@@ -520,8 +549,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
         }
       },
     },
-    filterArguments: 0,
-    filterArgument: 0,
+    arguments: 0,
     positionalArgument: 0,
     namedArgument: {
       type: ConcreteNodeTypes.NamedArgument,
@@ -625,6 +653,19 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
           : [frontmatter.toAST(self.args.mapping)];
 
       return frontmatterNode.concat(nodes.toAST(self.args.mapping));
+    },
+
+    orderedListOf: 0,
+    nonemptyOrderedListOf: 0,
+    nonemptyOrderedListOfBoth(
+      nonemptyListOfA: Node,
+      _sep: Node,
+      nonemptyListOfB: Node,
+    ) {
+      const self = this as any;
+      return nonemptyListOfA
+        .toAST(self.args.mapping)
+        .concat(nonemptyListOfB.toAST(self.args.mapping));
     },
 
     // Missing from ohm-js default rules. Those turn listOf rules into arrays.

@@ -37,7 +37,7 @@ In LiquidTag children array,
 If it breaks and the htmlWhitespaceSensitivity is 'strict', then add whitespace stripping
 htmlWhitespaceSensitivity: 'strict'
 printWidth: 30
-{% form -%}
+{% form 'cart' -%}
   aaaaaaaaaaaa
 {%- endform %}
 
@@ -51,13 +51,13 @@ printWidth: 30
 If it breaks and the node is display: inline add whitespace stripping
 printWidth: 30
 <!-- display: inline -->
-{% form -%}
+{% form 'cart' -%}
   aaaaaaaaaaaa
 {%- endform %}
 
 When it does break, there was a whitespace, and the parent is not
 leading/trailing space sensitive, it should not change anything
-{% form %}
+{% form 'cart' %}
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 {% endform %}
 

@@ -75,7 +75,9 @@ LiquidHTML {
   LiquidNode = liquidNode
   liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag | liquidInlineComment
 
-  liquidTagOpen = "{%" "-"? space* blockName space* tagMarkup "-"? "%}"
+  liquidTagOpen =
+    | liquidTagOpenForm
+    | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
     | liquidTagEcho
@@ -85,8 +87,13 @@ LiquidHTML {
     | liquidTagSection
     | liquidTagBaseCase
 
+  // These two are the same but transformed differently
+  liquidTagRule<name, markup> =
+    "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+  liquidTagOpenRule<name, markup> =
+    "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+
   liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
-  liquidTagRule<name, markup> = "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
 
   liquidTagEcho = liquidTagRule<"echo", liquidTagEchoMarkup>
   liquidTagEchoMarkup = liquidVariable
@@ -105,6 +112,11 @@ LiquidHTML {
   renderVariableExpression = space+ ("for" | "with") space+ liquidExpression
   renderAliasExpression = space+ "as" space+ variableSegment
   renderArguments = listOf<namedArgument, argumentSeparatorOptionalComma>
+
+  liquidTagOpenBaseCase = liquidTagOpenRule<blockName, tagMarkup>
+
+  liquidTagOpenForm = liquidTagOpenRule<"form", liquidTagOpenFormMarkup>
+  liquidTagOpenFormMarkup = arguments space*
 
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
@@ -167,14 +179,14 @@ LiquidHTML {
   indexLookup = space* "[" space* liquidExpression space* "]"
   dotLookup = space* "." space* identifier
 
-  liquidFilter = space* "|" space* identifier (space* ":" space* filterArguments)?
-  filterArguments = listOf<filterArgument, argumentSeparator>
-  filterArgument = namedArgument | positionalArgument
-  positionalArgument = liquidExpression
-  namedArgument = variableSegment space* ":" space* liquidExpression
+  liquidFilter = space* "|" space* identifier (space* ":" space* arguments)?
 
+  arguments = nonemptyOrderedListOf<positionalArgument, namedArgument, argumentSeparator>
   argumentSeparator = space* "," space*
   argumentSeparatorOptionalComma = space* ","? space*
+  positionalArgument = liquidExpression ~(space* ":")
+  namedArgument = variableSegment space* ":" space* liquidExpression
+
   variableSegment = (letter | "_") identifierCharacter*
   variableSegmentAsLookup = variableSegment
   identifier = variableSegment "?"?
@@ -224,6 +236,16 @@ LiquidHTML {
   AnyExceptPlus<lit> = (~ lit any)+
   AnyExceptStar<lit> = (~ lit any)*
   identifierCharacter = alnum | "_" | "-"
+
+  orderedListOf<a, b, sep> =
+    | nonemptyOrderedListOf<a, b, sep>
+    | emptyListOf<a, sep>
+  nonemptyOrderedListOf<a, b, sep> =
+    | nonemptyListOf<b, sep>
+    | nonemptyOrderedListOfBoth<a, b, sep>
+    | nonemptyListOf<a, sep>
+  nonemptyOrderedListOfBoth<a, b, sep> =
+    nonemptyListOf<a, sep> (sep nonemptyListOf<b, sep>)
 
   TextNode = AnyExceptPlus<openControl>
   openControl = "<" | "{{" | "{%"

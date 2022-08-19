@@ -47,6 +47,16 @@ export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
   );
 }
 
+// These are officially supported with special node types
+export enum NamedTags {
+  echo = 'echo',
+  section = 'section',
+  assign = 'assign',
+  render = 'render',
+  include = 'include',
+  form = 'form',
+}
+
 export const HtmlNodeTypes = [
   NodeTypes.HtmlElement,
   NodeTypes.HtmlRawNode,
