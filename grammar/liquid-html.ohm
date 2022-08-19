@@ -82,6 +82,7 @@ LiquidHTML {
     | liquidTagAssign
     | liquidTagRender
     | liquidTagInclude
+    | liquidTagSection
     | liquidTagBaseCase
 
   liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
@@ -92,6 +93,9 @@ LiquidHTML {
 
   liquidTagAssign = liquidTagRule<"assign", liquidTagAssignMarkup>
   liquidTagAssignMarkup = variableSegment space* "=" space* liquidVariable
+
+  liquidTagSection = liquidTagRule<"section", liquidTagSectionMarkup>
+  liquidTagSectionMarkup = liquidString space*
 
   liquidTagInclude = liquidTagRule<"include", liquidTagRenderMarkup>
   liquidTagRender = liquidTagRule<"render", liquidTagRenderMarkup>
