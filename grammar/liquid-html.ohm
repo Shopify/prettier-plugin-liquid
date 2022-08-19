@@ -77,6 +77,7 @@ LiquidHTML {
 
   liquidTagOpen =
     | liquidTagOpenForm
+    | liquidTagOpenPaginate
     | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
@@ -107,16 +108,19 @@ LiquidHTML {
   liquidTagInclude = liquidTagRule<"include", liquidTagRenderMarkup>
   liquidTagRender = liquidTagRule<"render", liquidTagRenderMarkup>
   liquidTagRenderMarkup =
-    snippetExpression renderVariableExpression? renderAliasExpression? (argumentSeparatorOptionalComma renderArguments) space*
+    snippetExpression renderVariableExpression? renderAliasExpression? (argumentSeparatorOptionalComma tagArguments) space*
   snippetExpression = liquidString | variableSegmentAsLookup
   renderVariableExpression = space+ ("for" | "with") space+ liquidExpression
   renderAliasExpression = space+ "as" space+ variableSegment
-  renderArguments = listOf<namedArgument, argumentSeparatorOptionalComma>
 
   liquidTagOpenBaseCase = liquidTagOpenRule<blockName, tagMarkup>
 
   liquidTagOpenForm = liquidTagOpenRule<"form", liquidTagOpenFormMarkup>
   liquidTagOpenFormMarkup = arguments space*
+
+  liquidTagOpenPaginate = liquidTagOpenRule<"paginate", liquidTagOpenPaginateMarkup>
+  liquidTagOpenPaginateMarkup =
+    liquidExpression space+ "by" space+ liquidExpression (argumentSeparatorOptionalComma tagArguments)? space*
 
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
@@ -186,6 +190,7 @@ LiquidHTML {
   argumentSeparatorOptionalComma = space* ","? space*
   positionalArgument = liquidExpression ~(space* ":")
   namedArgument = variableSegment space* ":" space* liquidExpression
+  tagArguments = listOf<namedArgument, argumentSeparatorOptionalComma>
 
   variableSegment = (letter | "_") identifierCharacter*
   variableSegmentAsLookup = variableSegment

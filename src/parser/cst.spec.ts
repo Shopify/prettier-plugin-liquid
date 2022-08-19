@@ -576,6 +576,51 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectLocation(cst, '0');
       });
     });
+
+    it('should parse the paginate tag open markup as arguments', () => {
+      [
+        {
+          expression: `collection.products by 50`,
+          collection: { type: 'VariableLookup' },
+          pageSize: { type: 'Number' },
+        },
+        {
+          expression: `collection.products by setting.value`,
+          collection: { type: 'VariableLookup' },
+          pageSize: { type: 'VariableLookup' },
+        },
+        {
+          expression: `collection.products by setting.value window_size: 2`,
+          collection: { type: 'VariableLookup' },
+          pageSize: { type: 'VariableLookup' },
+          args: [{ type: 'Number' }],
+        },
+        {
+          expression: `collection.products by setting.value, window_size: 2`,
+          collection: { type: 'VariableLookup' },
+          pageSize: { type: 'VariableLookup' },
+          args: [{ type: 'Number' }],
+        },
+      ].forEach(({ expression, collection, pageSize, args }) => {
+        cst = toLiquidHtmlCST(`{% paginate ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.name').to.equal('paginate');
+        expectPath(cst, '0.markup.type').to.equal('PaginateMarkup');
+        expectPath(cst, '0.markup.collection.type').to.equal(collection.type);
+        expectPath(cst, '0.markup.pageSize.type').to.equal(pageSize.type);
+        if (args) {
+          expectPath(cst, '0.markup.args').to.have.lengthOf(args.length);
+          args.forEach((arg, i) => {
+            expectPath(cst, `0.markup.args.${i}.type`).to.equal('NamedArgument');
+            expectPath(cst, `0.markup.args.${i}.value.type`).to.equal(arg.type);
+          });
+        } else {
+          expectPath(cst, '0.markup.args').to.have.lengthOf(0);
+        }
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
   });
 
   describe('Case: LiquidNode', () => {
