@@ -469,6 +469,41 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it('should parse the cycle tag as cycle markup', () => {
+      [
+        {
+          expression: `a, "string", 10`,
+          groupName: null,
+          args: [{ type: 'VariableLookup' }, { type: 'String' }, { type: 'Number' }],
+        },
+        {
+          expression: `var: a, "string", 10`,
+          groupName: { type: 'VariableLookup' },
+          args: [{ type: 'VariableLookup' }, { type: 'String' }, { type: 'Number' }],
+        },
+      ].forEach(({ expression, groupName, args }) => {
+        cst = toLiquidHtmlCST(`{% cycle ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTag');
+        expectPath(cst, '0.name').to.equal('cycle');
+        expectPath(cst, '0.markup.type').to.equal('CycleMarkup');
+        if (groupName) {
+          expectPath(cst, '0.markup.groupName.type').to.equal(groupName.type);
+          expectLocation(cst, '0.markup.groupName');
+        } else {
+          expectPath(cst, '0.markup.groupName').to.equal(null);
+        }
+        expectPath(cst, '0.markup.args').to.have.lengthOf(args.length);
+        args.forEach((arg, i) => {
+          expectPath(cst, `0.markup.args.${i}.type`).to.equal(arg.type);
+          expectLocation(cst, `0.markup.args.${i}`);
+        });
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal('-');
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
+
     it('should parse the render tag', () => {
       [
         {

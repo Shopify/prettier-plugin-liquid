@@ -87,6 +87,7 @@ LiquidHTML {
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
   liquidTag =
     | liquidTagAssign
+    | liquidTagCycle
     | liquidTagEcho
     | liquidTagElsif
     | liquidTagInclude
@@ -109,6 +110,9 @@ LiquidHTML {
 
   liquidTagAssign = liquidTagRule<"assign", liquidTagAssignMarkup>
   liquidTagAssignMarkup = variableSegment space* "=" space* liquidVariable
+
+  liquidTagCycle = liquidTagRule<"cycle", liquidTagCycleMarkup>
+  liquidTagCycleMarkup = (liquidExpression ":")? space* nonemptyListOf<liquidExpression, argumentSeparator> space*
 
   liquidTagSection = liquidTagRule<"section", liquidTagSectionMarkup>
   liquidTagSectionMarkup = liquidString space*
