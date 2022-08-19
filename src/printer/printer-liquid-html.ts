@@ -486,9 +486,9 @@ function printNode(
     }
 
     case NodeTypes.LiquidLiteral: {
-      // We prefer nil over null.
-      if (node.keyword === 'null') {
-        return 'nil';
+      // We prefer null over nil.
+      if (node.keyword === 'nil') {
+        return 'null';
       }
       return node.keyword;
     }
