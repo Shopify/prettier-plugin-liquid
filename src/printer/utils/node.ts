@@ -118,12 +118,31 @@ export function shouldPreserveContent(
   return false;
 }
 
-export function isPrettierIgnoreNode(node: LiquidHtmlNode | undefined) {
+export function isPrettierIgnoreHtmlNode(
+  node: LiquidHtmlNode | undefined,
+): node is HtmlComment {
   return (
-    node &&
+    !!node &&
     node.type === NodeTypes.HtmlComment &&
     /^\s*prettier-ignore/m.test(node.body)
   );
+}
+
+export function isPrettierIgnoreLiquidNode(
+  node: LiquidHtmlNode | undefined,
+): node is LiquidTag {
+  return (
+    !!node &&
+    node.type === NodeTypes.LiquidTag &&
+    node.name === '#' &&
+    /^\s*prettier-ignore/m.test(node.markup)
+  );
+}
+
+export function isPrettierIgnoreNode(
+  node: LiquidHtmlNode | undefined,
+): node is HtmlComment | LiquidTag {
+  return isPrettierIgnoreLiquidNode(node) || isPrettierIgnoreHtmlNode(node);
 }
 
 export function hasPrettierIgnore(node: LiquidHtmlNode) {

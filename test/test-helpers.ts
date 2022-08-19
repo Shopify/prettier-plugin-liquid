@@ -56,6 +56,7 @@ export function assertFormattedEqualsFixed(
       let expected = expectedChunks[i].replace(TEST_MESSAGE, '').trimStart();
 
       if (TEST_IDEMPOTENCE) {
+        if (testConfig.debug) debug(actual, testOptions);
         actual = format(actual, testOptions).trimEnd();
       }
 
