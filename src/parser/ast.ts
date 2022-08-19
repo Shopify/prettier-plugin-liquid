@@ -120,6 +120,7 @@ export type LiquidTag = LiquidTagNamed | LiquidTagBaseCase;
 export type LiquidTagNamed =
   | LiquidTagAssign
   | LiquidTagCase
+  | LiquidTagCapture
   | LiquidTagCycle
   | LiquidTagDecrement
   | LiquidTagEcho
@@ -170,6 +171,9 @@ export interface LiquidTagIncrement
   extends LiquidTagNode<NamedTags.increment, LiquidVariableLookup> {}
 export interface LiquidTagDecrement
   extends LiquidTagNode<NamedTags.decrement, LiquidVariableLookup> {}
+
+export interface LiquidTagCapture
+  extends LiquidTagNode<NamedTags.capture, LiquidVariableLookup> {}
 
 export interface LiquidTagCycle
   extends LiquidTagNode<NamedTags.cycle, CycleMarkup> {}
@@ -852,6 +856,15 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: toExpression(node.markup, source) as LiquidVariableLookup,
+      };
+    }
+
+    case NamedTags.capture: {
+      return {
+        ...liquidTagBaseAttributes(node, source),
+        name: node.name,
+        markup: toExpression(node.markup, source) as LiquidVariableLookup,
+        children: [],
       };
     }
 

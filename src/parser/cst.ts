@@ -144,6 +144,7 @@ export type ConcreteLiquidTagOpen =
   | ConcreteLiquidTagOpenNamed;
 export type ConcreteLiquidTagOpenNamed =
   | ConcreteLiquidTagOpenCase
+  | ConcreteLiquidTagOpenCapture
   | ConcreteLiquidTagOpenIf
   | ConcreteLiquidTagOpenUnless
   | ConcreteLiquidTagOpenForm
@@ -159,6 +160,12 @@ export interface ConcreteLiquidTagOpenNode<Name, Markup>
 
 export interface ConcreteLiquidTagOpenBaseCase
   extends ConcreteLiquidTagOpenNode<string, string> {}
+
+export interface ConcreteLiquidTagOpenCapture
+  extends ConcreteLiquidTagOpenNode<
+    NamedTags.capture,
+    ConcreteLiquidVariableLookup
+  > {}
 
 export interface ConcreteLiquidTagOpenCase
   extends ConcreteLiquidTagOpenNode<NamedTags.case, ConcreteLiquidExpression> {}
@@ -546,6 +553,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
+    liquidTagOpenCapture: 0,
     liquidTagOpenForm: 0,
     liquidTagOpenFormMarkup: 0,
     liquidTagOpenFor: 0,
@@ -629,7 +637,6 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
     liquidTagEchoMarkup: 0,
-    liquidTagIncrementMarkup: 0,
     liquidTagSectionMarkup: 0,
     liquidTagLayoutMarkup: 0,
     liquidTagAssignMarkup: {
@@ -767,6 +774,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+    variableSegmentAsLookupMarkup: 0,
     variableSegmentAsLookup: {
       type: ConcreteNodeTypes.VariableLookup,
       name: 0,
