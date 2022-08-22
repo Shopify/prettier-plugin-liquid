@@ -235,6 +235,8 @@ export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagAssign
   | ConcreteLiquidTagCycle
   | ConcreteLiquidTagEcho
+  | ConcreteLiquidTagIncrement
+  | ConcreteLiquidTagDecrement
   | ConcreteLiquidTagElsif
   | ConcreteLiquidTagInclude
   | ConcreteLiquidTagLayout
@@ -252,6 +254,16 @@ export interface ConcreteLiquidTagBaseCase
   extends ConcreteLiquidTagNode<string, string> {}
 export interface ConcreteLiquidTagEcho
   extends ConcreteLiquidTagNode<NamedTags.echo, ConcreteLiquidVariable> {}
+export interface ConcreteLiquidTagIncrement
+  extends ConcreteLiquidTagNode<
+    NamedTags.increment,
+    ConcreteLiquidVariableLookup
+  > {}
+export interface ConcreteLiquidTagDecrement
+  extends ConcreteLiquidTagNode<
+    NamedTags.decrement,
+    ConcreteLiquidVariableLookup
+  > {}
 export interface ConcreteLiquidTagSection
   extends ConcreteLiquidTagNode<NamedTags.section, ConcreteStringLiteral> {}
 export interface ConcreteLiquidTagLayout
@@ -594,6 +606,8 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidTagAssign: 0,
     liquidTagEcho: 0,
     liquidTagCycle: 0,
+    liquidTagIncrement: 0,
+    liquidTagDecrement: 0,
     liquidTagRender: 0,
     liquidTagInclude: 0,
     liquidTagSection: 0,
@@ -615,6 +629,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
     liquidTagEchoMarkup: 0,
+    liquidTagIncrementMarkup: 0,
     liquidTagSectionMarkup: 0,
     liquidTagLayoutMarkup: 0,
     liquidTagAssignMarkup: {

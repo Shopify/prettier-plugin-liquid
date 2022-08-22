@@ -121,14 +121,16 @@ export type LiquidTagNamed =
   | LiquidTagAssign
   | LiquidTagCase
   | LiquidTagCycle
+  | LiquidTagDecrement
   | LiquidTagEcho
-  | LiquidTagForm
   | LiquidTagFor
+  | LiquidTagForm
   | LiquidTagIf
   | LiquidTagInclude
+  | LiquidTagIncrement
+  | LiquidTagLayout
   | LiquidTagPaginate
   | LiquidTagRender
-  | LiquidTagLayout
   | LiquidTagSection
   | LiquidTagTablerow
   | LiquidTagUnless;
@@ -163,6 +165,11 @@ export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
   name: string;
   value: LiquidVariable;
 }
+
+export interface LiquidTagIncrement
+  extends LiquidTagNode<NamedTags.increment, LiquidVariableLookup> {}
+export interface LiquidTagDecrement
+  extends LiquidTagNode<NamedTags.decrement, LiquidVariableLookup> {}
 
 export interface LiquidTagCycle
   extends LiquidTagNode<NamedTags.cycle, CycleMarkup> {}
@@ -836,6 +843,15 @@ function toNamedLiquidTag(
         ...liquidTagBaseAttributes(node, source),
         name: node.name,
         markup: toCycleMarkup(node.markup, source),
+      };
+    }
+
+    case NamedTags.increment:
+    case NamedTags.decrement: {
+      return {
+        ...liquidTagBaseAttributes(node, source),
+        name: node.name,
+        markup: toExpression(node.markup, source) as LiquidVariableLookup,
       };
     }
 
