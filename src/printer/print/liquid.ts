@@ -152,6 +152,7 @@ function printNamedLiquidBlock(
       return tag(trailingWhitespace);
     }
 
+    case NamedTags.layout:
     case NamedTags.section: {
       return tag(' ');
     }
