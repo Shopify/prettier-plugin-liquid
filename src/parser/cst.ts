@@ -36,6 +36,7 @@ export enum ConcreteNodeTypes {
   Condition = 'Condition',
 
   AssignMarkup = 'AssignMarkup',
+  CycleMarkup = 'CycleMarkup',
   ForMarkup = 'ForMarkup',
   RenderMarkup = 'RenderMarkup',
   PaginateMarkup = 'PaginateMarkup',
@@ -232,6 +233,7 @@ export type ConcreteLiquidTag =
   | ConcreteLiquidTagBaseCase;
 export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagAssign
+  | ConcreteLiquidTagCycle
   | ConcreteLiquidTagEcho
   | ConcreteLiquidTagElsif
   | ConcreteLiquidTagInclude
@@ -264,6 +266,17 @@ export interface ConcreteLiquidTagAssignMarkup
   extends ConcreteBasicNode<ConcreteNodeTypes.AssignMarkup> {
   name: string;
   value: ConcreteLiquidVariable;
+}
+
+export interface ConcreteLiquidTagCycle
+  extends ConcreteLiquidTagNode<
+    NamedTags.cycle,
+    ConcreteLiquidTagCycleMarkup
+  > {}
+export interface ConcreteLiquidTagCycleMarkup
+  extends ConcreteBasicNode<ConcreteNodeTypes.CycleMarkup> {
+  groupName: ConcreteLiquidExpression | null;
+  args: ConcreteLiquidExpression[];
 }
 
 export interface ConcreteLiquidTagRender
@@ -578,8 +591,9 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
 
     liquidTag: 0,
     liquidTagBaseCase: 0,
-    liquidTagEcho: 0,
     liquidTagAssign: 0,
+    liquidTagEcho: 0,
+    liquidTagCycle: 0,
     liquidTagRender: 0,
     liquidTagInclude: 0,
     liquidTagSection: 0,
@@ -607,6 +621,14 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       type: ConcreteNodeTypes.AssignMarkup,
       name: 0,
       value: 4,
+      locStart,
+      locEnd,
+    },
+
+    liquidTagCycleMarkup: {
+      type: ConcreteNodeTypes.CycleMarkup,
+      groupName: 0,
+      args: 3,
       locStart,
       locEnd,
     },

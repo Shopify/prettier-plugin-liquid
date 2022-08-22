@@ -36,6 +36,7 @@ export enum NodeTypes {
   LogicalExpression = 'LogicalExpression',
 
   AssignMarkup = 'AssignMarkup',
+  CycleMarkup = 'CycleMarkup',
   ForMarkup = 'ForMarkup',
   PaginateMarkup = 'PaginateMarkup',
   RenderMarkup = 'RenderMarkup',
@@ -55,6 +56,7 @@ export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
 export enum NamedTags {
   assign = 'assign',
   case = 'case',
+  cycle = 'cycle',
   echo = 'echo',
   elsif = 'elsif',
   form = 'form',

@@ -142,6 +142,22 @@ function printNamedLiquidBlock(
       return tag(trailingWhitespace);
     }
 
+    case NamedTags.cycle: {
+      const whitespace = node.markup.args.length > 1 ? line : ' ';
+      return group([
+        '{%',
+        whitespaceStart,
+        ' ',
+        node.name,
+        // We want to break after the groupName
+        node.markup.groupName ? ' ' : '',
+        indent(path.call((p) => print(p), 'markup')),
+        whitespace,
+        whitespaceEnd,
+        '%}',
+      ]);
+    }
+
     case NamedTags.include:
     case NamedTags.render: {
       const markup = node.markup;

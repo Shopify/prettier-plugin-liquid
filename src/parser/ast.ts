@@ -31,6 +31,7 @@ import {
   ConcreteLiquidCondition,
   ConcreteLiquidComparison,
   ConcreteLiquidTagForMarkup,
+  ConcreteLiquidTagCycleMarkup,
 } from '~/parser/cst';
 import {
   Comparators,
@@ -59,6 +60,7 @@ export type LiquidHtmlNode =
   | LiquidFilter
   | LiquidNamedArgument
   | AssignMarkup
+  | CycleMarkup
   | ForMarkup
   | RenderMarkup
   | PaginateMarkup
@@ -118,6 +120,7 @@ export type LiquidTag = LiquidTagNamed | LiquidTagBaseCase;
 export type LiquidTagNamed =
   | LiquidTagAssign
   | LiquidTagCase
+  | LiquidTagCycle
   | LiquidTagEcho
   | LiquidTagForm
   | LiquidTagFor
@@ -159,6 +162,13 @@ export interface LiquidTagAssign
 export interface AssignMarkup extends ASTNode<NodeTypes.AssignMarkup> {
   name: string;
   value: LiquidVariable;
+}
+
+export interface LiquidTagCycle
+  extends LiquidTagNode<NamedTags.cycle, CycleMarkup> {}
+export interface CycleMarkup extends ASTNode<NodeTypes.CycleMarkup> {
+  groupName: LiquidExpression | null;
+  args: LiquidExpression[];
 }
 
 export interface LiquidTagCase
@@ -821,6 +831,14 @@ function toNamedLiquidTag(
       };
     }
 
+    case NamedTags.cycle: {
+      return {
+        ...liquidTagBaseAttributes(node, source),
+        name: node.name,
+        markup: toCycleMarkup(node.markup, source),
+      };
+    }
+
     case NamedTags.include:
     case NamedTags.render: {
       return {
@@ -956,6 +974,19 @@ function toAssignMarkup(
     type: NodeTypes.AssignMarkup,
     name: node.name,
     value: toLiquidVariable(node.value, source),
+    position: position(node),
+    source,
+  };
+}
+
+function toCycleMarkup(
+  node: ConcreteLiquidTagCycleMarkup,
+  source: string,
+): CycleMarkup {
+  return {
+    type: NodeTypes.CycleMarkup,
+    groupName: node.groupName ? toExpression(node.groupName, source) : null,
+    args: node.args.map((arg) => toExpression(arg, source)),
     position: position(node),
     source,
   };

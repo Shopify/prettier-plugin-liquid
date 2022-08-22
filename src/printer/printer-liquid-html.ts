@@ -382,6 +382,25 @@ function printNode(
       return [node.name, ' = ', path.call(print, 'value')];
     }
 
+    case NodeTypes.CycleMarkup: {
+      const doc: Doc[] = [];
+
+      if (node.groupName) {
+        doc.push(path.call(print, 'groupName'), ':');
+      }
+
+      const whitespace = node.args.length > 1 ? line : ' ';
+      doc.push(
+        whitespace,
+        join(
+          [',', whitespace],
+          path.map((p) => print(p), 'args'),
+        ),
+      );
+
+      return doc;
+    }
+
     case NodeTypes.ForMarkup: {
       const doc = [node.variableName, ' in ', path.call(print, 'collection')];
 
