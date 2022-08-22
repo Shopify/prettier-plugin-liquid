@@ -77,6 +77,7 @@ LiquidHTML {
 
   liquidTagOpen =
     | liquidTagOpenCase
+    | liquidTagOpenCapture
     | liquidTagOpenForm
     | liquidTagOpenFor
     | liquidTagOpenTablerow
@@ -116,9 +117,10 @@ LiquidHTML {
   liquidTagCycle = liquidTagRule<"cycle", liquidTagCycleMarkup>
   liquidTagCycleMarkup = (liquidExpression ":")? space* nonemptyListOf<liquidExpression, argumentSeparator> space*
 
-  liquidTagIncrement = liquidTagRule<"increment", liquidTagIncrementMarkup>
-  liquidTagDecrement = liquidTagRule<"decrement", liquidTagIncrementMarkup>
-  liquidTagIncrementMarkup = variableSegmentAsLookup space*
+  liquidTagIncrement = liquidTagRule<"increment", variableSegmentAsLookupMarkup>
+  liquidTagDecrement = liquidTagRule<"decrement", variableSegmentAsLookupMarkup>
+  liquidTagOpenCapture = liquidTagOpenRule<"capture", variableSegmentAsLookupMarkup>
+  variableSegmentAsLookupMarkup = variableSegmentAsLookup space*
 
   liquidTagSection = liquidTagRule<"section", liquidTagSectionMarkup>
   liquidTagSectionMarkup = liquidString space*

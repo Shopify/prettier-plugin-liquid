@@ -689,6 +689,17 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it('should parse capture arguments as a singular liquid variable lookup', () => {
+      [{ expression: `var`, type: 'VariableLookup' }].forEach(({ expression, type }) => {
+        cst = toLiquidHtmlCST(`{% capture ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.name').to.equal('capture');
+        expectPath(cst, '0.markup.type').to.equal(type);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
+
     it('should parse when arguments as an array of liquid expressions', () => {
       [
         { expression: `"string"`, args: [{ type: 'String' }] },

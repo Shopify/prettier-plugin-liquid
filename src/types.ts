@@ -55,6 +55,7 @@ export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
 // These are officially supported with special node types
 export enum NamedTags {
   assign = 'assign',
+  capture = 'capture',
   case = 'case',
   cycle = 'cycle',
   decrement = 'decrement',
