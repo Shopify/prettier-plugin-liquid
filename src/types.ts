@@ -53,6 +53,7 @@ export function isLiquidHtmlNode(value: any): value is LiquidHtmlNode {
 // These are officially supported with special node types
 export enum NamedTags {
   assign = 'assign',
+  case = 'case',
   echo = 'echo',
   elsif = 'elsif',
   form = 'form',
@@ -62,6 +63,7 @@ export enum NamedTags {
   render = 'render',
   section = 'section',
   unless = 'unless',
+  when = 'when',
 }
 
 export enum Comparators {

@@ -576,6 +576,44 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it('should parse case arguments as a singular liquid expression', () => {
+      [
+        { expression: `"string"`, type: 'String' },
+        { expression: `var.lookup`, type: 'VariableLookup' },
+      ].forEach(({ expression, type }) => {
+        cst = toLiquidHtmlCST(`{% case ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTagOpen');
+        expectPath(cst, '0.name').to.equal('case');
+        expectPath(cst, '0.markup.type').to.equal(type);
+        expectLocation(cst, '0');
+        expectLocation(cst, '0.markup');
+      });
+    });
+
+    it('should parse when arguments as an array of liquid expressions', () => {
+      [
+        { expression: `"string"`, args: [{ type: 'String' }] },
+        {
+          expression: `"string", var.lookup`,
+          args: [{ type: 'String' }, { type: 'VariableLookup' }],
+        },
+        {
+          expression: `"string" or var.lookup`,
+          args: [{ type: 'String' }, { type: 'VariableLookup' }],
+        },
+      ].forEach(({ expression, args }) => {
+        cst = toLiquidHtmlCST(`{% when ${expression} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTag');
+        expectPath(cst, '0.name').to.equal('when');
+        expectPath(cst, '0.markup').to.have.lengthOf(args.length);
+        args.forEach((arg, i) => {
+          expectPath(cst, `0.markup.${i}.type`).to.equal(arg.type);
+          expectLocation(cst, `0.markup.${i}`);
+        });
+        expectLocation(cst, '0');
+      });
+    });
+
     it('should parse the paginate tag open markup as arguments', () => {
       [
         {

@@ -1,0 +1,38 @@
+It should never break a name
+printWidth: 1
+{% case 'name' %}
+{% endcase %}
+{% case true %}
+{% endcase %}
+{% case var.lookup %}
+{% endcase %}
+{%- case var.lookup -%}
+{% endcase %}
+
+It should break and indent when statements, and not break the when
+printWidth: 1
+{% case candy.type %}
+  {% when 'gummy bears' %}
+    yum!
+{% endcase %}
+
+It should break on when comma syntax
+printWidth: 1
+{% case candy.type %}
+  {% when 'gummy bears',
+    'chocolate'
+  %}
+    yum!
+{% endcase %}
+
+It should break on when or syntax (and prefer commas)
+printWidth: 1
+{% case candy.type %}
+  {% when 'gummy bears',
+    'chocolate',
+    'chips'
+  %}
+    yum!
+  {% else %}
+    ok!
+{% endcase %}
