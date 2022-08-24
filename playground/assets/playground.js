@@ -4,6 +4,7 @@ const options = {
 
 const numInputs = ['printWidth'];
 const boolInputs = ['liquidSingleQuote', 'singleQuote'];
+const selectInputs = ['htmlWhitespaceSensitivity'];
 
 const waitFor = (pred) => {
   return new Promise((resolve) => {
@@ -43,6 +44,14 @@ boolInputs.forEach((input) => {
   });
 });
 
+selectInputs.forEach((input) => {
+  const el = document.getElementById(input);
+  el.addEventListener('input', (e) => {
+    options[input] = el.options[el.selectedIndex].value;
+    format();
+  });
+});
+
 function format() {
   try {
     output.value = prettier.format(input.value, {
@@ -63,7 +72,10 @@ function onKeyup(e) {
 }
 
 async function main() {
-  await waitFor(() => window.prettierPluginLiquid);
+  await Promise.all([
+    waitFor(() => window.prettierPluginLiquid),
+    waitFor(() => window.prettier),
+  ]);
   format();
   input.oninput = format;
   input.addEventListener('keyup', onKeyup);

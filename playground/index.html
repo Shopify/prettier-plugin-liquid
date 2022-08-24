@@ -1,11 +1,11 @@
 <head id="head">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width" />
-  <script
-    src="https://www.unpkg.com/prettier@2.7.1/standalone.js"
-    defer
-  ></script>
   <link rel="stylesheet" href="assets/styles.css" />
+
+  <!-- I'm ashamed that this is parser blocking, I had to do it
+    to support local development. Sorry. -->
+  <script src="https://www.unpkg.com/prettier@2.7.1/standalone.js"></script>
   <script>
     // This script exists to support local development with a more recent build
     // We'll try to load the local standalone file and fallback to the
@@ -13,7 +13,7 @@
     function getScript(url) {
       const script = document.createElement('script');
       script.src = url;
-      script.async = true;
+      script.defer = true;
       return script;
     }
 
@@ -73,8 +73,8 @@
         <div class="options">
           <details class="sub-options" open>
             <summary>Options</summary>
-            <label title="The line length where Prettier will try wrap."
-              >--print-width
+            <label title="The line length where Prettier will try wrap.">
+              --print-width
               <input
                 id="printWidthRange"
                 type="range"
@@ -91,13 +91,23 @@
                 value="120"
               />
             </label>
-            <label title="Use single quotes instead of double quotes."
-              ><input id="singleQuote" type="checkbox" /> --single-quote</label
+            <label
+              title="How meaningful whitespace is handled between HTML nodes"
             >
-            <label title="Use single quotes in Liquid."
-              ><input id="liquidSingleQuote" type="checkbox" checked />
-              --liquid-single-quote</label
-            >
+              --html-whitespace-sensitivity
+              <select id="htmlWhitespaceSensitivity">
+                <option value="css">css</option>
+                <option value="strict">strict</option>
+                <option value="ignore">ignore</option>
+              </select>
+            </label>
+            <label title="Use single quotes instead of double quotes.">
+              <input id="singleQuote" type="checkbox" /> --single-quote
+            </label>
+            <label title="Use single quotes in Liquid.">
+              <input id="liquidSingleQuote" type="checkbox" checked />
+              --liquid-single-quote
+            </label>
           </details>
         </div>
       </div>
