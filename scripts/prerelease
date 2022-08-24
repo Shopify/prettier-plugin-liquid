@@ -3,6 +3,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const packageJson = require('../package.json');
+const previousVersion = packageJson.version;
 
 async function run() {
   const VERSION = process.env.VERSION;
@@ -12,7 +13,11 @@ async function run() {
   if (!/^\d+\.\d+\.\d+/.test(VERSION)) {
     throw new Error('VERSION environment variable must match "X.X.X[-.*]"');
   }
-  await Promise.all([updateSinceVersion(VERSION), updatePackageJson(VERSION)]);
+  await Promise.all([
+    updateSinceVersion(VERSION),
+    updatePackageJson(VERSION),
+    updateGhPageVersion(VERSION),
+  ]);
 }
 
 async function updateSinceVersion(version) {
@@ -28,6 +33,16 @@ async function updatePackageJson(version) {
   await fs.writeFile(
     packageJsonPath,
     JSON.stringify(packageJson, null, 2) + '\n',
+    'utf8',
+  );
+}
+
+async function updateGhPageVersion(version) {
+  const indexHtml = path.join(__dirname, '../docs/index.html');
+  const contents = await fs.readFile(indexHtml, 'utf8');
+  await fs.writeFile(
+    indexHtml,
+    contents.replaceAll('v' + previousVersion, 'v' + version),
     'utf8',
   );
 }

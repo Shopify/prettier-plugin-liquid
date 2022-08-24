@@ -32,6 +32,7 @@
     "debug": "node --inspect-brk node_modules/.bin/_mocha \"{src,test}/**/*.ts\"",
     "format": "scripts/relative-to-alias && prettier --write --ignore-unknown \"{src,test}/**/*.ts\"",
     "format:check": "prettier --check --ignore-unknown \"{src,test}/**/*.ts\"",
+    "playground": "npx http-server playground",
     "prepare": "husky install",
     "prerelease": "scripts/prerelease",
     "prettier": "prettier --plugin . --parser=liquid-html",
