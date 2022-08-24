@@ -170,8 +170,8 @@ textarea, .CodeMirror {
 }
 
 [readonly] {
-    background: none;
-    opacity: .8;
+  background: none;
+  opacity: .8;
 }
 
 .bottom-bar {
@@ -334,6 +334,7 @@ input[type="number"] {
 
 .rulers {
   position: absolute;
+  z-index: -1;
   top: 0;
   left: 0;
   width: 100%;
