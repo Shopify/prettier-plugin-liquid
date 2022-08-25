@@ -32,6 +32,7 @@ import {
   ConcreteLiquidComparison,
   ConcreteLiquidTagForMarkup,
   ConcreteLiquidTagCycleMarkup,
+  ConcreteHtmlRawTag,
 } from '~/parser/cst';
 import {
   Comparators,
@@ -64,6 +65,7 @@ export type LiquidHtmlNode =
   | ForMarkup
   | RenderMarkup
   | PaginateMarkup
+  | RawMarkup
   | RenderVariableExpression
   | LiquidLogicalExpression
   | LiquidComparison
@@ -364,10 +366,26 @@ export interface HtmlRawNode extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
   /**
    * The innerHTML of the tag as a string. Not trimmed. Not parsed.
    */
-  body: string;
+  body: RawMarkup;
   name: string;
   blockEndPosition: Position;
 }
+
+export enum RawMarkupKinds {
+  css = 'css',
+  html = 'html',
+  javascript = 'javascript',
+  json = 'json',
+  markdown = 'markdown',
+  typescript = 'typescript',
+  text = 'text',
+}
+
+export interface RawMarkup extends ASTNode<NodeTypes.RawMarkup> {
+  kind: RawMarkupKinds;
+  value: string;
+}
+
 export interface HtmlComment extends ASTNode<NodeTypes.HtmlComment> {
   body: string;
 }
@@ -652,7 +670,7 @@ export function cstToAst(
         builder.push({
           type: NodeTypes.HtmlRawNode,
           name: node.name,
-          body: node.body,
+          body: toRawMarkup(node, source),
           attributes: toAttributes(node.attrList || [], source),
           position: position(node),
           source,
@@ -1046,6 +1064,66 @@ function toPaginateMarkup(
     pageSize: toExpression(node.pageSize, source),
     position: position(node),
     args: node.args ? node.args.map((arg) => toNamedArgument(arg, source)) : [],
+    source,
+  };
+}
+
+function toRawMarkupKind(
+  nodeName: string,
+  node: ConcreteHtmlRawTag,
+): RawMarkupKinds {
+  switch (nodeName) {
+    case 'script': {
+      const scriptAttr = node.attrList?.find(
+        (attr) => 'name' in attr && attr.name === 'type',
+      );
+      if (
+        !scriptAttr ||
+        !('value' in scriptAttr) ||
+        scriptAttr.value.length === 0 ||
+        scriptAttr.value[0].type !== ConcreteNodeTypes.TextNode
+      ) {
+        return RawMarkupKinds.javascript;
+      }
+      const type = scriptAttr.value[0].value;
+
+      if (type === 'text/markdown') {
+        return RawMarkupKinds.markdown;
+      }
+
+      if (type === 'application/x-typescript') {
+        return RawMarkupKinds.typescript;
+      }
+
+      if (type === 'text/html') {
+        return RawMarkupKinds.html;
+      }
+
+      if (
+        (type && (type.endsWith('json') || type.endsWith('importmap'))) ||
+        type === 'speculationrules'
+      ) {
+        return RawMarkupKinds.json;
+      }
+
+      return RawMarkupKinds.javascript;
+    }
+    case 'style':
+      return RawMarkupKinds.css;
+    default:
+      return RawMarkupKinds.text;
+  }
+}
+
+function toRawMarkup(node: ConcreteHtmlRawTag, source: string): RawMarkup {
+  return {
+    type: NodeTypes.RawMarkup,
+    kind: toRawMarkupKind(node.name, node),
+    value: node.body,
+    position: {
+      start: node.blockStartLocEnd,
+      end: node.blockEndLocStart,
+    },
     source,
   };
 }

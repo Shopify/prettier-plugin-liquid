@@ -39,6 +39,7 @@ export enum NodeTypes {
   CycleMarkup = 'CycleMarkup',
   ForMarkup = 'ForMarkup',
   PaginateMarkup = 'PaginateMarkup',
+  RawMarkup = 'RawMarkup',
   RenderMarkup = 'RenderMarkup',
   RenderVariableExpression = 'RenderVariableExpression',
 }

@@ -623,7 +623,9 @@ describe('Unit: toLiquidHtmlAST', () => {
     ast = toLiquidHtmlAST(`<script>\n  const a = {{ product | json }};\n</script>`);
     expectPath(ast, 'children.0.type').to.eql('HtmlRawNode');
     expectPath(ast, 'children.0.name').to.eql('script');
-    expectPath(ast, 'children.0.body').to.eql('\n  const a = {{ product | json }};\n');
+    expectPath(ast, 'children.0.body.type').to.eql('RawMarkup');
+    expectPath(ast, 'children.0.body.kind').to.eql('javascript');
+    expectPath(ast, 'children.0.body.value').to.eql('\n  const a = {{ product | json }};\n');
     expectPosition(ast, 'children.0');
   });
 
@@ -631,7 +633,9 @@ describe('Unit: toLiquidHtmlAST', () => {
     ast = toLiquidHtmlAST(`<style>\n  :root { --bg: {{ settings.bg }}}\n</style>`);
     expectPath(ast, 'children.0.type').to.eql('HtmlRawNode');
     expectPath(ast, 'children.0.name').to.eql('style');
-    expectPath(ast, 'children.0.body').to.eql('\n  :root { --bg: {{ settings.bg }}}\n');
+    expectPath(ast, 'children.0.body.type').to.eql('RawMarkup');
+    expectPath(ast, 'children.0.body.kind').to.eql('css');
+    expectPath(ast, 'children.0.body.value').to.eql('\n  :root { --bg: {{ settings.bg }}}\n');
     expectPosition(ast, 'children.0');
   });
 

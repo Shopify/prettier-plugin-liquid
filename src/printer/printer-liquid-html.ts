@@ -43,6 +43,8 @@ import {
   printLiquidTag,
 } from '~/printer/print/liquid';
 import { printChildren } from '~/printer/print/children';
+import { embed } from '~/printer/embed';
+import { RawMarkupKinds } from '~/parser';
 
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
@@ -237,19 +239,20 @@ function printNode(
     }
 
     case NodeTypes.HtmlRawNode: {
-      const lines = bodyLines(node.body);
-      const shouldSkipFirstLine =
-        !node.source[node.blockStartPosition.end].match(/\r|\n/);
-      const body =
-        lines.length > 0 && lines[0].trim() !== ''
-          ? [
-              indent([
-                hardline,
-                join(hardline, reindent(lines, shouldSkipFirstLine)),
-              ]),
-              hardline,
-            ]
-          : [softline];
+      let body: Doc = [];
+      const hasEmptyBody = node.body.value.trim() === '';
+      const shouldIndentBody = node.body.kind !== RawMarkupKinds.markdown;
+
+      if (!hasEmptyBody) {
+        if (shouldIndentBody) {
+          body = [indent([hardline, path.call(print, 'body')]), hardline];
+        } else {
+          body = [
+            builders.dedentToRoot([hardline, path.call(print, 'body')]),
+            hardline,
+          ];
+        }
+      }
 
       return group([
         group([
@@ -258,9 +261,18 @@ function printNode(
           printAttributes(path as AstPath<HtmlRawNode>, options, print),
           '>',
         ]),
-        body,
+        ...body,
         ['</', node.name, '>'],
       ]);
+    }
+
+    case NodeTypes.RawMarkup: {
+      const lines = bodyLines(node.value);
+      const shouldSkipFirstLine =
+        !node.source[node.position.start].match(/\r|\n/);
+      return lines.length > 0 && lines[0].trim() !== ''
+        ? join(hardline, reindent(lines, shouldSkipFirstLine))
+        : softline;
     }
 
     case NodeTypes.LiquidDrop: {
@@ -603,8 +615,23 @@ function printNode(
   }
 }
 
-export const printerLiquidHtml: Printer<LiquidHtmlNode> & { preprocess: any } =
-  {
-    print: printNode,
-    preprocess,
-  };
+const ignoredKeys = new Set([
+  'prev',
+  'parentNode',
+  'next',
+  'firstChild',
+  'lastChild',
+]);
+
+export const printerLiquidHtml: Printer<LiquidHtmlNode> & {
+  preprocess: any;
+} & { getVisitorKeys: any } = {
+  print: printNode,
+  embed,
+  preprocess,
+  getVisitorKeys(node: any, nonTraversableKeys: Set<string>) {
+    return Object.keys(node).filter(
+      (key) => !nonTraversableKeys.has(key) && !ignoredKeys.has(key),
+    );
+  },
+};
