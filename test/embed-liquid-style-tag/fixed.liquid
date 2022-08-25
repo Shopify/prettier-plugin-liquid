@@ -1,0 +1,21 @@
+It should pretty print CSS inside style tags
+printWidth: 20
+{% style %}
+  .class,
+  #id,
+  html,
+  body {
+    background-color: green;
+    width: 100%;
+  }
+  .container {
+    display: flex;
+  }
+{% endstyle %}
+
+It should fallback to reindenting when it doesn't parse
+printWidth: 20
+{% style %}
+  .class,#id,html,body{background-color:{{setting.color}};width:100%}
+  .container{display:flex;}
+{% endstyle %}

@@ -11,8 +11,16 @@
 {%-endschema-%}
 </div>
 
-it should not try to format invalid json, should not reindent
+it should not try to format invalid json, but should reindent
 {% schema %}
 { "invalid":
-  'json' }
+  x0482 }
 {% endschema %}
+
+It should respect the indentSchema option
+indentSchema: false
+{%schema%}
+{
+  "hello": "world"
+}
+{%endschema%}

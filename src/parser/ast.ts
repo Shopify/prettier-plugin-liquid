@@ -33,6 +33,7 @@ import {
   ConcreteLiquidTagForMarkup,
   ConcreteLiquidTagCycleMarkup,
   ConcreteHtmlRawTag,
+  ConcreteLiquidRawTag,
 } from '~/parser/cst';
 import {
   Comparators,
@@ -109,7 +110,7 @@ export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
   /**
    * String body of the tag. So we don't try to parse it.
    */
-  body: string;
+  body: RawMarkup;
   whitespaceStart: '-' | '';
   whitespaceEnd: '-' | '';
   delimiterWhitespaceStart: '-' | '';
@@ -617,7 +618,7 @@ export function cstToAst(
         builder.push({
           type: NodeTypes.LiquidRawTag,
           name: node.name,
-          body: node.body,
+          body: toRawMarkup(node, source),
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
           delimiterWhitespaceStart: node.delimiterWhitespaceStart ?? '',
@@ -1068,11 +1069,37 @@ function toPaginateMarkup(
   };
 }
 
+function toRawMarkup(
+  node: ConcreteHtmlRawTag | ConcreteLiquidRawTag,
+  source: string,
+): RawMarkup {
+  return {
+    type: NodeTypes.RawMarkup,
+    kind: toRawMarkupKind(node),
+    value: node.body,
+    position: {
+      start: node.blockStartLocEnd,
+      end: node.blockEndLocStart,
+    },
+    source,
+  };
+}
+
 function toRawMarkupKind(
-  nodeName: string,
-  node: ConcreteHtmlRawTag,
+  node: ConcreteHtmlRawTag | ConcreteLiquidRawTag,
 ): RawMarkupKinds {
-  switch (nodeName) {
+  switch (node.type) {
+    case ConcreteNodeTypes.HtmlRawTag:
+      return toRawMarkupKindFromHtmlNode(node);
+    case ConcreteNodeTypes.LiquidRawTag:
+      return toRawMarkupKindFromLiquidNode(node);
+    default:
+      return assertNever(node);
+  }
+}
+
+function toRawMarkupKindFromHtmlNode(node: ConcreteHtmlRawTag): RawMarkupKinds {
+  switch (node.name) {
     case 'script': {
       const scriptAttr = node.attrList?.find(
         (attr) => 'name' in attr && attr.name === 'type',
@@ -1115,17 +1142,19 @@ function toRawMarkupKind(
   }
 }
 
-function toRawMarkup(node: ConcreteHtmlRawTag, source: string): RawMarkup {
-  return {
-    type: NodeTypes.RawMarkup,
-    kind: toRawMarkupKind(node.name, node),
-    value: node.body,
-    position: {
-      start: node.blockStartLocEnd,
-      end: node.blockEndLocStart,
-    },
-    source,
-  };
+function toRawMarkupKindFromLiquidNode(
+  node: ConcreteLiquidRawTag,
+): RawMarkupKinds {
+  switch (node.name) {
+    case 'javascript':
+      return RawMarkupKinds.javascript;
+    case 'style':
+      return RawMarkupKinds.css;
+    case 'schema':
+      return RawMarkupKinds.json;
+    default:
+      return RawMarkupKinds.text;
+  }
 }
 
 function toRenderMarkup(

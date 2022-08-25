@@ -280,10 +280,6 @@ function printNode(
     }
 
     case NodeTypes.LiquidRawTag: {
-      const lines = bodyLines(node.body);
-      const shouldSkipFirstLine =
-        !node.source[node.blockStartPosition.end].match(/\r|\n/);
-      const body = reindent(lines, shouldSkipFirstLine);
       const blockStart = group([
         '{%',
         node.whitespaceStart,
@@ -304,52 +300,34 @@ function printNode(
         '%}',
       ];
 
-      if (node.name === 'schema') {
-        const [schema, isValid] = getSchema(node.body, options);
-        if (!isValid) {
-          return [
-            blockStart,
-            ...replaceTextEndOfLine(schema, hardline),
-            blockEnd,
-          ];
-        }
-
-        const body = [hardline, ...replaceTextEndOfLine(schema, hardline)];
-        return [
-          blockStart,
-          options.indentSchema ? indent(body) : body,
-          hardline,
-          blockEnd,
-        ];
-      }
-
-      if (
+      let body: Doc = [];
+      const hasEmptyBody = node.body.value.trim() === '';
+      const shouldNotIndentBody =
+        node.name === 'schema' && !options.indentSchema;
+      const shouldPrintAsIs =
+        node.name === 'raw' ||
         !hasLineBreakInRange(
           node.source,
-          node.blockStartPosition.end,
-          node.blockEndPosition.start,
-        )
-      ) {
-        return [
-          blockStart,
+          node.body.position.start,
+          node.body.position.end,
+        );
+
+      if (shouldPrintAsIs) {
+        body = [
           node.source.slice(
             node.blockStartPosition.end,
             node.blockEndPosition.start,
           ),
-          blockEnd,
         ];
+      } else if (hasEmptyBody) {
+        body = [hardline];
+      } else if (shouldNotIndentBody) {
+        body = [hardline, path.call(print, 'body'), hardline];
+      } else {
+        body = [indent([hardline, path.call(print, 'body')]), hardline];
       }
 
-      if (body.length === 1 && body[0].trim() === '') {
-        return [blockStart, hardline, blockEnd];
-      }
-
-      return [
-        blockStart,
-        indent([hardline, join(hardline, body)]),
-        hardline,
-        blockEnd,
-      ];
+      return [blockStart, ...body, blockEnd];
     }
 
     case NodeTypes.LiquidTag: {
