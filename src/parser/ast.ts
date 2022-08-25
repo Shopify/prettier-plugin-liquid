@@ -1098,6 +1098,8 @@ function toRawMarkupKind(
   }
 }
 
+const liquidToken = /(\{%|\{\{)-?/g;
+
 function toRawMarkupKindFromHtmlNode(node: ConcreteHtmlRawTag): RawMarkupKinds {
   switch (node.name) {
     case 'script': {
@@ -1136,6 +1138,9 @@ function toRawMarkupKindFromHtmlNode(node: ConcreteHtmlRawTag): RawMarkupKinds {
       return RawMarkupKinds.javascript;
     }
     case 'style':
+      if (liquidToken.test(node.body)) {
+        return RawMarkupKinds.text;
+      }
       return RawMarkupKinds.css;
     default:
       return RawMarkupKinds.text;
@@ -1149,6 +1154,9 @@ function toRawMarkupKindFromLiquidNode(
     case 'javascript':
       return RawMarkupKinds.javascript;
     case 'style':
+      if (liquidToken.test(node.body)) {
+        return RawMarkupKinds.text;
+      }
       return RawMarkupKinds.css;
     case 'schema':
       return RawMarkupKinds.json;
