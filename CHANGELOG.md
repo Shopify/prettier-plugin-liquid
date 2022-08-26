@@ -1,4 +1,28 @@
 
+0.3.0 / 2022-08-26
+==================
+
+## Features
+
+  * Add [online playground](https://shopify.github.io/prettier-plugin-liquid/) ([#86](https://github.com/shopify/prettier-plugin-liquid/issues/86))
+  * Add support for `{% # prettier-ignore %}` ([#85](https://github.com/shopify/prettier-plugin-liquid/issues/85))
+  * Add support for the `assign` tag ([#54](https://github.com/shopify/prettier-plugin-liquid/issues/54))
+  * Add support for the `echo` liquid tag ([#54](https://github.com/shopify/prettier-plugin-liquid/issues/54))
+  * Add support for the `section` tag ([#73](https://github.com/shopify/prettier-plugin-liquid/issues/73))
+  * Add support for the `if`, `elsif` and `unless` tags ([#77](https://github.com/shopify/prettier-plugin-liquid/issues/77))
+  * Add support for the `render` and `include` tags ([#56](https://github.com/shopify/prettier-plugin-liquid/issues/56))
+  * Add support for the `form` tag ([#75](https://github.com/shopify/prettier-plugin-liquid/issues/75))
+  * Add support for the `capture` open tag parsing ([#84](https://github.com/shopify/prettier-plugin-liquid/issues/84))
+  * Add support for the `case` and `when` tag ([#78](https://github.com/shopify/prettier-plugin-liquid/issues/78))
+  * Add support for the `cycle` tag ([#81](https://github.com/shopify/prettier-plugin-liquid/issues/81))
+  * Add support for the `for` tag ([#79](https://github.com/shopify/prettier-plugin-liquid/issues/79))
+  * Add support for the `increment` and `decrement` tags ([#82](https://github.com/shopify/prettier-plugin-liquid/issues/82))
+  * Add support for the `layout` tag ([#80](https://github.com/shopify/prettier-plugin-liquid/issues/80))
+  * Add support for the `paginate` tag ([#76](https://github.com/shopify/prettier-plugin-liquid/issues/76))
+  * Add support for the `tablerow` tag ([#79](https://github.com/shopify/prettier-plugin-liquid/issues/79))
+  * Prefer `null` over `nil`
+  * Strip markup from tags that don't take arguments
+
 0.2.1 / 2022-08-10
 ==================
 
