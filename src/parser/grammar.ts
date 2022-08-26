@@ -1,8 +1,10 @@
 import ohm from 'ohm-js';
 
-export const liquidHtmlGrammar = ohm.grammar(
+export const liquidHtmlGrammars = ohm.grammars(
   require('../../grammar/liquid-html.ohm.js'),
 );
+
+export const liquidHtmlGrammar = liquidHtmlGrammars['LiquidHTML'];
 
 // see ../../grammar/liquid-html.ohm for full list
 export const BLOCKS = (

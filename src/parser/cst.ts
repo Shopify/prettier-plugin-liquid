@@ -427,7 +427,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     locStart,
     locEnd,
   };
-  const res = liquidHtmlGrammar.match(text);
+  const res = liquidHtmlGrammar.match(text, 'Node');
 
   if (res.failed()) {
     throw new LiquidHTMLCSTParsingError(res);

@@ -38,6 +38,6 @@ describe('Unit: liquidHtmlGrammar', () => {
   });
 
   function expectMatchSucceeded(text: string) {
-    return expect(liquidHtmlGrammar.match(text).succeeded());
+    return expect(liquidHtmlGrammar.match(text, 'Node').succeeded());
   }
 });

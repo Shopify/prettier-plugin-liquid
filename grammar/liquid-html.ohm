@@ -1,4 +1,30 @@
-LiquidHTML {
+Helpers {
+  empty = /* nothing */
+  anyExcept<lit> = (~ lit any)
+  anyExceptStar<lit> = (~ lit any)*
+  anyExceptPlus<lit> = (~ lit any)+
+  AnyExcept<lit> = (~ lit any)
+  AnyExceptPlus<lit> = (~ lit any)+
+  AnyExceptStar<lit> = (~ lit any)*
+  identifierCharacter = alnum | "_" | "-"
+
+  orderedListOf<a, b, sep> =
+    | nonemptyOrderedListOf<a, b, sep>
+    | emptyListOf<a, sep>
+  nonemptyOrderedListOf<a, b, sep> =
+    | nonemptyListOf<b, sep>
+    | nonemptyOrderedListOfBoth<a, b, sep>
+    | nonemptyListOf<a, sep>
+  nonemptyOrderedListOfBoth<a, b, sep> =
+    nonemptyListOf<a, sep> (sep nonemptyListOf<b, sep>)
+
+  openControl = "<" | "{{" | "{%"
+  controls = "\u{007F}".."\u{009F}"
+  noncharacters = "\u{FDD0}".."\u{FDEF}"
+  newline = "\r"? "\n"
+}
+
+LiquidHTML <: Helpers {
   Node
     = yamlFrontmatter? (HtmlNode | liquidNode | TextNode)*
 
@@ -292,29 +318,5 @@ LiquidHTML {
     ) ~identifierCharacter
 
   tagMarkup = anyExceptStar<("-%}"| "%}")>
-
-  anyExcept<lit> = (~ lit any)
-  anyExceptStar<lit> = (~ lit any)*
-  anyExceptPlus<lit> = (~ lit any)+
-  AnyExcept<lit> = (~ lit any)
-  AnyExceptPlus<lit> = (~ lit any)+
-  AnyExceptStar<lit> = (~ lit any)*
-  identifierCharacter = alnum | "_" | "-"
-
-  orderedListOf<a, b, sep> =
-    | nonemptyOrderedListOf<a, b, sep>
-    | emptyListOf<a, sep>
-  nonemptyOrderedListOf<a, b, sep> =
-    | nonemptyListOf<b, sep>
-    | nonemptyOrderedListOfBoth<a, b, sep>
-    | nonemptyListOf<a, sep>
-  nonemptyOrderedListOfBoth<a, b, sep> =
-    nonemptyListOf<a, sep> (sep nonemptyListOf<b, sep>)
-
   TextNode = AnyExceptPlus<openControl>
-  openControl = "<" | "{{" | "{%"
-  controls = "\u{007F}".."\u{009F}"
-  noncharacters = "\u{FDD0}".."\u{FDEF}"
-  newline = "\r"? "\n"
-  empty = /* nothing */
 }
