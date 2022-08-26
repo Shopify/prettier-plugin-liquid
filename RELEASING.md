@@ -11,19 +11,23 @@
 
 3. Run [`git changelog`](https://github.com/tj/git-extras) to update `CHANGELOG.md`.
 
-4. Commit your changes and make a PR.
+   ```bash
+   git changelog
+   ```
+
+5. Commit your changes and make a PR.
 
    ```bash
    git checkout -b "bump/v$VERSION"
-   git add CHANGELOG.md package.json src/index.ts
+   git add CHANGELOG.md package.json src/index.ts playground/index.html
    git commit -m "Bump version to $VERSION"
    git push origin "bump/v$VERSION"
    gh pr create --base="main" --head="Shopify:bump/v$VERSION"
    ```
 
-5. Merge your PR to main.
+6. Merge your PR to main.
 
-6. Push the tag
+7. Push the tag
 
    ```bash
    git tag v$VERSION
