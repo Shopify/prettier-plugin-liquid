@@ -52,6 +52,10 @@ See our [Wiki](https://github.com/Shopify/prettier-plugin-liquid/wiki) pages on 
 - [As a pre-commit hook](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-as-a-pre-commit-hook)
 - [With a bundler](https://github.com/shopify/prettier-plugin-liquid/wiki/Use-it-with-a-bundler)
 
+## Playground
+
+You can try it out in your browser in the [playground](https://shopify.github.io/prettier-plugin-liquid/).
+
 ## Configuration
 
 Prettier for Liquid supports the following options.
