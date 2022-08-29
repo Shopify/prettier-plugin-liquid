@@ -1,4 +1,8 @@
 Helpers {
+  Node = TextNode*
+  TextNode = AnyExceptPlus<openControl>
+  openControl = empty
+
   empty = /* nothing */
   anyExcept<lit> = (~ lit any)
   anyExceptStar<lit> = (~ lit any)*
@@ -18,88 +22,22 @@ Helpers {
   nonemptyOrderedListOfBoth<a, b, sep> =
     nonemptyListOf<a, sep> (sep nonemptyListOf<b, sep>)
 
-  openControl = "<" | "{{" | "{%"
   controls = "\u{007F}".."\u{009F}"
   noncharacters = "\u{FDD0}".."\u{FDEF}"
   newline = "\r"? "\n"
 }
 
-LiquidHTML <: Helpers {
-  Node
-    = yamlFrontmatter? (HtmlNode | liquidNode | TextNode)*
+Liquid <: Helpers {
+  Node := (liquidNode | TextNode)*
+  openControl := "{{" | "{%"
 
-  yamlFrontmatter =
-    "---" newline anyExceptStar<"---"> "---" newline
-
-  HtmlNode =
-    | HtmlComment
-    | HtmlRawTag
-    | HtmlVoidElement
-    | HtmlSelfClosingElement
-    | HtmlTagClose
-    | HtmlTagOpen
-
-  HtmlComment = "<!--" #(anyExceptStar<"-->"> "-->")
-
-  // These are black holes, we'll ignore what's in them
-  HtmlRawTag =
-    | HtmlRawTagImpl<"script">
-    | HtmlRawTagImpl<"style">
-    | HtmlRawTagImpl<"svg">
-
-  HtmlRawTagImpl<name> =
-    #("<" name) AttrList ">" #(anyExceptStar<endTag<name>> endTag<name>)
-
-  endTag<name> =
-    "</" name space* ">"
-
-  HtmlVoidElement =
-    #("<" voidElementName &(space | "/" | ">")) AttrList "/"? ">"
-
-  HtmlSelfClosingElement =
-    #("<" tagNameOrLiquidDrop) AttrList "/>"
-
-  HtmlTagOpen =
-    #("<" tagNameOrLiquidDrop) AttrList ">"
-
-  HtmlTagClose =
-    #("</" tagNameOrLiquidDrop) ">"
-
-  tagNameOrLiquidDrop =
-    | tagName
+  liquidNode =
+    | liquidRawTag
     | liquidDrop
-
-  tagName =
-    letter (alnum | "-" | ":")*
-
-  liquidTagName =
-    letter (alnum | "_")*
-
-  AttrList = Attr*
-
-  Attr =
-    liquidNode | AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
-
-  attrEmpty = attrName
-
-  AttrUnquoted = attrName "=" attrUnquotedValue
-  AttrSingleQuoted = attrName "=" "'" #(attrSingleQuotedValue "'")
-  AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
-
-  // https://html.spec.whatwg.org/#attributes-2
-  attrName = anyExceptPlus<(space | quotes | "=" | ">" | "/" | "{{" | "{%" | controls | noncharacters)>
-  attrUnquotedValue = (attrUnquotedTextNode)*
-  attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
-  attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
-
-  attrUnquotedTextNode = anyExceptPlus<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>
-  attrSingleQuotedTextNode = anyExceptPlus<("'" | "{{" | "{%")>
-  attrDoubleQuotedTextNode = anyExceptPlus<("\""| "{{" | "{%")>
-
-  quotes =  "'" | "\""
-
-  LiquidNode = liquidNode
-  liquidNode = liquidRawTag | liquidDrop | liquidTagClose | liquidTagOpen | liquidTag | liquidInlineComment
+    | liquidTagClose
+    | liquidTagOpen
+    | liquidTag
+    | liquidInlineComment
 
   liquidTagOpen =
     | liquidTagOpenCase
@@ -281,6 +219,97 @@ LiquidHTML <: Helpers {
   variableSegmentAsLookup = variableSegment
   identifier = variableSegment "?"?
 
+  tagMarkup = anyExceptStar<("-%}"| "%}")>
+
+  liquidTagName =
+    letter (alnum | "_")*
+
+  blockName =
+    // Shopify blocks
+    ( "form"
+    | "paginate"
+    // Base blocks
+    | "capture"
+    | "case"
+    | "for"
+    | "ifchanged"
+    | "if"
+    | "unless"
+    | "tablerow"
+    ) ~identifierCharacter
+}
+
+LiquidHTML <: Liquid {
+  Node := yamlFrontmatter? (HtmlNode | liquidNode | TextNode)*
+  openControl += "<"
+
+  yamlFrontmatter =
+    "---" newline anyExceptStar<"---"> "---" newline
+
+  HtmlNode =
+    | HtmlComment
+    | HtmlRawTag
+    | HtmlVoidElement
+    | HtmlSelfClosingElement
+    | HtmlTagClose
+    | HtmlTagOpen
+
+  HtmlComment = "<!--" #(anyExceptStar<"-->"> "-->")
+
+  // These are black holes, we'll ignore what's in them
+  HtmlRawTag =
+    | HtmlRawTagImpl<"script">
+    | HtmlRawTagImpl<"style">
+    | HtmlRawTagImpl<"svg">
+
+  HtmlRawTagImpl<name> =
+    #("<" name) AttrList ">" #(anyExceptStar<endTag<name>> endTag<name>)
+
+  endTag<name> =
+    "</" name space* ">"
+
+  HtmlVoidElement =
+    #("<" voidElementName &(space | "/" | ">")) AttrList "/"? ">"
+
+  HtmlSelfClosingElement =
+    #("<" tagNameOrLiquidDrop) AttrList "/>"
+
+  HtmlTagOpen =
+    #("<" tagNameOrLiquidDrop) AttrList ">"
+
+  HtmlTagClose =
+    #("</" tagNameOrLiquidDrop) ">"
+
+  tagNameOrLiquidDrop =
+    | tagName
+    | liquidDrop
+
+  tagName =
+    letter (alnum | "-" | ":")*
+
+  AttrList = Attr*
+
+  Attr =
+    liquidNode | AttrSingleQuoted | AttrDoubleQuoted | AttrUnquoted | attrEmpty
+
+  attrEmpty = attrName
+
+  AttrUnquoted = attrName "=" attrUnquotedValue
+  AttrSingleQuoted = attrName "=" "'" #(attrSingleQuotedValue "'")
+  AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
+
+  // https://html.spec.whatwg.org/#attributes-2
+  attrName = anyExceptPlus<(space | quotes | "=" | ">" | "/" | "{{" | "{%" | controls | noncharacters)>
+  attrUnquotedValue = (attrUnquotedTextNode)*
+  attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
+  attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
+
+  attrUnquotedTextNode = anyExceptPlus<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>
+  attrSingleQuotedTextNode = anyExceptPlus<("'" | "{{" | "{%")>
+  attrDoubleQuotedTextNode = anyExceptPlus<("\""| "{{" | "{%")>
+
+  quotes =  "'" | "\""
+
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   // Cheating a bit with by stretching it to the doctype
   voidElementName =
@@ -302,21 +331,4 @@ LiquidHTML <: Helpers {
     | caseInsensitive<"track">
     | caseInsensitive<"wbr">
     ) ~identifierCharacter
-
-  blockName =
-    // Shopify blocks
-    ( "form"
-    | "paginate"
-    // Base blocks
-    | "capture"
-    | "case"
-    | "for"
-    | "ifchanged"
-    | "if"
-    | "unless"
-    | "tablerow"
-    ) ~identifierCharacter
-
-  tagMarkup = anyExceptStar<("-%}"| "%}")>
-  TextNode = AnyExceptPlus<openControl>
 }
