@@ -802,6 +802,9 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd,
     },
 
+    // trim on both sides
+    tagMarkup: (n: Node) => n.sourceString.trim(),
+
     TextNode: textNode,
 
     yamlFrontmatter: {
