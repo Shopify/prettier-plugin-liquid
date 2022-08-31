@@ -1,4 +1,9 @@
 
+0.3.1 / 2022-08-31
+==================
+
+  * Fixup printing of failed-to-parse Liquid ([#95](https://github.com/shopify/prettier-plugin-liquid/issues/95))
+
 0.3.0 / 2022-08-26
 ==================
 
