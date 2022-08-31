@@ -219,6 +219,7 @@ export function printChildren(
                 forceNextEmptyLine(childNode.prev) ? hardline : '',
               ],
           printChild(childPath, options, print, {
+            ...args,
             leadingSpaceGroupId: FORCE_BREAK_GROUP_ID,
             trailingSpaceGroupId: FORCE_BREAK_GROUP_ID,
           }),
@@ -351,6 +352,7 @@ export function printChildren(
             [
               ...leadingDependentWhitespace, // breaks with trailing
               printChild(childPath, options, print, {
+                ...args,
                 leadingSpaceGroupId: leadingSpaceGroupId(
                   whitespaceBetweenNode,
                   childIndex,

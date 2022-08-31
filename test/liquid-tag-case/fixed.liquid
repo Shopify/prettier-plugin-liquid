@@ -36,3 +36,9 @@ printWidth: 1
   {% else %}
     ok!
 {% endcase %}
+
+It should join args with comma and space
+{% case candy.type %}
+  {% when foo, bar %}
+    yum!
+{% endcase %}

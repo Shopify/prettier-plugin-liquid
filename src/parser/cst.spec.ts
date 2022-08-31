@@ -420,6 +420,59 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
   });
 
   describe('Case: LiquidTag', () => {
+    it('should parse the liquid liquid tag as a list of tags', () => {
+      [
+        [
+          {
+            expression: `echo "hi"`,
+            type: 'LiquidTag',
+            name: 'echo',
+          },
+          {
+            expression: `
+              comment
+                hello there
+                got you, eh?
+              endcomment`,
+            type: 'LiquidRawTag',
+            name: 'comment',
+          },
+          {
+            expression: `
+              if cond
+            `,
+            type: 'LiquidTagOpen',
+            name: 'if',
+          },
+          {
+            expression: `
+              endif
+            `,
+            type: 'LiquidTagClose',
+            name: 'if',
+          },
+          {
+            expression: `
+              # this is an inline comment
+            `,
+            type: 'LiquidTag',
+            name: '#',
+          },
+        ],
+      ].forEach((expressions) => {
+        cst = toLiquidHtmlCST(`{% liquid \n${expressions.map((x) => x.expression).join('\n')} -%}`);
+        expectPath(cst, '0.type').to.equal('LiquidTag');
+        expectPath(cst, '0.name').to.equal('liquid');
+        expressions.forEach(({ type, name }, i) => {
+          expectPath(cst, `0.markup.${i}.type`).to.equal(type);
+          expectPath(cst, `0.markup.${i}.name`).to.equal(name);
+        });
+        expectPath(cst, '0.whitespaceStart').to.equal(null);
+        expectPath(cst, '0.whitespaceEnd').to.equal('-');
+        expectLocation(cst, '0');
+      });
+    });
+
     it('should parse the echo tag as variables', () => {
       [
         { expression: `"hi"`, expressionType: 'String', expressionValue: 'hi', filters: [] },

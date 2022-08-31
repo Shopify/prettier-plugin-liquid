@@ -39,6 +39,21 @@ Liquid <: Helpers {
     | liquidTag
     | liquidInlineComment
 
+  liquidTag =
+    | liquidTagAssign
+    | liquidTagCycle
+    | liquidTagDecrement
+    | liquidTagEcho
+    | liquidTagElsif
+    | liquidTagInclude
+    | liquidTagIncrement
+    | liquidTagLayout
+    | liquidTagLiquid
+    | liquidTagRender
+    | liquidTagSection
+    | liquidTagWhen
+    | liquidTagBaseCase
+
   liquidTagOpen =
     | liquidTagOpenCase
     | liquidTagOpenCapture
@@ -50,19 +65,6 @@ Liquid <: Helpers {
     | liquidTagOpenUnless
     | liquidTagOpenBaseCase
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
-  liquidTag =
-    | liquidTagAssign
-    | liquidTagCycle
-    | liquidTagDecrement
-    | liquidTagEcho
-    | liquidTagElsif
-    | liquidTagInclude
-    | liquidTagIncrement
-    | liquidTagLayout
-    | liquidTagRender
-    | liquidTagSection
-    | liquidTagWhen
-    | liquidTagBaseCase
 
   // These two are the same but transformed differently
   liquidTagRule<name, markup> =
@@ -91,6 +93,17 @@ Liquid <: Helpers {
 
   liquidTagLayout = liquidTagRule<"layout", liquidTagLayoutMarkup>
   liquidTagLayoutMarkup = liquidExpression space*
+
+  // We'll black hole the statement and switch parser in the cst builder
+  // We do this because it's technically the same grammar (with minor redefinitions)
+  // and it would be a huge chore and maintenance hell to rewrite all the rules with
+  // hspace = " " | "\t"
+  //
+  // The alternative is that this grammar parses the {% liquid tagMarkup %} as its own string,
+  // and then we switch to the LiquidStatement grammar that
+  // redefines liquidTagOpenRule, liquidTagRule, and space.
+  liquidTagLiquid = liquidTagRule<"liquid", liquidTagLiquidMarkup>
+  liquidTagLiquidMarkup = tagMarkup
 
   liquidTagInclude = liquidTagRule<"include", liquidTagRenderMarkup>
   liquidTagRender = liquidTagRule<"render", liquidTagRenderMarkup>
@@ -168,7 +181,8 @@ Liquid <: Helpers {
   // because we'd otherwise positively match the following string
   // instead of falling back to the other rule:
   // {{ 'string' | some_filter }}
-  liquidVariable = liquidExpression liquidFilter* space* &("-}}" | "}}" | "-%}" | "%}")
+  liquidVariable = liquidExpression liquidFilter* space* &liquidStatementEnd
+  liquidStatementEnd = ("-}}" | "}}" | "-%}" | "%}")
 
   liquidExpression =
     | liquidString
@@ -237,6 +251,62 @@ Liquid <: Helpers {
     | "unless"
     | "tablerow"
     ) ~identifierCharacter
+}
+
+LiquidStatement <: Liquid {
+  Node := listOf<LiquidStatement, statementSep> (space | newline)*
+
+  // This is the big brains moment: we redefine space to exclude newlines.
+  //
+  // Which means that all our other Liquid rules can be reused
+  // without modification(!)
+  //
+  // We don't need to maintain rules like this:
+  // - liquidVariable<space>
+  // - liquidExpression<space>
+  // - variableLookup<space>
+  // - ... long list of stuff that takes space as param
+  // - liquidString<space>
+  //
+  // All we need is this little, VERY IMPORTANT, part right here that
+  // make it so we can parse the same way in Liquid tags.
+  //
+  // I'm putting in this huge comment so that it's more obvious.
+  space := " " | "\t"
+
+  LiquidStatement =
+    | liquidRawTag
+    | liquidTagClose
+    | liquidTagOpen
+    | liquidTag
+    | liquidInlineComment
+
+  liquidTagOpenRule<name, markup>
+    := (name ~identifierCharacter) space* markup &liquidStatementEnd
+
+  liquidTagRule<name, markup>
+    := (name ~identifierCharacter) space* markup &liquidStatementEnd
+
+  liquidTagClose
+    := "end" (blockName ~identifierCharacter) space* tagMarkup &liquidStatementEnd
+
+  liquidRawTagImpl<name>
+    := (name ~identifierCharacter) space* tagMarkup newline
+      anyExceptStar<liquidRawTagClose<name>>
+      "end" name space* &liquidStatementEnd
+
+  liquidRawTagClose<name>
+    := "end" name space* &liquidStatementEnd
+
+  liquidInlineComment
+    := "#" space? tagMarkup &liquidStatementEnd
+
+  tagMarkup := anyExceptStar<liquidStatementEnd>
+
+  // trailing whitespace, newline, + anything else before the next tag
+  statementSep = space* newline (space | newline)*
+
+  liquidStatementEnd := newline | end
 }
 
 LiquidHTML <: Liquid {

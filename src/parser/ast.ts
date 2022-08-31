@@ -82,6 +82,7 @@ export interface YAMLFrontmatter extends ASTNode<NodeTypes.YAMLFrontmatter> {
 }
 
 export type LiquidNode = LiquidRawTag | LiquidTag | LiquidDrop | LiquidBranch;
+export type LiquidStatement = LiquidRawTag | LiquidTag | LiquidBranch;
 
 export interface HasChildren {
   children?: LiquidHtmlNode[];
@@ -133,6 +134,7 @@ export type LiquidTagNamed =
   | LiquidTagInclude
   | LiquidTagIncrement
   | LiquidTagLayout
+  | LiquidTagLiquid
   | LiquidTagPaginate
   | LiquidTagRender
   | LiquidTagSection
@@ -247,6 +249,9 @@ export interface LiquidTagSection
   extends LiquidTagNode<NamedTags.section, LiquidString> {}
 export interface LiquidTagLayout
   extends LiquidTagNode<NamedTags.layout, LiquidExpression> {}
+
+export interface LiquidTagLiquid
+  extends LiquidTagNode<NamedTags.liquid, LiquidStatement[]> {}
 
 export interface RenderMarkup extends ASTNode<NodeTypes.RenderMarkup> {
   snippet: LiquidString | LiquidVariableLookup;
@@ -965,6 +970,14 @@ function toNamedLiquidTag(
         ...liquidBranchBaseAttributes(node, source),
         name: node.name,
         markup: node.markup.map((arg) => toExpression(arg, source)),
+      };
+    }
+
+    case NamedTags.liquid: {
+      return {
+        ...liquidTagBaseAttributes(node, source),
+        name: node.name,
+        markup: cstToAst(node.markup, source) as LiquidStatement[],
       };
     }
 
