@@ -3,7 +3,7 @@ printWidth: 20
 <script>
   function main() {
     console.log(
-      "hello"
+      'hello'
     );
   }
   const x =
@@ -46,4 +46,10 @@ It should fallback to reindenting when it can't parse the source
 printWidth: 20
 <script>
   function main(){console.log({{ drop }});}const x = 100 > 42 ? x : y;
+</script>
+
+It should respect embeddedSingleQuote
+embeddedSingleQuote: false
+<script>
+  console.log("hello");
 </script>

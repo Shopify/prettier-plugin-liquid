@@ -105,6 +105,7 @@ export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
   singleLineLinkTags: boolean;
   liquidSingleQuote: boolean;
+  embeddedSingleQuote: boolean;
   indentSchema: boolean;
 };
 export type LiquidPrinterArgs = {

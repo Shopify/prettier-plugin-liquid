@@ -1,6 +1,6 @@
 import { Printer, doc } from 'prettier';
 import { RawMarkupKinds } from '~/parser';
-import { LiquidHtmlNode, NodeTypes } from '~/types';
+import { LiquidHtmlNode, LiquidParserOptions, NodeTypes } from '~/types';
 
 // null will pass through
 export const ParserMap: { [key in RawMarkupKinds]: string | null } = {
@@ -27,6 +27,7 @@ export const embed: Printer<LiquidHtmlNode>['embed'] = (
         return doc.utils.stripTrailingHardline(
           textToDoc(node.value, {
             ...options,
+            singleQuote: (options as LiquidParserOptions).embeddedSingleQuote,
             parser,
             __embeddedInHtml: true,
           }),
