@@ -426,6 +426,20 @@ export type LiquidHtmlConcreteNode =
 
 export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
 
+interface Mapping {
+  [k: string]: number | TemplateMapping | TopLevelFunctionMapping;
+}
+
+interface TemplateMapping {
+  type: ConcreteNodeTypes;
+  locStart: (node: Node[]) => number;
+  locEnd: (node: Node[]) => number;
+  [k: string]: FunctionMapping | string | number | boolean | object | null;
+}
+
+type TopLevelFunctionMapping = (...nodes: Node[]) => any;
+type FunctionMapping = (nodes: Node[]) => any;
+
 const markup = (i: number) => (tokens: Node[]) => tokens[i].sourceString.trim();
 const markupTrimEnd = (i: number) => (tokens: Node[]) =>
   tokens[i].sourceString.trimEnd();
@@ -455,7 +469,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     throw new LiquidHTMLCSTParsingError(res);
   }
 
-  const HelperMappings = {
+  const HelperMappings: Mapping = {
     Node: 0,
     TextNode: textNode,
     orderedListOf: 0,
@@ -483,7 +497,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
   };
 
-  const LiquidMappings = {
+  const LiquidMappings: Mapping = {
     liquidNode: 0,
     liquidRawTag: 0,
     liquidRawTagImpl: {
@@ -704,6 +718,8 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidFilter: {
       type: ConcreteNodeTypes.LiquidFilter,
       name: 3,
+      locStart,
+      locEnd,
       args(nodes: Node[]) {
         // Traditinally, this would get transformed into null or array. But
         // it's better if we have an empty array instead of null here.
@@ -797,7 +813,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     tagMarkup: (n: Node) => n.sourceString.trim(),
   };
 
-  const LiquidStatement = {
+  const LiquidStatement: Mapping = {
     LiquidStatement: 0,
     liquidTagOpenRule: {
       type: ConcreteNodeTypes.LiquidTagOpen,
@@ -873,7 +889,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
   };
 
-  const LiquidHTMLMappings = {
+  const LiquidHTMLMappings: Mapping = {
     Node(frontmatter: Node, nodes: Node) {
       const self = this as any;
       const frontmatterNode =
@@ -892,13 +908,14 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     HtmlComment: {
+      type: ConcreteNodeTypes.HtmlComment,
       body: markup(1),
       locStart,
       locEnd,
     },
 
     HtmlRawTagImpl: {
-      type: 'HtmlRawTag',
+      type: ConcreteNodeTypes.HtmlRawTag,
       name: 1,
       attrList: 2,
       body: 4,
@@ -911,6 +928,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     HtmlVoidElement: {
+      type: ConcreteNodeTypes.HtmlVoidElement,
       name: 1,
       attrList: 3,
       locStart,
@@ -918,6 +936,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     HtmlSelfClosingElement: {
+      type: ConcreteNodeTypes.HtmlSelfClosingElement,
       name: 1,
       attrList: 2,
       locStart,
@@ -925,6 +944,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     HtmlTagOpen: {
+      type: ConcreteNodeTypes.HtmlTagOpen,
       name: 1,
       attrList: 2,
       locStart,
@@ -932,6 +952,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     HtmlTagClose: {
+      type: ConcreteNodeTypes.HtmlTagClose,
       name: 1,
       locStart,
       locEnd,
@@ -940,6 +961,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     tagNameOrLiquidDrop: 0,
 
     AttrUnquoted: {
+      type: ConcreteNodeTypes.AttrUnquoted,
       name: 0,
       value: 2,
       locStart,
@@ -947,6 +969,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     AttrSingleQuoted: {
+      type: ConcreteNodeTypes.AttrSingleQuoted,
       name: 0,
       value: 3,
       locStart,
@@ -954,6 +977,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
 
     AttrDoubleQuoted: {
+      type: ConcreteNodeTypes.AttrDoubleQuoted,
       name: 0,
       value: 3,
       locStart,
