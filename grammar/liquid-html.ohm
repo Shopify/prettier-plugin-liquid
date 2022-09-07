@@ -146,10 +146,10 @@ Liquid <: Helpers {
   comparator =
     ( "=="
     | "!="
-    | ">"
-    | "<"
     | ">="
-    | "<=")
+    | "<="
+    | ">"
+    | "<")
     | ("contains" ~identifier)
 
   liquidTagOpenPaginate = liquidTagOpenRule<"paginate", liquidTagOpenPaginateMarkup>
