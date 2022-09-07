@@ -23,3 +23,6 @@ printWidth: 30
 It should support all kinds of shit (same but for unless)
 printWidth: 30
 {% unless lower < some.variable and some.variable < upper and string contains 'hi' or string == empty or nil or var.lookup %} hello {% endunless %}
+
+It should be idempotent
+{% if variable >= 1 %} {% endif %}
