@@ -13,7 +13,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.type').to.equal('HtmlComment');
         expectPath(cst, '0.body').to.equal('hello world');
-        expectLocation(cst, '0');
       });
     });
   });
@@ -26,8 +25,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.name').to.equal('div');
         expectPath(cst, '1.type').to.equal('HtmlTagClose');
         expectPath(cst, '1.name').to.equal('div');
-        expectLocation(cst, '0');
-        expectLocation(cst, '1');
       });
     });
 
@@ -43,10 +40,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.name.markup.type').to.equal('LiquidVariable');
       expectPath(cst, '1.name.markup.expression.type').to.equal('VariableLookup');
       expectPath(cst, '1.name.markup.expression.name').to.equal('node_type');
-      expectLocation(cst, '0');
-      expectLocation(cst, '0.name');
-      expectLocation(cst, '1');
-      expectLocation(cst, '1.name');
     });
 
     it('should parse script and style tags as a dump', () => {
@@ -59,7 +52,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.type').to.eql('HtmlRawTag');
       expectPath(cst, '1.name').to.eql('style');
       expectPath(cst, '1.body').to.eql('\n#id {}\n');
-      expectLocation(cst, '0');
     });
 
     it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
@@ -70,7 +62,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '0.blockStartLocEnd').to.equal(source.indexOf('const'));
       expectPath(cst, '0.blockEndLocStart').to.equal(source.indexOf('</script>'));
       expectPath(cst, '0.blockEndLocEnd').to.equal(source.length);
-      expectLocation(cst, '0');
     });
 
     it('should parse void elements', () => {
@@ -79,7 +70,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.type').to.equal('HtmlVoidElement');
         expectPath(cst, '0.name').to.equal(voidElementName);
         expectPath(cst, '0.attrList.0.name').to.equal('disabled');
-        expectLocation(cst, '0');
       });
     });
 
@@ -89,8 +79,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
         expectPath(cst, '0.attrList.0.name').to.equal('empty');
         expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.attrList.0');
       });
     });
 
@@ -110,8 +98,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           expectPath(cst, '0.attrList.0.name').to.equal(testConfig.name);
           expectPath(cst, '0.attrList.0.value.0.type').to.eql('TextNode');
           expectPath(cst, '0.attrList.0.value.0.value').to.eql(testConfig.name);
-          expectLocation(cst, '0');
-          expectLocation(cst, '0.attrList.0');
         });
       });
 
@@ -124,8 +110,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           ].forEach((text) => {
             cst = toLiquidHtmlCST(text);
             expectPath(cst, '0.attrList.0.value.1.type').to.eql('LiquidDrop', text);
-            expectLocation(cst, '0');
-            expectLocation(cst, '0.attrList.0');
           });
         });
       }
@@ -141,8 +125,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           expectPath(cst, '0.attrList.1.type').to.eql(testConfig.type, text);
           expectPath(cst, '0.attrList.1.value.0.value').to.eql('https://name');
           expectPath(cst, '0.attrList.2.type').to.eql('LiquidTagClose', text);
-          expectLocation(cst, '0');
-          expectLocation(cst, '0.attrList.0');
         });
       });
     });
@@ -159,7 +141,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.markup').to.equal('!-asdl');
       expectPath(cst, '1.whitespaceStart').to.equal('-');
       expectPath(cst, '1.whitespaceEnd').to.equal('-');
-      expectLocation(cst, '0');
     });
 
     it('should parse strings', () => {
@@ -176,9 +157,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.expression.single').to.equal(single);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
-        expectLocation(cst, '0.markup.expression');
       });
     });
 
@@ -198,9 +176,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.expression.value').to.equal(value);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
-        expectLocation(cst, '0.markup.expression');
       });
     });
 
@@ -221,9 +196,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.expression.value').to.equal(value);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
-        expectLocation(cst, '0.markup.expression');
       });
     });
 
@@ -289,7 +261,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
                   val,
                 );
               });
-              expectLocation(cst, `0.markup.expression.lookups.${i}`);
               break;
             }
           }
@@ -297,9 +268,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
-        expectLocation(cst, '0.markup.expression');
       });
     });
 
@@ -332,11 +300,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.expression.end.value').to.equal(end.value);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
-        expectLocation(cst, '0.markup.expression');
-        expectLocation(cst, '0.markup.expression.start');
-        expectLocation(cst, '0.markup.expression.end');
       });
     });
 
@@ -412,9 +375,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         });
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
-        expectLocation(cst, '0.markup.expression');
       });
     });
   });
@@ -469,7 +429,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         });
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectLocation(cst, '0');
       });
     });
 
@@ -489,8 +448,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.filters').to.have.lengthOf(filters.length);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
 
@@ -517,8 +474,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.value.filters').to.have.lengthOf(filters.length);
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
 
@@ -541,19 +496,15 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup.type').to.equal('CycleMarkup');
         if (groupName) {
           expectPath(cst, '0.markup.groupName.type').to.equal(groupName.type);
-          expectLocation(cst, '0.markup.groupName');
         } else {
           expectPath(cst, '0.markup.groupName').to.equal(null);
         }
         expectPath(cst, '0.markup.args').to.have.lengthOf(args.length);
         args.forEach((arg, i) => {
           expectPath(cst, `0.markup.args.${i}.type`).to.equal(arg.type);
-          expectLocation(cst, `0.markup.args.${i}`);
         });
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
 
@@ -624,8 +575,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           expectPath(cst, '0.markup.variable.name.type').to.equal(
             renderVariableExpression.name.type,
           );
-          expectLocation(cst, '0.markup.variable');
-          expectLocation(cst, '0.markup.variable.name');
         } else {
           expectPath(cst, '0.markup.variable').to.equal(null);
         }
@@ -635,12 +584,9 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
           expectPath(cst, `0.markup.args.${i}.type`).to.equal('NamedArgument');
           expectPath(cst, `0.markup.args.${i}.name`).to.equal(name);
           expectPath(cst, `0.markup.args.${i}.value.type`).to.equal(valueType);
-          expectLocation(cst, `0.markup.args.${i}`);
         });
         expectPath(cst, '0.whitespaceStart').to.equal(null);
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
   });
@@ -657,10 +603,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup').to.have.lengthOf(args.length, expression);
         args.forEach((arg, i) => {
           expectPath(cst, `0.markup.${i}.type`).to.equal(arg.type);
-          expectLocation(cst, `0.markup.${i}`);
         });
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
-        expectLocation(cst, '0');
       });
     });
 
@@ -718,12 +662,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
             expectPath(cst, `0.markup.args.${i}.type`).to.equal(arg.type);
             expectPath(cst, `0.markup.args.${i}.name`).to.equal(arg.name);
             expectPath(cst, `0.markup.args.${i}.value.type`).to.equal(arg.value.type);
-            expectLocation(cst, `0.markup.args.${i}`);
-            expectLocation(cst, `0.markup.args.${i}.value`);
           });
           expectPath(cst, '0.whitespaceEnd').to.equal('-');
-          expectLocation(cst, '0');
-          expectLocation(cst, `0.markup`);
         });
       });
     });
@@ -737,8 +677,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.type').to.equal('LiquidTagOpen');
         expectPath(cst, '0.name').to.equal('case');
         expectPath(cst, '0.markup.type').to.equal(type);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
 
@@ -748,8 +686,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.type').to.equal('LiquidTagOpen');
         expectPath(cst, '0.name').to.equal('capture');
         expectPath(cst, '0.markup.type').to.equal(type);
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
 
@@ -771,9 +707,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.markup').to.have.lengthOf(args.length);
         args.forEach((arg, i) => {
           expectPath(cst, `0.markup.${i}.type`).to.equal(arg.type);
-          expectLocation(cst, `0.markup.${i}`);
         });
-        expectLocation(cst, '0');
       });
     });
 
@@ -817,8 +751,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         } else {
           expectPath(cst, '0.markup.args').to.have.lengthOf(0);
         }
-        expectLocation(cst, '0');
-        expectLocation(cst, '0.markup');
       });
     });
 
@@ -870,9 +802,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
                 conditional.right.type,
               );
             }
-            expectLocation(cst, `0.markup.${i}`);
           });
-          expectLocation(cst, '0');
         });
       });
     });
@@ -888,7 +818,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         expectPath(cst, '0.whitespaceEnd').to.equal('-');
         expectPath(cst, '0.delimiterWhitespaceStart').to.equal('-');
         expectPath(cst, '0.delimiterWhitespaceEnd').to.equal(null);
-        expectLocation(cst, '0');
       });
     });
 
@@ -903,7 +832,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '0.blockEndLocEnd').to.equal(source.length);
       expectPath(cst, '0.delimiterWhitespaceStart').to.equal('-');
       expectPath(cst, '0.delimiterWhitespaceEnd').to.equal(null);
-      expectLocation(cst, '0');
     });
 
     it('should basically parse liquid tags', () => {
@@ -921,7 +849,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '2.name').to.equal('if');
       expectPath(cst, '2.whitespaceStart').to.equal('-');
       expectPath(cst, '2.whitespaceEnd').to.equal(null);
-      expectLocation(cst, '0');
     });
 
     it('should parse tag open / close', () => {
@@ -948,7 +875,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(text);
         expectPath(cst, '1.type').to.equal('TextNode');
         expectPath(cst, '1.value').to.equal('hello');
-        expectLocation(cst, '1');
       });
     });
 
@@ -970,7 +896,6 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(testCase);
         expectPath(cst, '1.type').to.equal('TextNode');
         expectPathStringified(cst, '1.value').to.equal(JSON.stringify(expected));
-        expectLocation(cst, '1');
       });
     });
   });
@@ -993,13 +918,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     expectPath(cst, '0.type').to.eql('LiquidTag');
     expectPath(cst, '0.name').to.eql('#');
     expectPath(cst, '0.markup').to.eql('hello world \n # hi');
-    expectLocation(cst, '0');
   });
-
-  function expectLocation(cst: LiquidHtmlCST, path: string) {
-    expect(deepGet(path.split('.').concat('locStart'), cst)).to.be.a('number');
-    expect(deepGet(path.split('.').concat('locEnd'), cst)).to.be.a('number');
-  }
 
   function expectPath(cst: LiquidHtmlCST, path: string) {
     return expect(deepGet(path.split('.'), cst));
