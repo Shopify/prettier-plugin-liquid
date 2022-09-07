@@ -1,7 +1,7 @@
 import { Parser } from 'prettier';
 import { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { liquidHtmlGrammar } from '~/parser/grammar';
+import { liquidHtmlGrammar, liquidHtmlGrammars } from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { Comparators, NamedTags } from '~/types';
 
@@ -247,6 +247,7 @@ export type ConcreteLiquidTagNamed =
   | ConcreteLiquidTagElsif
   | ConcreteLiquidTagInclude
   | ConcreteLiquidTagLayout
+  | ConcreteLiquidTagLiquid
   | ConcreteLiquidTagRender
   | ConcreteLiquidTagSection
   | ConcreteLiquidTagWhen;
@@ -275,6 +276,17 @@ export interface ConcreteLiquidTagSection
   extends ConcreteLiquidTagNode<NamedTags.section, ConcreteStringLiteral> {}
 export interface ConcreteLiquidTagLayout
   extends ConcreteLiquidTagNode<NamedTags.layout, ConcreteLiquidExpression> {}
+
+export interface ConcreteLiquidTagLiquid
+  extends ConcreteLiquidTagNode<
+    NamedTags.liquid,
+    ConcreteLiquidLiquidTagNode[]
+  > {}
+export type ConcreteLiquidLiquidTagNode =
+  | ConcreteLiquidTagOpen
+  | ConcreteLiquidTagClose
+  | ConcreteLiquidTag
+  | ConcreteLiquidRawTag;
 
 export interface ConcreteLiquidTagAssign
   extends ConcreteLiquidTagNode<
@@ -414,11 +426,35 @@ export type LiquidHtmlConcreteNode =
 
 export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
 
+interface Mapping {
+  [k: string]: number | TemplateMapping | TopLevelFunctionMapping;
+}
+
+interface TemplateMapping {
+  type: ConcreteNodeTypes;
+  locStart: (node: Node[]) => number;
+  locEnd: (node: Node[]) => number;
+  [k: string]: FunctionMapping | string | number | boolean | object | null;
+}
+
+type TopLevelFunctionMapping = (...nodes: Node[]) => any;
+type FunctionMapping = (nodes: Node[]) => any;
+
 const markup = (i: number) => (tokens: Node[]) => tokens[i].sourceString.trim();
+const markupTrimEnd = (i: number) => (tokens: Node[]) =>
+  tokens[i].sourceString.trimEnd();
 
 export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
-  const locStart = (tokens: Node[]) => tokens[0].source.startIdx;
-  const locEnd = (tokens: Node[]) => tokens[tokens.length - 1].source.endIdx;
+  // When we switch parser, our locStart and locEnd functions must account
+  // for the offset of the {% liquid %} markup
+  let liquidStatementOffset = 0;
+  const locStart = (tokens: Node[]) =>
+    liquidStatementOffset + tokens[0].source.startIdx;
+  const locEnd = (tokens: Node[]) =>
+    liquidStatementOffset + tokens[tokens.length - 1].source.endIdx;
+  const locEndSecondToLast = (tokens: Node[]) =>
+    liquidStatementOffset + tokens[tokens.length - 2].source.endIdx;
+
   const textNode = {
     type: ConcreteNodeTypes.TextNode,
     value: function () {
@@ -427,95 +463,41 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     locStart,
     locEnd,
   };
-  const res = liquidHtmlGrammar.match(text);
 
+  const res = liquidHtmlGrammar.match(text, 'Node');
   if (res.failed()) {
     throw new LiquidHTMLCSTParsingError(res);
   }
 
-  const ohmAST = toAST(res, {
-    HtmlComment: {
-      body: markup(1),
-      locStart,
-      locEnd,
+  const HelperMappings: Mapping = {
+    Node: 0,
+    TextNode: textNode,
+    orderedListOf: 0,
+
+    listOf: 0,
+    empty: () => null,
+    emptyListOf: () => [],
+    nonemptyListOf(first: any, _sep: any, rest: any) {
+      const self = this as any;
+      return [first.toAST(self.args.mapping)].concat(
+        rest.toAST(self.args.mapping),
+      );
     },
 
-    HtmlRawTagImpl: {
-      type: 'HtmlRawTag',
-      name: 1,
-      attrList: 2,
-      body: 4,
-      locStart,
-      locEnd,
-      blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
-      blockStartLocEnd: (tokens: any) => tokens[3].source.endIdx,
-      blockEndLocStart: (tokens: any) => tokens[5].source.startIdx,
-      blockEndLocEnd: (tokens: any) => tokens[5].source.endIdx,
+    nonemptyOrderedListOf: 0,
+    nonemptyOrderedListOfBoth(
+      nonemptyListOfA: Node,
+      _sep: Node,
+      nonemptyListOfB: Node,
+    ) {
+      const self = this as any;
+      return nonemptyListOfA
+        .toAST(self.args.mapping)
+        .concat(nonemptyListOfB.toAST(self.args.mapping));
     },
+  };
 
-    HtmlVoidElement: {
-      name: 1,
-      attrList: 3,
-      locStart,
-      locEnd,
-    },
-
-    HtmlSelfClosingElement: {
-      name: 1,
-      attrList: 2,
-      locStart,
-      locEnd,
-    },
-
-    HtmlTagOpen: {
-      name: 1,
-      attrList: 2,
-      locStart,
-      locEnd,
-    },
-
-    HtmlTagClose: {
-      name: 1,
-      locStart,
-      locEnd,
-    },
-
-    tagNameOrLiquidDrop: 0,
-
-    AttrUnquoted: {
-      name: 0,
-      value: 2,
-      locStart,
-      locEnd,
-    },
-
-    AttrSingleQuoted: {
-      name: 0,
-      value: 3,
-      locStart,
-      locEnd,
-    },
-
-    AttrDoubleQuoted: {
-      name: 0,
-      value: 3,
-      locStart,
-      locEnd,
-    },
-
-    attrEmpty: {
-      type: ConcreteNodeTypes.AttrEmpty,
-      name: 0,
-      locStart,
-      locEnd,
-    },
-
-    attrDoubleQuotedValue: 0,
-    attrSingleQuotedValue: 0,
-    attrUnquotedValue: 0,
-    attrDoubleQuotedTextNode: textNode,
-    attrSingleQuotedTextNode: textNode,
-    attrUnquotedTextNode: textNode,
+  const LiquidMappings: Mapping = {
     liquidNode: 0,
     liquidRawTag: 0,
     liquidRawTagImpl: {
@@ -532,6 +514,15 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       blockStartLocEnd: (tokens: Node[]) => tokens[7].source.endIdx,
       blockEndLocStart: (tokens: Node[]) => tokens[9].source.startIdx,
       blockEndLocEnd: (tokens: Node[]) => tokens[16].source.endIdx,
+    },
+    liquidInlineComment: {
+      type: ConcreteNodeTypes.LiquidTag,
+      name: 3,
+      markup: markupTrimEnd(5),
+      whitespaceStart: 1,
+      whitespaceEnd: 6,
+      locStart,
+      locEnd,
     },
 
     liquidTagOpen: 0,
@@ -636,6 +627,30 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locStart,
       locEnd,
     },
+
+    liquidTagLiquid: 0,
+    liquidTagLiquidMarkup(tagMarkup: Node) {
+      const res = liquidHtmlGrammars['LiquidStatement'].match(
+        tagMarkup.sourceString,
+        'Node',
+      );
+
+      if (res.failed()) {
+        throw new LiquidHTMLCSTParsingError(res);
+      }
+
+      // We're reparsing with a different startIdx
+      liquidStatementOffset = tagMarkup.source.startIdx;
+      const subCST = toAST(res, {
+        ...HelperMappings,
+        ...LiquidMappings,
+        ...LiquidStatement,
+      });
+      liquidStatementOffset = 0;
+
+      return subCST;
+    },
+
     liquidTagEchoMarkup: 0,
     liquidTagSectionMarkup: 0,
     liquidTagLayoutMarkup: 0,
@@ -703,6 +718,8 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidFilter: {
       type: ConcreteNodeTypes.LiquidFilter,
       name: 3,
+      locStart,
+      locEnd,
       args(nodes: Node[]) {
         // Traditinally, this would get transformed into null or array. But
         // it's better if we have an empty array instead of null here.
@@ -792,28 +809,87 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       locEnd: (nodes: Node[]) => nodes[nodes.length - 1].source.endIdx,
     },
 
-    liquidInlineComment: {
-      type: ConcreteNodeTypes.LiquidTag,
-      name: 3,
-      markup: markup(5),
-      whitespaceStart: 1,
-      whitespaceEnd: 6,
-      locStart,
-      locEnd,
-    },
-
     // trim on both sides
     tagMarkup: (n: Node) => n.sourceString.trim(),
+  };
 
-    TextNode: textNode,
-
-    yamlFrontmatter: {
-      type: ConcreteNodeTypes.YAMLFrontmatter,
-      body: 2,
+  const LiquidStatement: Mapping = {
+    LiquidStatement: 0,
+    liquidTagOpenRule: {
+      type: ConcreteNodeTypes.LiquidTagOpen,
+      name: 0,
+      markup(nodes: Node[]) {
+        const markupNode = nodes[2];
+        const nameNode = nodes[0];
+        if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
+          return markupNode.toAST((this as any).args.mapping);
+        }
+        return markupNode.sourceString.trim();
+      },
+      whitespaceStart: null,
+      whitespaceEnd: null,
       locStart,
-      locEnd,
+      locEnd: locEndSecondToLast,
     },
 
+    liquidTagClose: {
+      type: ConcreteNodeTypes.LiquidTagClose,
+      name: 1,
+      whitespaceStart: null,
+      whitespaceEnd: null,
+      locStart,
+      locEnd: locEndSecondToLast,
+    },
+
+    liquidTagRule: {
+      type: ConcreteNodeTypes.LiquidTag,
+      name: 0,
+      markup(nodes: Node[]) {
+        const markupNode = nodes[2];
+        const nameNode = nodes[0];
+        if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
+          return markupNode.toAST((this as any).args.mapping);
+        }
+        return markupNode.sourceString.trim();
+      },
+      whitespaceStart: null,
+      whitespaceEnd: null,
+      locStart,
+      locEnd: locEndSecondToLast,
+    },
+
+    liquidRawTagImpl: {
+      type: ConcreteNodeTypes.LiquidRawTag,
+      name: 0,
+      body: 4,
+      whitespaceStart: null,
+      whitespaceEnd: null,
+      delimiterWhitespaceStart: null,
+      delimiterWhitespaceEnd: null,
+      locStart,
+      locEnd: locEndSecondToLast,
+      blockStartLocStart: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[2].source.endIdx,
+      blockEndLocStart: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[5].source.startIdx,
+      blockEndLocEnd: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[5].source.endIdx,
+    },
+
+    liquidInlineComment: {
+      type: ConcreteNodeTypes.LiquidTag,
+      name: 0,
+      markup: markupTrimEnd(2),
+      whitespaceStart: null,
+      whitespaceEnd: null,
+      locStart,
+      locEnd: locEndSecondToLast,
+    },
+  };
+
+  const LiquidHTMLMappings: Mapping = {
     Node(frontmatter: Node, nodes: Node) {
       const self = this as any;
       const frontmatterNode =
@@ -824,31 +900,109 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       return frontmatterNode.concat(nodes.toAST(self.args.mapping));
     },
 
-    orderedListOf: 0,
-    nonemptyOrderedListOf: 0,
-    nonemptyOrderedListOfBoth(
-      nonemptyListOfA: Node,
-      _sep: Node,
-      nonemptyListOfB: Node,
-    ) {
-      const self = this as any;
-      return nonemptyListOfA
-        .toAST(self.args.mapping)
-        .concat(nonemptyListOfB.toAST(self.args.mapping));
+    yamlFrontmatter: {
+      type: ConcreteNodeTypes.YAMLFrontmatter,
+      body: 2,
+      locStart,
+      locEnd,
     },
 
-    // Missing from ohm-js default rules. Those turn listOf rules into arrays.
-    listOf: 0,
-    nonemptyListOf(first: any, _sep: any, rest: any) {
-      const self = this as any;
-      return [first.toAST(self.args.mapping)].concat(
-        rest.toAST(self.args.mapping),
-      );
+    HtmlComment: {
+      type: ConcreteNodeTypes.HtmlComment,
+      body: markup(1),
+      locStart,
+      locEnd,
     },
-    emptyListOf() {
-      return [];
+
+    HtmlRawTagImpl: {
+      type: ConcreteNodeTypes.HtmlRawTag,
+      name: 1,
+      attrList: 2,
+      body: 4,
+      locStart,
+      locEnd,
+      blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: any) => tokens[3].source.endIdx,
+      blockEndLocStart: (tokens: any) => tokens[5].source.startIdx,
+      blockEndLocEnd: (tokens: any) => tokens[5].source.endIdx,
     },
-    empty: () => null,
+
+    HtmlVoidElement: {
+      type: ConcreteNodeTypes.HtmlVoidElement,
+      name: 1,
+      attrList: 3,
+      locStart,
+      locEnd,
+    },
+
+    HtmlSelfClosingElement: {
+      type: ConcreteNodeTypes.HtmlSelfClosingElement,
+      name: 1,
+      attrList: 2,
+      locStart,
+      locEnd,
+    },
+
+    HtmlTagOpen: {
+      type: ConcreteNodeTypes.HtmlTagOpen,
+      name: 1,
+      attrList: 2,
+      locStart,
+      locEnd,
+    },
+
+    HtmlTagClose: {
+      type: ConcreteNodeTypes.HtmlTagClose,
+      name: 1,
+      locStart,
+      locEnd,
+    },
+
+    tagNameOrLiquidDrop: 0,
+
+    AttrUnquoted: {
+      type: ConcreteNodeTypes.AttrUnquoted,
+      name: 0,
+      value: 2,
+      locStart,
+      locEnd,
+    },
+
+    AttrSingleQuoted: {
+      type: ConcreteNodeTypes.AttrSingleQuoted,
+      name: 0,
+      value: 3,
+      locStart,
+      locEnd,
+    },
+
+    AttrDoubleQuoted: {
+      type: ConcreteNodeTypes.AttrDoubleQuoted,
+      name: 0,
+      value: 3,
+      locStart,
+      locEnd,
+    },
+
+    attrEmpty: {
+      type: ConcreteNodeTypes.AttrEmpty,
+      name: 0,
+      locStart,
+      locEnd,
+    },
+
+    attrDoubleQuotedValue: 0,
+    attrSingleQuotedValue: 0,
+    attrUnquotedValue: 0,
+    attrDoubleQuotedTextNode: textNode,
+    attrSingleQuotedTextNode: textNode,
+    attrUnquotedTextNode: textNode,
+  };
+
+  const ohmAST = toAST(res, {
+    ...HelperMappings,
+    ...LiquidMappings,
+    ...LiquidHTMLMappings,
   });
 
   return ohmAST as LiquidHtmlCST;

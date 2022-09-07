@@ -11,6 +11,8 @@ import {
   LiquidBranchNamed,
   NamedTags,
   NodeTypes,
+  LiquidRawTag,
+  LiquidStatement,
 } from '~/types';
 import { isBranchedTag } from '~/parser/ast';
 import { assertNever } from '~/utils';
@@ -27,14 +29,17 @@ import {
   originallyHadLineBreaks,
   reindent,
   trim,
+  bodyLines,
+  hasLineBreakInRange,
 } from '~/printer/utils';
 
 import { printChildren } from '~/printer/print/children';
 
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
-const { builders } = doc;
+const { builders, utils } = doc;
 const { group, hardline, ifBreak, indent, join, line, softline } = builders;
+const { replaceTextEndOfLine } = utils as any;
 
 export function printLiquidDrop(
   path: LiquidAstPath,
@@ -90,44 +95,61 @@ export function printLiquidDrop(
   ]);
 }
 
-function printNamedLiquidBlock(
+function printNamedLiquidBlockStart(
   path: AstPath<LiquidTagNamed | LiquidBranchNamed>,
   _options: LiquidParserOptions,
   print: LiquidPrinter,
+  args: LiquidPrinterArgs,
   whitespaceStart: Doc,
   whitespaceEnd: Doc,
 ): Doc {
   const node = path.getValue();
+  const { isLiquidStatement } = args;
+
+  // This is slightly more verbose than 3 ternaries, but I feel like I
+  // should make it obvious that these three things work in tandem on the
+  // same conditional.
+  const { wrapper, prefix, suffix } = (() => {
+    if (isLiquidStatement) {
+      return {
+        wrapper: utils.removeLines,
+        prefix: '',
+        suffix: () => '',
+      };
+    } else {
+      return {
+        wrapper: group,
+        prefix: ['{%', whitespaceStart, ' '],
+        suffix: (trailingWhitespace: Doc) => [
+          trailingWhitespace,
+          whitespaceEnd,
+          '%}',
+        ],
+      };
+    }
+  })();
 
   const tag = (trailingWhitespace: Doc) =>
-    group([
-      '{%',
-      whitespaceStart,
-      ' ',
+    wrapper([
+      ...prefix,
       node.name,
       ' ',
-      indent(path.call((p) => print(p), 'markup')),
-      trailingWhitespace,
-      whitespaceEnd,
-      '%}',
+      indent(path.call((p) => print(p, args), 'markup')),
+      ...suffix(trailingWhitespace),
     ]);
 
   const tagWithArrayMarkup = (whitespace: Doc) =>
-    group([
-      '{%',
-      whitespaceStart,
-      ' ',
+    wrapper([
+      ...prefix,
       node.name,
       ' ',
       indent([
         join(
           [',', line],
-          path.map((p) => print(p), 'markup'),
+          path.map((p) => print(p, args), 'markup'),
         ),
       ]),
-      whitespace,
-      whitespaceEnd,
-      '%}',
+      ...suffix(whitespace),
     ]);
 
   switch (node.name) {
@@ -144,17 +166,13 @@ function printNamedLiquidBlock(
 
     case NamedTags.cycle: {
       const whitespace = node.markup.args.length > 1 ? line : ' ';
-      return group([
-        '{%',
-        whitespaceStart,
-        ' ',
+      return wrapper([
+        ...prefix,
         node.name,
         // We want to break after the groupName
         node.markup.groupName ? ' ' : '',
-        indent(path.call((p) => print(p), 'markup')),
-        whitespace,
-        whitespaceEnd,
-        '%}',
+        indent(path.call((p) => print(p, args), 'markup')),
+        ...suffix(whitespace),
       ]);
     }
 
@@ -213,19 +231,59 @@ function printNamedLiquidBlock(
       return tagWithArrayMarkup(trailingWhitespace);
     }
 
+    case NamedTags.liquid: {
+      return group([
+        ...prefix,
+        node.name,
+        indent([
+          hardline,
+          join(
+            hardline,
+            path.map((p) => {
+              const curr = p.getValue();
+              return [
+                getSpaceBetweenLines(curr.prev as LiquidStatement | null, curr),
+                print(p, { ...args, isLiquidStatement: true }),
+              ];
+            }, 'markup'),
+          ),
+        ]),
+        ...suffix(hardline),
+      ]);
+    }
+
     default: {
       return assertNever(node);
     }
   }
 }
 
+function printLiquidStatement(
+  path: AstPath<Extract<LiquidTag, { name: string; markup: string }>>,
+  _options: LiquidParserOptions,
+  _print: LiquidPrinter,
+  _args: LiquidPrinterArgs,
+): Doc {
+  const node = path.getValue();
+  const shouldSkipLeadingSpace =
+    node.markup.trim() === '' ||
+    (node.name === '#' && node.markup.startsWith('#'));
+  return doc.utils.removeLines([
+    node.name,
+    shouldSkipLeadingSpace ? '' : ' ',
+    node.markup,
+  ]);
+}
+
 export function printLiquidBlockStart(
   path: AstPath<LiquidTag | LiquidBranch>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
-  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
+  args: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
+  const { leadingSpaceGroupId, trailingSpaceGroupId } = args;
+
   if (!node.name) return '';
 
   const whitespaceStart = getWhitespaceTrim(
@@ -240,12 +298,22 @@ export function printLiquidBlockStart(
   );
 
   if (typeof node.markup !== 'string') {
-    return printNamedLiquidBlock(
+    return printNamedLiquidBlockStart(
       path as AstPath<LiquidTagNamed | LiquidBranchNamed>,
       options,
       print,
+      args,
       whitespaceStart,
       whitespaceEnd,
+    );
+  }
+
+  if (args.isLiquidStatement) {
+    return printLiquidStatement(
+      path as AstPath<Extract<LiquidTag, { name: string; markup: string }>>,
+      options,
+      print,
+      args,
     );
   }
 
@@ -292,10 +360,14 @@ export function printLiquidBlockEnd(
   path: AstPath<LiquidTag>,
   _options: LiquidParserOptions,
   _print: LiquidPrinter,
-  { leadingSpaceGroupId, trailingSpaceGroupId }: LiquidPrinterArgs = {},
+  args: LiquidPrinterArgs = {},
 ): Doc {
   const node = path.getValue();
+  const { isLiquidStatement, leadingSpaceGroupId, trailingSpaceGroupId } = args;
   if (!node.children || !node.blockEndPosition) return '';
+  if (isLiquidStatement) {
+    return ['end', node.name];
+  }
   const whitespaceStart = getWhitespaceTrim(
     node.delimiterWhitespaceStart ?? '',
     needsBlockEndLeadingWhitespaceStrippingOnBreak(node),
@@ -345,6 +417,7 @@ export function printLiquidTag(
       path.map(
         (p) =>
           print(p, {
+            ...args,
             leadingSpaceGroupId: tagGroupId,
             trailingSpaceGroupId: tagGroupId,
           }),
@@ -356,6 +429,7 @@ export function printLiquidTag(
     body = indent([
       innerLeadingWhitespace(node),
       printChildren(path, options, print, {
+        ...args,
         leadingSpaceGroupId: tagGroupId,
         trailingSpaceGroupId: tagGroupId,
       }),
@@ -370,6 +444,65 @@ export function printLiquidTag(
       isAttributeNode(node) ||
       isDeeplyNested(node),
   });
+}
+
+export function printLiquidRawTag(
+  path: AstPath<LiquidRawTag>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  { isLiquidStatement }: LiquidPrinterArgs,
+): Doc {
+  let body: Doc = [];
+  const node = path.getValue();
+  const hasEmptyBody = node.body.value.trim() === '';
+  const shouldNotIndentBody = node.name === 'schema' && !options.indentSchema;
+  const shouldPrintAsIs =
+    node.name === 'raw' ||
+    !hasLineBreakInRange(
+      node.source,
+      node.body.position.start,
+      node.body.position.end,
+    );
+  const blockStart = isLiquidStatement
+    ? [node.name]
+    : group([
+        '{%',
+        node.whitespaceStart,
+        ' ',
+        node.name,
+        ' ',
+        node.whitespaceEnd,
+        '%}',
+      ]);
+  const blockEnd = isLiquidStatement
+    ? ['end', node.name]
+    : [
+        '{%',
+        node.whitespaceStart,
+        ' ',
+        'end',
+        node.name,
+        ' ',
+        node.whitespaceEnd,
+        '%}',
+      ];
+
+  if (shouldPrintAsIs) {
+    body = [
+      node.source.slice(
+        node.blockStartPosition.end,
+        node.blockEndPosition.start,
+      ),
+    ];
+  } else if (hasEmptyBody) {
+    body = [hardline];
+  } else if (shouldNotIndentBody) {
+    body = [hardline, path.call(print, 'body'), hardline];
+  } else {
+    body = [indent([hardline, path.call(print, 'body')]), hardline];
+  }
+
+  return [blockStart, ...body, blockEnd];
 }
 
 function isAttributeNode(node: LiquidTag) {
@@ -564,4 +697,27 @@ function needsBlockEndLeadingWhitespaceStrippingOnBreak(node: LiquidTag) {
 
 function cleanDoc(doc: Doc[]): Doc[] {
   return doc.filter((x) => x !== '');
+}
+
+function getSchema(contents: string, options: LiquidParserOptions) {
+  try {
+    return [JSON.stringify(JSON.parse(contents), null, options.tabWidth), true];
+  } catch (e) {
+    return [contents, false];
+  }
+}
+
+function getSpaceBetweenLines(
+  prev: LiquidStatement | null,
+  curr: LiquidStatement,
+): Doc {
+  if (!prev) return '';
+  const source = curr.source;
+  const whitespaceBetweenNodes = source.slice(
+    prev.position.end,
+    curr.position.start,
+  );
+  const hasMoreThanOneNewLine =
+    (whitespaceBetweenNodes.match(/\n/g) || []).length > 1;
+  return hasMoreThanOneNewLine ? hardline : '';
 }

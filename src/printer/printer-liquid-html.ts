@@ -21,6 +21,7 @@ import {
   Position,
   LiquidPrinterArgs,
   DocumentNode,
+  LiquidRawTag,
 } from '~/types';
 import { assertNever } from '~/utils';
 
@@ -40,6 +41,7 @@ import {
 import {
   printLiquidBranch,
   printLiquidDrop,
+  printLiquidRawTag,
   printLiquidTag,
 } from '~/printer/print/liquid';
 import { printChildren } from '~/printer/print/children';
@@ -48,15 +50,6 @@ import { RawMarkupKinds } from '~/parser';
 
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
-const { replaceTextEndOfLine } = doc.utils as any;
-
-function getSchema(contents: string, options: LiquidParserOptions) {
-  try {
-    return [JSON.stringify(JSON.parse(contents), null, options.tabWidth), true];
-  } catch (e) {
-    return [contents, false];
-  }
-}
 
 function printAttributes<
   T extends LiquidHtmlNode & {
@@ -280,54 +273,12 @@ function printNode(
     }
 
     case NodeTypes.LiquidRawTag: {
-      const blockStart = group([
-        '{%',
-        node.whitespaceStart,
-        ' ',
-        node.name,
-        ' ',
-        node.whitespaceEnd,
-        '%}',
-      ]);
-      const blockEnd = [
-        '{%',
-        node.whitespaceStart,
-        ' ',
-        'end',
-        node.name,
-        ' ',
-        node.whitespaceEnd,
-        '%}',
-      ];
-
-      let body: Doc = [];
-      const hasEmptyBody = node.body.value.trim() === '';
-      const shouldNotIndentBody =
-        node.name === 'schema' && !options.indentSchema;
-      const shouldPrintAsIs =
-        node.name === 'raw' ||
-        !hasLineBreakInRange(
-          node.source,
-          node.body.position.start,
-          node.body.position.end,
-        );
-
-      if (shouldPrintAsIs) {
-        body = [
-          node.source.slice(
-            node.blockStartPosition.end,
-            node.blockEndPosition.start,
-          ),
-        ];
-      } else if (hasEmptyBody) {
-        body = [hardline];
-      } else if (shouldNotIndentBody) {
-        body = [hardline, path.call(print, 'body'), hardline];
-      } else {
-        body = [indent([hardline, path.call(print, 'body')]), hardline];
-      }
-
-      return [blockStart, ...body, blockEnd];
+      return printLiquidRawTag(
+        path as AstPath<LiquidRawTag>,
+        options,
+        print,
+        args,
+      );
     }
 
     case NodeTypes.LiquidTag: {

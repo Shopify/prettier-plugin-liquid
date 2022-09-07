@@ -68,6 +68,7 @@ export enum NamedTags {
   include = 'include',
   increment = 'increment',
   layout = 'layout',
+  liquid = 'liquid',
   paginate = 'paginate',
   render = 'render',
   section = 'section',
@@ -111,6 +112,7 @@ export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
 export type LiquidPrinterArgs = {
   leadingSpaceGroupId?: symbol[] | symbol;
   trailingSpaceGroupId?: symbol[] | symbol;
+  isLiquidStatement?: boolean;
   truncate?: boolean;
 };
 export type LiquidPrinter = (
@@ -198,6 +200,7 @@ export type Augment<Aug> = <NodeType extends AugmentedNode<Aug>>(
 export type LiquidHtmlNode = Augmented<AST.LiquidHtmlNode, AllAugmentations>;
 export type DocumentNode = Augmented<AST.DocumentNode, AllAugmentations>;
 export type LiquidNode = Augmented<AST.LiquidNode, AllAugmentations>;
+export type LiquidStatement = Augmented<AST.LiquidStatement, AllAugmentations>;
 export type ParentNode = Augmented<AST.ParentNode, AllAugmentations>;
 export type LiquidRawTag = Augmented<AST.LiquidRawTag, AllAugmentations>;
 export type LiquidTag = Augmented<AST.LiquidTag, AllAugmentations>;

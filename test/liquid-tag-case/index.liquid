@@ -18,3 +18,6 @@ printWidth: 1
 It should break on when or syntax (and prefer commas)
 printWidth: 1
 {% case candy.type %} {% when "gummy bears" or "chocolate" or "chips" %} yum! {% else %} ok! {% endcase %}
+
+It should join args with comma and space
+{% case candy.type %} {% when foo,bar %} yum! {% endcase %}
