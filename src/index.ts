@@ -26,6 +26,14 @@ const options: SupportOptions = {
       'Use single quotes instead of double quotes in Liquid tags and objects.',
     since: '0.2.0',
   },
+  embeddedSingleQuote: {
+    type: 'boolean',
+    category: 'LIQUID',
+    default: true,
+    description:
+      'Use single quotes instead of double quotes in embedded languages (JavaScript, CSS, TypeScript inside <script>, <style> or Liquid equivalent).',
+    since: 'SINCE_VERSION',
+  },
   singleLineLinkTags: {
     type: 'boolean',
     category: 'HTML',

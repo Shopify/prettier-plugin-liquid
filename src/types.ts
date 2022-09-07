@@ -39,6 +39,7 @@ export enum NodeTypes {
   CycleMarkup = 'CycleMarkup',
   ForMarkup = 'ForMarkup',
   PaginateMarkup = 'PaginateMarkup',
+  RawMarkup = 'RawMarkup',
   RenderMarkup = 'RenderMarkup',
   RenderVariableExpression = 'RenderVariableExpression',
 }
@@ -104,6 +105,7 @@ export type LiquidParserOptions = ParserOptions<LiquidHtmlNode> & {
   singleAttributePerLine: boolean;
   singleLineLinkTags: boolean;
   liquidSingleQuote: boolean;
+  embeddedSingleQuote: boolean;
   indentSchema: boolean;
 };
 export type LiquidPrinterArgs = {

@@ -47,6 +47,7 @@ function getCssDisplay(
       }
     }
 
+    case NodeTypes.RawMarkup:
     case NodeTypes.TextNode:
       return 'inline';
 
@@ -121,6 +122,7 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
     case NodeTypes.TextNode:
       return CSS_WHITE_SPACE_DEFAULT;
 
+    case NodeTypes.RawMarkup:
     case NodeTypes.YAMLFrontmatter:
     case NodeTypes.LiquidRawTag:
       return 'pre';

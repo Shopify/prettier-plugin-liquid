@@ -56,7 +56,7 @@ function format() {
   try {
     output.value = prettier.format(input.value, {
       ...options,
-      plugins: [prettierPluginLiquid],
+      plugins: prettierPlugins,
       parser: 'liquid-html',
     });
     ruler.style.left = `${options.printWidth}ch`;
@@ -74,8 +74,10 @@ function onKeyup(e) {
 async function main() {
   await Promise.all([
     waitFor(() => window.prettierPluginLiquid),
+    waitFor(() => window.prettierPlugins),
     waitFor(() => window.prettier),
   ]);
+  prettierPlugins['liquid-html'] = prettierPluginLiquid;
   format();
   input.oninput = format;
   input.addEventListener('keyup', onKeyup);
