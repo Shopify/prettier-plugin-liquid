@@ -32,7 +32,7 @@ const options: SupportOptions = {
     default: true,
     description:
       'Use single quotes instead of double quotes in embedded languages (JavaScript, CSS, TypeScript inside <script>, <style> or Liquid equivalent).',
-    since: 'SINCE_VERSION',
+    since: '0.4.0',
   },
   singleLineLinkTags: {
     type: 'boolean',

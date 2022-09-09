@@ -1,4 +1,22 @@
 
+0.4.0 / 2022-09-09
+==================
+
+## Features
+
+  * Add support for the `{% liquid %}` tag ([#94](https://github.com/shopify/prettier-plugin-liquid/issues/94))
+  * Add support for embedded languages ([#88](https://github.com/shopify/prettier-plugin-liquid/issues/88))
+    * Use prettier's JavaScript formatter inside `<script>` and `{% javascript %}` tags
+    * Use prettier's CSS formatter inside `<style>` and `{% style %}` tags
+    * Use prettier's JSON formatter inside `<script type="anything/that-ends-in-json">` and `{% schema %}` tags
+    * Use prettier's Markdown formatter inside `<script type="text/markdown">`
+    * Add a new configuration: `embeddedSingleQuote` to control the `singleQuote` property of embedded languages
+      * When `true` (default), will prefer single quotes inside embedded JS & CSS
+
+## Fixes
+
+  * Fix grammar precedence (>=, <=) for operators in conditionals ([#98](https://github.com/shopify/prettier-plugin-liquid/issues/98))
+
 0.3.1 / 2022-08-31
 ==================
 
