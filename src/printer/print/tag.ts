@@ -273,6 +273,7 @@ function printAttributes(
   path: AstPath<HtmlNode>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
+  attrGroupId: symbol,
 ) {
   const node = path.getValue();
   const { locStart, locEnd } = options;
@@ -307,7 +308,7 @@ function printAttributes(
       ? replaceTextEndOfLine(
           options.originalText.slice(locStart(attribute), locEnd(attribute)),
         )
-      : print(attributePath);
+      : print(attributePath, { trailingSpaceGroupId: attrGroupId });
   }, 'attributes');
 
   const forceNotToBreakAttrContent =
@@ -319,7 +320,7 @@ function printAttributes(
       (isHtmlElement(node) && node.children.length > 0)) &&
       node.attributes &&
       node.attributes.length === 1 &&
-      !isMultilineLiquidTag(node.attributes[0]));
+      !isLiquidNode(node.attributes[0]));
 
   const forceBreakAttrContent =
     node.source
@@ -386,12 +387,13 @@ export function printOpeningTag(
   path: AstPath<HtmlNode>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
+  attrGroupId: symbol,
 ) {
   const node = path.getValue();
 
   return [
     printOpeningTagStart(node, options),
-    printAttributes(path, options, print),
+    printAttributes(path, options, print, attrGroupId),
     hasNoCloseMarker(node) ? '' : printOpeningTagEnd(node),
   ];
 }

@@ -35,11 +35,15 @@ export function printElement(
   print: LiquidPrinter,
 ) {
   const node = path.getValue();
+  const attrGroupId = Symbol('element-attr-group-id');
+  const elementGroupId = Symbol('element-group-id');
 
   if (hasNoCloseMarker(node)) {
     // TODO, broken for HtmlComment but this code path is not used (so far).
     return [
-      group(printOpeningTag(path, options, print)),
+      group(printOpeningTag(path, options, print, attrGroupId), {
+        id: attrGroupId,
+      }),
       ...printClosingTag(node, options),
       printClosingTagSuffix(node, options),
     ];
@@ -51,20 +55,21 @@ export function printElement(
   ) {
     return [
       printOpeningTagPrefix(node, options),
-      group(printOpeningTag(path, options, print)),
+      group(printOpeningTag(path, options, print, attrGroupId), {
+        id: attrGroupId,
+      }),
       ...replaceTextEndOfLine(getNodeContent(node, options)),
       ...printClosingTag(node, options),
       printClosingTagSuffix(node, options),
     ];
   }
 
-  const attrGroupId = Symbol('element-attr-group-id');
-  const elementGroupId = Symbol('element-group-id');
-
   const printTag = (doc: Doc) =>
     group(
       [
-        group(printOpeningTag(path, options, print), { id: attrGroupId }),
+        group(printOpeningTag(path, options, print, attrGroupId), {
+          id: attrGroupId,
+        }),
         doc,
         printClosingTag(node, options),
       ],

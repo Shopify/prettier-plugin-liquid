@@ -14,7 +14,12 @@ import {
   WithWhitespaceHelpers,
 } from '~/types';
 import { isBranchedTag } from '~/parser';
-import { isPreLikeNode, isScriptLikeTag, isWhitespace } from '~/printer/utils';
+import {
+  isAttributeNode,
+  isPreLikeNode,
+  isScriptLikeTag,
+  isWhitespace,
+} from '~/printer/utils';
 
 type RequiredAugmentations = WithParent &
   WithSiblings &
@@ -256,6 +261,7 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
       || isScriptLikeTag(node.parentNode) // technically we don't use this one.
       || !isInnerRightWhitespaceSensitiveCssDisplay(node.parentNode.cssDisplay)
       || isTrimmingInnerRight(node.parentNode)
+      || isAttributeNode(node as any)
     )
   ) {
     return false;
