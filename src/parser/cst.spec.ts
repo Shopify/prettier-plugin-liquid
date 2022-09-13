@@ -7,6 +7,25 @@ import { deepGet } from '~/utils';
 describe('Unit: toLiquidHtmlCST(text)', () => {
   let cst: LiquidHtmlCST;
 
+  describe('Case: HtmlDoctype', () => {
+    it('should basically parse html doctypes', () => {
+      [
+        { text: '<!doctype html>', legacyDoctypeString: null },
+        { text: '<!doctype html >', legacyDoctypeString: null },
+        {
+          text: `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
+           "http://www.w3.org/TR/html4/frameset.dtd">`,
+          legacyDoctypeString: `PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
+           "http://www.w3.org/TR/html4/frameset.dtd"`,
+        },
+      ].forEach(({ text, legacyDoctypeString }) => {
+        cst = toLiquidHtmlCST(text);
+        expectPath(cst, '0.type').to.equal('HtmlDoctype');
+        expectPath(cst, '0.legacyDoctypeString').to.equal(legacyDoctypeString);
+      });
+    });
+  });
+
   describe('Case: HtmlComment', () => {
     it('should basically parse html comments', () => {
       ['<!-- hello world -->'].forEach((text) => {

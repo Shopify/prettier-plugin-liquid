@@ -308,6 +308,11 @@ function printNode(
       );
     }
 
+    case NodeTypes.HtmlDoctype: {
+      if (!node.legacyDoctypeString) return '<!doctype html>';
+      return node.source.slice(node.position.start, node.position.end);
+    }
+
     case NodeTypes.HtmlComment: {
       return [
         '<!--',

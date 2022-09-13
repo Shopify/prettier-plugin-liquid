@@ -75,6 +75,7 @@ function getCssDisplay(
     case NodeTypes.AttrEmpty:
       return 'inline';
 
+    case NodeTypes.HtmlDoctype:
     case NodeTypes.HtmlComment:
       return 'block';
 
@@ -140,6 +141,7 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
     case NodeTypes.AttrEmpty:
       return CSS_WHITE_SPACE_DEFAULT;
 
+    case NodeTypes.HtmlDoctype:
     case NodeTypes.HtmlComment:
       return CSS_WHITE_SPACE_DEFAULT;
 

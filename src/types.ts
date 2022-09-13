@@ -14,6 +14,7 @@ export enum NodeTypes {
   LiquidDrop = 'LiquidDrop',
   HtmlSelfClosingElement = 'HtmlSelfClosingElement',
   HtmlVoidElement = 'HtmlVoidElement',
+  HtmlDoctype = 'HtmlDoctype',
   HtmlComment = 'HtmlComment',
   HtmlElement = 'HtmlElement',
   HtmlRawNode = 'HtmlRawNode',
@@ -220,6 +221,7 @@ export type HtmlSelfClosingElement = Augmented<
   AllAugmentations
 >;
 export type HtmlRawNode = Augmented<AST.HtmlRawNode, AllAugmentations>;
+export type HtmlDoctype = Augmented<AST.HtmlDoctype, AllAugmentations>;
 export type HtmlComment = Augmented<AST.HtmlComment, AllAugmentations>;
 export type AttributeNode = Augmented<AST.AttributeNode, AllAugmentations>;
 export type AttrSingleQuoted = Augmented<
