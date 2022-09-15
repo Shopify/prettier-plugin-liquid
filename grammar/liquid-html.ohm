@@ -317,12 +317,19 @@ LiquidHTML <: Liquid {
     "---" newline anyExceptStar<"---"> "---" newline
 
   HtmlNode =
+    | HtmlDoctype
     | HtmlComment
     | HtmlRawTag
     | HtmlVoidElement
     | HtmlSelfClosingElement
     | HtmlTagClose
     | HtmlTagOpen
+
+  // https://html.spec.whatwg.org/multipage/syntax.html#the-doctype
+  HtmlDoctype =
+    #("<!" caseInsensitive<"doctype"> space+ caseInsensitive<"html">) legacyDoctypeString? ">"
+  legacyDoctypeString
+    = anyExceptPlus<">">
 
   HtmlComment = "<!--" #(anyExceptStar<"-->"> "-->")
 
@@ -381,10 +388,8 @@ LiquidHTML <: Liquid {
   quotes =  "'" | "\""
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
-  // Cheating a bit with by stretching it to the doctype
   voidElementName =
-    ( caseInsensitive<"!doctype">
-    | caseInsensitive<"area">
+    ( caseInsensitive<"area">
     | caseInsensitive<"base">
     | caseInsensitive<"br">
     | caseInsensitive<"col">

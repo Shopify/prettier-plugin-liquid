@@ -6,6 +6,7 @@ import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { Comparators, NamedTags } from '~/types';
 
 export enum ConcreteNodeTypes {
+  HtmlDoctype = 'HtmlDoctype',
   HtmlComment = 'HtmlComment',
   HtmlRawTag = 'HtmlRawTag',
   HtmlVoidElement = 'HtmlVoidElement',
@@ -65,6 +66,11 @@ export interface ConcreteBasicNode<T> {
 export interface ConcreteHtmlNodeBase<T> extends ConcreteBasicNode<T> {
   name: string | ConcreteLiquidDrop;
   attrList?: ConcreteAttributeNode[];
+}
+
+export interface ConcreteHtmlDoctype
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlDoctype> {
+  legacyDoctypeString: string | null;
 }
 
 export interface ConcreteHtmlComment
@@ -401,6 +407,7 @@ export interface ConcreteLiquidVariableLookup
 }
 
 export type ConcreteHtmlNode =
+  | ConcreteHtmlDoctype
   | ConcreteHtmlComment
   | ConcreteHtmlRawTag
   | ConcreteHtmlVoidElement
@@ -903,6 +910,13 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     yamlFrontmatter: {
       type: ConcreteNodeTypes.YAMLFrontmatter,
       body: 2,
+      locStart,
+      locEnd,
+    },
+
+    HtmlDoctype: {
+      type: ConcreteNodeTypes.HtmlDoctype,
+      legacyDoctypeString: 4,
       locStart,
       locEnd,
     },

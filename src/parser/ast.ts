@@ -55,6 +55,7 @@ export type LiquidHtmlNode =
   | DocumentNode
   | YAMLFrontmatter
   | LiquidNode
+  | HtmlDoctype
   | HtmlNode
   | AttributeNode
   | LiquidVariable
@@ -392,6 +393,10 @@ export interface RawMarkup extends ASTNode<NodeTypes.RawMarkup> {
   value: string;
 }
 
+export interface HtmlDoctype extends ASTNode<NodeTypes.HtmlDoctype> {
+  legacyDoctypeString: string | null;
+}
+
 export interface HtmlComment extends ASTNode<NodeTypes.HtmlComment> {
   body: string;
 }
@@ -659,6 +664,16 @@ export function cstToAst(
 
       case ConcreteNodeTypes.HtmlSelfClosingElement: {
         builder.push(toHtmlSelfClosingElement(node, source));
+        break;
+      }
+
+      case ConcreteNodeTypes.HtmlDoctype: {
+        builder.push({
+          type: NodeTypes.HtmlDoctype,
+          legacyDoctypeString: node.legacyDoctypeString,
+          position: position(node),
+          source,
+        });
         break;
       }
 
