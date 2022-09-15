@@ -12,6 +12,7 @@ import {
   HtmlComment,
   HtmlElement,
   LiquidTag,
+  AttributeNode,
 } from '~/types';
 import { isEmpty } from '~/printer/utils/array';
 
@@ -74,6 +75,15 @@ export function isMultilineLiquidTag(
 
 export function isHtmlNode(node: LiquidHtmlNode | undefined): node is HtmlNode {
   return !!node && HtmlNodeTypes.includes(node.type as any);
+}
+
+export function isAttributeNode(
+  node: LiquidHtmlNode,
+): node is AttributeNode & { parentNode: HtmlNode } {
+  return (
+    isHtmlNode(node.parentNode) &&
+    node.parentNode.attributes.indexOf(node as AttributeNode) !== -1
+  );
 }
 
 export function hasNonTextChild(node: LiquidHtmlNode) {

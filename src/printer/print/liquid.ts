@@ -24,13 +24,12 @@ import {
   hasMeaningfulLackOfDanglingWhitespace,
   isDeeplyNested,
   isEmpty,
-  isHtmlNode,
   markupLines,
   originallyHadLineBreaks,
   reindent,
   trim,
-  bodyLines,
   hasLineBreakInRange,
+  isAttributeNode,
 } from '~/printer/utils';
 
 import { printChildren } from '~/printer/print/children';
@@ -39,7 +38,6 @@ const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 const { builders, utils } = doc;
 const { group, hardline, ifBreak, indent, join, line, softline } = builders;
-const { replaceTextEndOfLine } = utils as any;
 
 export function printLiquidDrop(
   path: LiquidAstPath,
@@ -503,13 +501,6 @@ export function printLiquidRawTag(
   }
 
   return [blockStart, ...body, blockEnd];
-}
-
-function isAttributeNode(node: LiquidTag) {
-  return (
-    isHtmlNode(node.parentNode) &&
-    node.parentNode.attributes.indexOf(node) !== -1
-  );
 }
 
 function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {
