@@ -51,6 +51,11 @@ To run the integration tests (where we make sure an input file gets transformed 
 yarn test:integration
 ```
 
+To run the idempotence tests (where we make sure running prettier twice on an input file returns the same result):
+```bash
+yarn test:idempotence
+```
+
 To run all tests:
 
 ```bash
