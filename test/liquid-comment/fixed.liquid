@@ -6,6 +6,29 @@
 
 {% comment %}theme-check-disable foo{% endcomment %}
 
+It should support nested comments
+{% comment %}
+  ho
+  {% comment %}
+    hi
+  {% endcomment %}
+  ha
+{% endcomment %}
+
+It should support empty comments
+{% comment %}{% endcomment %}
+
+It should support nested empty comments
+{% comment %}{% comment %}{% endcomment %}{% endcomment %}
+
+It should support nested empty comments (pt 2)
+{% comment %}
+  hi
+  {% comment %}
+  {% endcomment %}
+  ho
+{% endcomment %}
+
 It should support inline comments
 {% # hello world %}
 

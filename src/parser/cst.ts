@@ -515,6 +515,23 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       blockEndLocStart: (tokens: Node[]) => tokens[9].source.startIdx,
       blockEndLocEnd: (tokens: Node[]) => tokens[16].source.endIdx,
     },
+    liquidBlockComment: {
+      type: ConcreteNodeTypes.LiquidRawTag,
+      name: 'comment',
+      body: (tokens: Node[]) => tokens[1].sourceString,
+      whitespaceStart: (tokens: Node[]) => tokens[0].children[1].sourceString,
+      whitespaceEnd: (tokens: Node[]) => tokens[0].children[6].sourceString,
+      delimiterWhitespaceStart: (tokens: Node[]) =>
+        tokens[2].children[1].sourceString,
+      delimiterWhitespaceEnd: (tokens: Node[]) =>
+        tokens[2].children[6].sourceString,
+      locStart,
+      locEnd,
+      blockStartLocStart: (tokens: Node[]) => tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: Node[]) => tokens[0].source.endIdx,
+      blockEndLocStart: (tokens: Node[]) => tokens[2].source.startIdx,
+      blockEndLocEnd: (tokens: Node[]) => tokens[2].source.endIdx,
+    },
     liquidInlineComment: {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
@@ -876,6 +893,33 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
         liquidStatementOffset + tokens[5].source.startIdx,
       blockEndLocEnd: (tokens: Node[]) =>
         liquidStatementOffset + tokens[5].source.endIdx,
+    },
+
+    liquidBlockComment: {
+      type: ConcreteNodeTypes.LiquidRawTag,
+      name: 'comment',
+      body: (tokens: Node[]) =>
+        // We want this to behave like LiquidRawTag, so we have to do some
+        // shenanigans to make it behave the same while also supporting
+        // nested comments
+        //
+        // We're stripping the newline from the statementSep, that's why we
+        // slice(1). Since statementSep = newline (space | newline)*
+        tokens[1].sourceString.slice(1) + tokens[2].sourceString,
+      whitespaceStart: '',
+      whitespaceEnd: '',
+      delimiterWhitespaceStart: '',
+      delimiterWhitespaceEnd: '',
+      locStart,
+      locEnd,
+      blockStartLocStart: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[0].source.startIdx,
+      blockStartLocEnd: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[0].source.endIdx,
+      blockEndLocStart: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[4].source.startIdx,
+      blockEndLocEnd: (tokens: Node[]) =>
+        liquidStatementOffset + tokens[4].source.endIdx,
     },
 
     liquidInlineComment: {

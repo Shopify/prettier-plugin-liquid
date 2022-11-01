@@ -32,6 +32,7 @@ Liquid <: Helpers {
   openControl := "{{" | "{%"
 
   liquidNode =
+    | liquidBlockComment
     | liquidRawTag
     | liquidDrop
     | liquidTagClose
@@ -163,7 +164,6 @@ Liquid <: Helpers {
 
   liquidRawTag =
     | liquidRawTagImpl<"raw">
-    | liquidRawTagImpl<"comment">
     | liquidRawTagImpl<"javascript">
     | liquidRawTagImpl<"schema">
     | liquidRawTagImpl<"style">
@@ -173,6 +173,13 @@ Liquid <: Helpers {
     "{%" "-"? space* "end" name space* "-"? "%}"
   liquidRawTagClose<name> =
     "{%" "-"? space* "end" name space* "-"? "%}"
+
+  liquidBlockComment =
+    commentBlockStart
+      (liquidBlockComment | anyExceptPlus<(commentBlockStart | commentBlockEnd)>)*
+    commentBlockEnd
+  commentBlockStart = "{%" "-"? space* ("comment"    ~identifierCharacter) space* tagMarkup "-"? "%}"
+  commentBlockEnd   = "{%" "-"? space* ("endcomment" ~identifierCharacter) space* tagMarkup "-"? "%}"
 
   // In order for the grammar to "fallback" to the base case, this
   // rule must pass if and only if we support what we parse. This
@@ -275,6 +282,7 @@ LiquidStatement <: Liquid {
   space := " " | "\t"
 
   LiquidStatement =
+    | liquidBlockComment
     | liquidRawTag
     | liquidTagClose
     | liquidTagOpen
@@ -297,6 +305,24 @@ LiquidStatement <: Liquid {
 
   liquidRawTagClose<name>
     := "end" name space* &liquidStatementEnd
+
+  liquidBlockComment :=
+    commentBlockStart statementSep
+      (listOf<liquidCommentBlockStatement, statementSep> statementSep)?
+    commentBlockEnd
+
+  liquidCommentBlockStatement =
+    | liquidBlockComment
+    | nonTerminalCommentLine
+
+  commentBlockStart
+    := ("comment" ~identifierCharacter) space* tagMarkup
+
+  commentBlockEnd
+    := ("endcomment" ~identifierCharacter) space* tagMarkup
+
+  nonTerminalCommentLine
+    = ~commentBlockEnd anyExceptPlus<newline>
 
   liquidInlineComment
     := "#" space? tagMarkup &liquidStatementEnd

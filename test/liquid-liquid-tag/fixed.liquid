@@ -33,6 +33,25 @@ It should handle comments correctly
   endcomment
 -%}
 
+It should handle nested comments correctly
+{%- liquid
+  comment
+    how u doin?
+    comment
+      ho
+    endcomment
+  endcomment
+-%}
+
+It should handle empty nested comments correctly
+{%- liquid
+  comment
+    how u doin?
+    comment
+    endcomment
+  endcomment
+-%}
+
 It should handle inline comments correctly
 {%- liquid
   # heyy how u doin
