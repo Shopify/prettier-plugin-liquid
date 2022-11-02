@@ -30,6 +30,7 @@ import {
   trim,
   hasLineBreakInRange,
   isAttributeNode,
+  shouldPreserveContent,
 } from '~/printer/utils';
 
 import { printChildren } from '~/printer/print/children';
@@ -37,6 +38,7 @@ import { printChildren } from '~/printer/print/children';
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 const { builders, utils } = doc;
+const { replaceTextEndOfLine } = doc.utils as any;
 const { group, hardline, ifBreak, indent, join, line, softline } = builders;
 
 export function printLiquidDrop(
@@ -385,6 +387,14 @@ export function printLiquidBlockEnd(
   ]);
 }
 
+function getNodeContent(node: LiquidTag) {
+  if (!node.children || !node.blockEndPosition) return '';
+  return node.source.slice(
+    node.blockStartPosition.end,
+    node.blockEndPosition.start,
+  );
+}
+
 export function printLiquidTag(
   path: AstPath<LiquidTag>,
   options: LiquidParserOptions,
@@ -407,6 +417,14 @@ export function printLiquidTag(
     leadingSpaceGroupId: tagGroupId,
     trailingSpaceGroupId,
   }); // {% endif %}
+
+  if (!args.isLiquidStatement && shouldPreserveContent(node, options)) {
+    return [
+      blockStart,
+      ...replaceTextEndOfLine(getNodeContent(node)),
+      blockEnd,
+    ];
+  }
 
   let body: Doc = [];
 

@@ -4,6 +4,7 @@ import {
   CSS_DISPLAY_LIQUID_TAGS,
   CSS_DISPLAY_TAGS,
   CSS_WHITE_SPACE_DEFAULT,
+  CSS_WHITE_SPACE_LIQUID_TAGS,
   CSS_WHITE_SPACE_TAGS,
 } from '~/constants.evaluate';
 import {
@@ -129,7 +130,7 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
       return 'pre';
 
     case NodeTypes.LiquidTag:
-      return CSS_WHITE_SPACE_DEFAULT;
+      return CSS_WHITE_SPACE_LIQUID_TAGS[node.name] || CSS_WHITE_SPACE_DEFAULT;
 
     case NodeTypes.LiquidBranch:
     case NodeTypes.LiquidDrop:

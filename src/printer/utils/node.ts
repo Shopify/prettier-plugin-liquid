@@ -120,7 +120,7 @@ export function shouldPreserveContent(
   if (
     isPreLikeNode(node) &&
     (node as any).children &&
-    (node as any).children.some((child: any) => !isTextLikeNode(child))
+    (node as any).children.length > 0
   ) {
     return true;
   }

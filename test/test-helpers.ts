@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
+import { parse } from '../src/parser/parser';
+import { preprocess } from '../src/printer/print-preprocess';
 import { LiquidParserOptions } from '../src/types';
 
 const PARAGRAPH_SPLITTER =
@@ -172,6 +174,8 @@ export function printToDoc(content: string, options: any = {}) {
 }
 
 export function debug(content: string, options: any = {}) {
+  const ast = parse(content, plugin.parsers, options);
+  const processedAST = preprocess(ast, options);
   const printed = format(content, options);
   const doc = printToDoc(content, options);
   debugger;
