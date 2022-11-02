@@ -21,6 +21,15 @@ It should not reindent raw tags, as this tag is indentation sensitive
 {% endraw %}
 </div>
 
+It should be indentation (and whitespace) sensitive
+<p>{% raw %}
+  # markdown example
+
+  - this is a list
+  	* this is indented with mixed tabs!
+{% endraw %}
+</p>
+
 it should pretty-print and indent the contents of the schema tag
 printWidth: 1
 {% schema %}
