@@ -451,6 +451,43 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       });
     });
 
+    it('should support nested comments', () => {
+      const commentBodyContainingNestedComment = `  hello
+      comment tagMarkup
+        nested comment body
+      endcomment
+      outer comment body`;
+      const statementSep = '\n  ';
+      const commentExpr = ['comment', commentBodyContainingNestedComment, 'endcomment'].join(
+        statementSep,
+      );
+      const testStr = ['{% liquid', commentExpr, '%}'].join('\n');
+      cst = toLiquidHtmlCST(testStr);
+      expectPath(cst, '0.type').to.equal('LiquidTag');
+      expectPath(cst, '0.name').to.equal('liquid');
+      expectPath(cst, '0.markup.0.type').to.equal('LiquidRawTag');
+      expectPath(cst, '0.markup.0.name').to.equal('comment');
+      expectPath(cst, '0.markup.0.body').to.equal(
+        // We don't want the newline but we do want the leading spaces
+        // The reason we want that is because we want this to behave like LiquidRawTag
+        statementSep.slice(1) + commentBodyContainingNestedComment + statementSep,
+      );
+      expectPath(cst, '0.markup.0.whitespaceStart').to.equal('');
+      expectPath(cst, '0.markup.0.whitespaceEnd').to.equal('');
+      expectPath(cst, '0.markup.0.delimiterWhitespaceStart').to.equal('');
+      expectPath(cst, '0.markup.0.delimiterWhitespaceEnd').to.equal('');
+
+      const liquidStatementOffset = '{% liquid\n'.length;
+      expectPath(cst, '0.markup.0.blockStartLocStart').to.equal(liquidStatementOffset);
+      expectPath(cst, '0.markup.0.blockStartLocEnd').to.equal(
+        liquidStatementOffset + 'comment'.length,
+      );
+      expectPath(cst, '0.markup.0.blockEndLocStart').to.equal(
+        testStr.length - 'endcomment\n%}'.length,
+      );
+      expectPath(cst, '0.markup.0.blockEndLocEnd').to.equal(testStr.length - '\n%}'.length);
+    });
+
     it('should parse the echo tag as variables', () => {
       [
         { expression: `"hi"`, expressionType: 'String', expressionValue: 'hi', filters: [] },
@@ -868,6 +905,22 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '2.name').to.equal('if');
       expectPath(cst, '2.whitespaceStart').to.equal('-');
       expectPath(cst, '2.whitespaceEnd').to.equal(null);
+    });
+
+    it('should support nested comments', () => {
+      const testStr = '{% comment -%} ho {% comment %} ho {% endcomment %} ho {%- endcomment %}';
+      cst = toLiquidHtmlCST(testStr);
+      expectPath(cst, '0.type').to.equal('LiquidRawTag');
+      expectPath(cst, '0.name').to.equal('comment');
+      expectPath(cst, '0.body').to.equal(' ho {% comment %} ho {% endcomment %} ho ');
+      expectPath(cst, '0.whitespaceStart').to.equal('');
+      expectPath(cst, '0.whitespaceEnd').to.equal('-');
+      expectPath(cst, '0.delimiterWhitespaceStart').to.equal('-');
+      expectPath(cst, '0.delimiterWhitespaceEnd').to.equal('');
+      expectPath(cst, '0.blockStartLocStart').to.equal(0);
+      expectPath(cst, '0.blockStartLocEnd').to.equal(0 + '{% comment -%}'.length);
+      expectPath(cst, '0.blockEndLocStart').to.equal(testStr.length - '{%- endcomment %}'.length);
+      expectPath(cst, '0.blockEndLocEnd').to.equal(testStr.length);
     });
 
     it('should parse tag open / close', () => {
