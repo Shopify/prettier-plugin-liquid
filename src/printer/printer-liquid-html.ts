@@ -228,6 +228,7 @@ function printNode(
         path as AstPath<HtmlSelfClosingElement>,
         options,
         print,
+        args,
       );
     }
 

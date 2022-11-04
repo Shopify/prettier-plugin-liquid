@@ -174,7 +174,7 @@ export function printToDoc(content: string, options: any = {}) {
 }
 
 export function debug(content: string, options: any = {}) {
-  const ast = parse(content, plugin.parsers, options);
+  const ast = parse(content, plugin.parsers!, options);
   const processedAST = preprocess(ast, options);
   const printed = format(content, options);
   const doc = printToDoc(content, options);
@@ -195,7 +195,7 @@ export function debug(content: string, options: any = {}) {
  */
 export function reindent(
   strs: TemplateStringsArray,
-  ...keys: any[] | undefined
+  ...keys: any[]
 ): string {
   const s = strs.reduce((acc, next, i) => {
     if (keys[i] !== undefined) {

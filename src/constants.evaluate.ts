@@ -90,6 +90,6 @@ export const CSS_WHITE_SPACE_DEFAULT = 'normal';
 export const CSS_WHITE_SPACE_LIQUID_TAGS: Record<string, string> = {
   capture: 'pre',
   raw: 'pre',
-  javascript: 'pre',
-  style: 'pre',
+  // javascript: 'pre',
+  // style: 'pre',
 };

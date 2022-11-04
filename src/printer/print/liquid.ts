@@ -31,6 +31,7 @@ import {
   hasLineBreakInRange,
   isAttributeNode,
   shouldPreserveContent,
+  FORCE_FLAT_GROUP_ID,
 } from '~/printer/utils';
 
 import { printChildren } from '~/printer/print/children';
@@ -38,8 +39,8 @@ import { printChildren } from '~/printer/print/children';
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 const { builders, utils } = doc;
-const { replaceTextEndOfLine } = doc.utils as any;
 const { group, hardline, ifBreak, indent, join, line, softline } = builders;
+const { replaceTextEndOfLine } = doc.utils as any;
 
 export function printLiquidDrop(
   path: LiquidAstPath,
@@ -406,6 +407,23 @@ export function printLiquidTag(
   if (!node.children || !node.blockEndPosition) {
     return printLiquidBlockStart(path, options, print, args);
   }
+
+  if (!args.isLiquidStatement && shouldPreserveContent(node)) {
+    return [
+      printLiquidBlockStart(path, options, print, {
+        ...args,
+        leadingSpaceGroupId,
+        trailingSpaceGroupId: FORCE_FLAT_GROUP_ID,
+      }),
+      ...replaceTextEndOfLine(getNodeContent(node)),
+      printLiquidBlockEnd(path, options, print, {
+        ...args,
+        leadingSpaceGroupId: FORCE_FLAT_GROUP_ID,
+        trailingSpaceGroupId,
+      }),
+    ];
+  }
+
   const tagGroupId = Symbol('tag-group');
   const blockStart = printLiquidBlockStart(path, options, print, {
     ...args,
@@ -417,14 +435,6 @@ export function printLiquidTag(
     leadingSpaceGroupId: tagGroupId,
     trailingSpaceGroupId,
   }); // {% endif %}
-
-  if (!args.isLiquidStatement && shouldPreserveContent(node, options)) {
-    return [
-      blockStart,
-      ...replaceTextEndOfLine(getNodeContent(node)),
-      blockEnd,
-    ];
-  }
 
   let body: Doc = [];
 
@@ -452,14 +462,17 @@ export function printLiquidTag(
     ]);
   }
 
-  return group([blockStart, body, innerTrailingWhitespace(node), blockEnd], {
-    id: tagGroupId,
-    shouldBreak:
-      LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
-      originallyHadLineBreaks(path, options) ||
-      isAttributeNode(node) ||
-      isDeeplyNested(node),
-  });
+  return group(
+    [blockStart, body, innerTrailingWhitespace(node, args), blockEnd],
+    {
+      id: tagGroupId,
+      shouldBreak:
+        LIQUID_TAGS_THAT_ALWAYS_BREAK.includes(node.name) ||
+        originallyHadLineBreaks(path, options) ||
+        isAttributeNode(node) ||
+        isDeeplyNested(node),
+    },
+  );
 }
 
 export function printLiquidRawTag(
@@ -473,7 +486,7 @@ export function printLiquidRawTag(
   const hasEmptyBody = node.body.value.trim() === '';
   const shouldNotIndentBody = node.name === 'schema' && !options.indentSchema;
   const shouldPrintAsIs =
-    node.name === 'raw' ||
+    node.isIndentationSensitive ||
     !hasLineBreakInRange(
       node.source,
       node.body.position.start,
@@ -540,8 +553,12 @@ function innerLeadingWhitespace(node: LiquidTag | LiquidBranch) {
   return softline;
 }
 
-function innerTrailingWhitespace(node: LiquidTag | LiquidBranch) {
+function innerTrailingWhitespace(
+  node: LiquidTag | LiquidBranch,
+  args: LiquidPrinterArgs,
+) {
   if (
+    (!args.isLiquidStatement && shouldPreserveContent(node)) ||
     node.type === NodeTypes.LiquidBranch ||
     !node.blockEndPosition ||
     !node.lastChild
