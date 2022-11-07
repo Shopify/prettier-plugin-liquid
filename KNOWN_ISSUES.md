@@ -56,15 +56,15 @@ However... We _do_ support Liquid variables as HTML tag names.
 That said, we do offer _partial_ support for it. We support Liquid inside JavaScript strings:
 
 ```liquid
-// 👍 supported, will be reformatted using prettier's own JavaScript formatter
+{% # 👍 supported, will be reformatted using prettier's own JavaScript formatter %}
 <script>
   const mySetting = '{{ some_liquid_drop }}';
 </script>
 
-// 👎 not supported, will only reindent the code
+{% # 👎 not supported, will only reindent the code %}
 <script>
   {% if condition %}
-    // do stuff
+    {% # do stuff %}
   {% endif %}
 </script>
 ```
@@ -116,6 +116,6 @@ You can see this pattern used in the Dawn repo.
 - [base.css](https://github.com/Shopify/dawn/blob/main/assets/base.css#L3-L14)
 
 Pros of this approach:
-- Your CSS files are then true CSS files. This means you can use the official syntax highlighting for CSS, the formatter for CSS, etc. Which are bound to have better support that this plugin can offer. 
+- Your CSS files are then true CSS files. This means you can use the official syntax highlighting for CSS, the formatter for CSS, etc. Which are bound to have better support than this plugin can offer. 
 - You can use build tools independently of Liquid that work with CSS files.
 - You could even use LESS or SCSS independently if you are so inclined.
