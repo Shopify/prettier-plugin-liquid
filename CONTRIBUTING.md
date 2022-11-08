@@ -6,7 +6,7 @@ Requirements:
 - Yarn
 
 ```
-git clone git@github.com/shopify/prettier-plugin-liquid
+git clone git@github.com:Shopify/prettier-plugin-liquid.git
 yarn
 yarn test
 ```
