@@ -261,6 +261,22 @@ function printNode(
     }
 
     case NodeTypes.RawMarkup: {
+      const isRawMarkupIdentationSensitive = () => {
+        switch (node.kind) {
+          case RawMarkupKinds.typescript:
+          case RawMarkupKinds.javascript: {
+            return node.value.includes('`');
+          }
+          default: {
+            return false;
+          }
+        }
+      };
+
+      if (isRawMarkupIdentationSensitive()) {
+        return node.value;
+      }
+
       const lines = bodyLines(node.value);
       const shouldSkipFirstLine =
         !node.source[node.position.start].match(/\r|\n/);

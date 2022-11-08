@@ -11,3 +11,10 @@ printWidth: 20
 .class,#id,html,body{background-color:{{setting.color}};width:100%}
 .container{display:flex;}
 {% endstyle %}
+
+It should reindent with tabs when useTabs is true
+useTabs: true
+{% style %}
+    .class,#id,html,body{background-color:{{setting.color}};width:100%}
+    .container{display:flex;}
+{% endstyle %}

@@ -5,11 +5,22 @@ printWidth: 20
 .container{display:flex;}
 </style>
 
-It should fallback to reindenting when it doesn't parse
+it should fallback to reindenting when it doesn't parse
 printWidth: 20
 <style>
 .class,#id,html,body{background-color:{{setting.color}};width:100%}
 .container{display:flex;}
+</style>
+
+it should reindent when it doesn't parse, and swap minIndent with tabs with useTabs
+printWidth: 20
+useTabs: true
+<style>
+    .class,#id,html,body{
+      background-color:{{setting.color}};
+      width:100%;
+    }
+    .container{display:flex;}
 </style>
 
 It should fallback to reindenting when it contains liquid in calc. (somehow this parses!)

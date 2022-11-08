@@ -30,6 +30,16 @@ It should be indentation (and whitespace) sensitive
 {% endraw %}
 </p>
 
+It should be indentation (and whitespace) sensitive (useTabs)
+useTabs: true
+<p>{% raw %}
+  # markdown example
+
+  - this is a list
+  	* this is indented with mixed tabs!
+{% endraw %}
+</p>
+
 it should pretty-print and indent the contents of the schema tag
 printWidth: 1
 {% schema %}
