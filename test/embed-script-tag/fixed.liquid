@@ -48,6 +48,15 @@ printWidth: 20
   function main(){console.log({{ drop }});}const x = 100 > 42 ? x : y;
 </script>
 
+It should reindent with tabs when useTabs is true
+useTabs: true
+<script>
+	function main(){
+	  console.log({{ drop }});
+	}
+	const x = 100 > 42 ? x : y;
+</script>
+
 It should respect embeddedSingleQuote
 embeddedSingleQuote: false
 <script>

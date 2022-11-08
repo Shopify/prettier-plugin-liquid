@@ -51,35 +51,6 @@ import { RawMarkupKinds } from '~/parser';
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
 
-function printAttributes<
-  T extends LiquidHtmlNode & {
-    attributes: AttributeNode[];
-    blockStartPosition: Position;
-  },
->(path: AstPath<T>, _options: LiquidParserOptions, print: LiquidPrinter): Doc {
-  const node = path.getValue();
-  if (isEmpty(node.attributes)) return '';
-  return group(
-    [
-      indent([
-        line,
-        join(
-          line,
-          path.map((p) => print(p), 'attributes'),
-        ),
-      ]),
-      softline,
-    ],
-    {
-      shouldBreak: hasLineBreakInRange(
-        node.source,
-        node.blockStartPosition.start,
-        node.blockStartPosition.end,
-      ),
-    },
-  );
-}
-
 const oppositeQuotes = {
   '"': "'",
   "'": '"',
@@ -216,11 +187,16 @@ function printNode(
     }
 
     case NodeTypes.HtmlElement: {
-      return printElement(path as AstPath<HtmlElement>, options, print);
+      return printElement(path as AstPath<HtmlElement>, options, print, args);
     }
 
     case NodeTypes.HtmlVoidElement: {
-      return printElement(path as AstPath<HtmlVoidElement>, options, print);
+      return printElement(
+        path as AstPath<HtmlVoidElement>,
+        options,
+        print,
+        args,
+      );
     }
 
     case NodeTypes.HtmlSelfClosingElement: {
@@ -233,31 +209,7 @@ function printNode(
     }
 
     case NodeTypes.HtmlRawNode: {
-      let body: Doc = [];
-      const hasEmptyBody = node.body.value.trim() === '';
-      const shouldIndentBody = node.body.kind !== RawMarkupKinds.markdown;
-
-      if (!hasEmptyBody) {
-        if (shouldIndentBody) {
-          body = [indent([hardline, path.call(print, 'body')]), hardline];
-        } else {
-          body = [
-            builders.dedentToRoot([hardline, path.call(print, 'body')]),
-            hardline,
-          ];
-        }
-      }
-
-      return group([
-        group([
-          '<',
-          node.name,
-          printAttributes(path as AstPath<HtmlRawNode>, options, print),
-          '>',
-        ]),
-        ...body,
-        ['</', node.name, '>'],
-      ]);
+      return printElement(path as AstPath<HtmlRawNode>, options, print, args);
     }
 
     case NodeTypes.RawMarkup: {
