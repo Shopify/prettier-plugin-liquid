@@ -74,6 +74,8 @@ We used [OhmJS](https://ohmjs.org/). Why? I'll admit this:
   - Lets you visualize the Syntax tree
   - Lets you write explore
 
+More details to follow...
+
 ### Problems with OhmJS
 
 The problem with parser generators, however, is that they only spit out Trees for [_context-free grammars_](https://en.wikipedia.org/wiki/Context-free_grammar).
