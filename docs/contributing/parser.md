@@ -90,7 +90,7 @@ In other words, you can parse open and close tags independently, but not recogni
 
 So, we're left with a series of context-free nodes:
 
-![ohm-cst-illustration](../images/ohm-cst-illustration.png)
+![ohm-cst-illustration](../images/ohm-nodes.png)
 
 Since those are rather useful (!), [our first stage](./parser-stage-1-cst-to-ast.md) takes source code and turns it into what we call the **Concrete Syntax Tree[^1].**
 
