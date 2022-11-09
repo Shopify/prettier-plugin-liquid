@@ -3,7 +3,7 @@
 In this doc, we'll go over two topics:
 
 - Why we need our own HTML + Liquid parser
-- How it works
+- Why and how we got to three stages
 
 ## **TL;DR**
 
