@@ -20,13 +20,15 @@ My hope is that those docs help you speed things up a little bit.
 
 ## So what's in this formatter?
 
-A prettier formatter takes source code as input, and deterministically turn the output into pretty code by reprinting the Abstract Syntax Tree (AST for short).
+A prettier printer takes an _Abstract Syntax Tree (AST)_ and a _configuration_ as input, and returns _pretty code_.
 
-That is, 
+That is,
 
 $$
-\text{formattedCode} = f\left(\text{AST}, \text{Config}\right).
+\text{prettyCode} = print\left(\text{sourceCode}, \text{Config}\right).
 $$
+
+But since we're mostly dealing with source code, we need a step that turns source code into an Abstract Syntax Tree. That step is performed by the _parser_.
 
 As such, there are two major pipelines in this codebase:
 
@@ -44,82 +46,70 @@ If you like types, it's a bit like this:
 ```typescript
 type Parser = (sourceCode: string) => AST
 type Printer = (ast: AST, config: Config) => string
-
 type Formatter = (sourceCode: string, config: Config) => string
+```
+
+If you like math, it's a bit like this:
+```math
+\begin{align}
+\text{AST} & = \text{parse}(\text{sourceCode}) \\\\
+\text{prettyCode} & = \text{print}(\text{AST}, \text{Config}) \\\\
+\text{prettyCode} & = \text{format}(\text{sourceCode}, \text{Config}) = \text{print}(\text{parse(sourceCode)}, \text{Config})
+\end{align}
 ```
 
 ### Example
 
-The following liquid code could be our input:
+Take the following code as input:
 
 ```liquid
-{%for product in all_products%}<img
-  src="{{ product.featured_image | image_url }}"
+{%for product in all_products%}
+  <img
+    src="{{ product.featured_image | image_url }}"
     loading="lazy"
-  >{%endfor %}
+  >
+{%endfor %}
 ```
 
-Our goal is to turn this into "pretty" code, and we do this first by parsing this code into an AST. Something like this:
+Since our goal is to turn this into "pretty" code, our first job is to turn it into an AST.
 
 ```typescript
 function parse(sourceCode: string): AST {
-  // see parser docs for details :)
+  // see parser docs for details :D
 }
 
 const input: string = `
-{%for product in all_products%}<img
-  src="{{ product.featured_image | image_url }}"
+{%for product in all_products%}
+  <img
+    src="{{ product.featured_image | image_url }}"
     loading="lazy"
-  >{%endfor %}
+  >
+{%endfor %}
 `
 
 const ast: AST = parse(input);
 ```
 
-Once we have the AST, then we want
+And then we need to pass that AST to the printer.
 
+```typescript
+function print(ast: AST, config: Config): string {
+  // see printer docs for details :D
+}
 
-For the above `input`, we'd probably want our parser to turn this into an AST that looks like this:
-
+const prettyCode: string = print(ast, getPrettierRcConfig());
 ```
-const ast: AST = parse(input);
+
+So our formatter is really just the combination of the two:
+
+```typescript
+function format(sourceCode: string, config: Config): string {
+  const ast: AST = parse(sourceCode);
+  return print(ast, config);
+}
 ```
-
-![docs/liquid-html-tree.png](../liquid-html-tree.png)
-
-## Important mathematical properties of prettier formatters
-
-_(This section is optional)_
-
-One of the desirable properties of prettier is that it is [Idempotent](https://en.wikipedia.org/wiki/Idempotence). That is, running it twice on the same source code will return the same result.
-
-In other words:
-
-$$
-\text{format}\left(\text{sourceCode}, \text{Config}\right) 
-= \text{format}\left(
-    \text{format}\left(
-      \text{sourceCode}, \text{Config}
-    \right), 
-    \text{Config}
-  \right)
-$$
-
-Recall the equation we have for prettier code:
-
-$$
-\text{formattedCode} = f\left(\text{AST}, \text{Config}\right)
-$$
-
-Since prettier code shouldn't change the AST, it follows that parsing the prettier code should return an AST equivalent to the AST parsed from the non-pretty code:
-
-$$
-\text{parse(\text{PrettierCode})} = \text{parse}(\text{sourceCode})
-$$
-
-Since the parser should return the same AST.
 
 ## Where to go from here
 
-- [The parser](The parser)
-- [The printer](The printer)
+- [The parser](parser.md)
+- [The printer](printer.md)
