@@ -13,7 +13,7 @@ Our parser has three stages:
 
 | description              | input       | output       | function signature                                             |
 | ---                      | ---         | ---          | ---                                                            |
-| The OhmJS transformation | source code | CST[^1]      | type toLiquidHtmlCST = (text: string) => CST`                  |
+| The OhmJS transformation | source code | CST[^1]      | `type toLiquidHtmlCST = (text: string) => CST`                |
 | the AST build            | CST         | AST          | `type cstToAst = (cst: CST) => AST`                            |
 | the AST augmentation     | AST         | AugmentedAST | `type preprocess = (ast: AST, config: Config) => AugmentedAST` |
 
@@ -22,7 +22,7 @@ Our parser has three stages:
 In other words, it goes like this:
 
 ```
-sourceCode -> CST -> AST -> AugmentedAST 
+sourceCode -> CST -> AST -> AugmentedAST
 ```
 
 The rest of this doc explains why and how we got there.
@@ -62,13 +62,9 @@ What we need is an AST that combines both Liquid _and_ HTML. Something like this
 
 <img src="../liquid-html-tree.png" width="50%">
 
-**This is what our parser pipeline does.**
-
-That's why we have our own parser in here.
-
 ### Getting to a solution
 
-But... making a parser is a lot of work, so we took a shortcut by using a parser-generator. 
+But... making a parser is a lot of work, so we took a shortcut by using a parser-generator.
 
 We used [OhmJS](https://ohmjs.org/). Why? I'll admit this:
 
@@ -80,7 +76,48 @@ We used [OhmJS](https://ohmjs.org/). Why? I'll admit this:
 
 ### Problems with OhmJS
 
-The problem with parser-generators, however, is that they only spit out _Context-free grammars_. Which is a problem, since HTML and Liquid are _both_ context sensitive.
+The problem with parser generators, however, is that they only spit out Trees for [_context-free grammars_](https://en.wikipedia.org/wiki/Context-free_grammar).
 
+And since HTML and Liquid are _both_ [context-sensitive grammars](https://en.wikipedia.org/wiki/Context-sensitive_grammar), we can't parse both together in one go.
 
+However, we recognized that the _tokens_ contained in HTML and Liquid _are_ context-free.
 
+That is, you could parse `<a class="link"><a>hi</a></a>` as a series of five tokens, but not as a tree two child deep.
+
+// illustrate
+
+So, if we're using OhmJS, we're left with a series of context-free tokens (and some _can_ be nested).
+
+// illustrate
+
+They are still useful, and we call the output of this stage the **Concrete Syntax Tree[^1].**
+
+So, [our first stage](./parser-stage-1-cst-to-ast.md) takes source code and turns it into what we call the **Concrete Syntax Tree[^1].**
+
+### Solution to OhmJS
+
+But—like we said—a CST isn't exactly what we desire, we're almost there but not quite.
+
+This is what [our second stage](./parser-stage-2-cst-to-ast.md) does. It turns the CST into an AST (the second stage doc describes how).
+
+### Oh and one more thing
+
+Some properties are easier to add to the tree once the tree is built. For example: `firstChild`, `lastChild`, `parentNode`, etc.
+
+That's why we have a `preprocess` step that walks the tree and adds those properties to the tree.
+
+It's only a separate step because it makes things easier.
+
+This [third stage](./parser-stage-3-ast-to-augmented-ast.md) takes the AST and turns it into an AugmentedAST.
+
+## Where to go from here
+
+### Breadth first
+
+- [The parser](parser.md)
+
+### Depth first
+
+- [The OhmJS source code to CST transformation](./parser-stage-1-source-code-to-cst.md)
+- [The CST to AST transformation](./parser-stage-2-cst-to-ast.md)
+- [The AST augmentation](./parser-stage-3-ast-to-augmented-ast.md)
