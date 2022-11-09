@@ -84,17 +84,15 @@ And since HTML and Liquid are _both_ [context-sensitive grammars](https://en.wik
 
 However, we recognized that the _tokens_ contained in HTML and Liquid _are_ context-free.
 
-That is, you could parse `<a class="link"><a>hi</a></a>` as a series of five tokens, but not as a tree two child deep.
+That is, you could parse `<a class="link"><a>hi</a></a>` as a series of five independent nodes, but not as a tree two child deep.
 
-// illustrate
+In other words, you can parse open and close tags independently, but not recognize the parent/child relationship just yet.
 
-So, if we're using OhmJS, we're left with a series of context-free tokens (and some _can_ be nested).
+So, we're left with a series of context-free nodes:
 
-// illustrate
+![ohm-cst-illustration](../images/ohm-cst-illustration.png)
 
-They are still useful, and we call the output of this stage the **Concrete Syntax Tree[^1].**
-
-So, [our first stage](./parser-stage-1-cst-to-ast.md) takes source code and turns it into what we call the **Concrete Syntax Tree[^1].**
+Since those are rather useful (!), [our first stage](./parser-stage-1-cst-to-ast.md) takes source code and turns it into what we call the **Concrete Syntax Tree[^1].**
 
 ### Solution to OhmJS
 
