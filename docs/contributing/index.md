@@ -25,7 +25,7 @@ A prettier printer takes an _Abstract Syntax Tree (AST)_ and a _configuration_ a
 That is,
 
 $$
-\text{prettyCode} = print\left(\text{sourceCode}, \text{Config}\right).
+\text{prettyCode} = print\left(\text{AST}, \text{Config}\right).
 $$
 
 But since we're mostly dealing with source code, we need a step that turns source code into an Abstract Syntax Tree. That step is performed by the _parser_.
