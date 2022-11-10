@@ -176,7 +176,7 @@ flowchart
 
 ### Getting to a solution
 
-But... making a parser is a lot of work, so we took a shortcut by using a parser-generator.
+But making a parser is a lot of work... So we took a shortcut by using a parser-generator.
 
 We used [OhmJS](https://ohmjs.org/). Why? I'll admit this:
 
@@ -208,7 +208,7 @@ Since those are rather useful (!), [our first stage](./parser-stage-1-cst-to-ast
 
 ### Solution to OhmJS
 
-But—like we said—a CST isn't exactly what we desire, we're almost there but not quite.
+But—like we said—a CST isn't exactly what we desire. We're almost there but not quite.
 
 This is what [our second stage](./parser-stage-2-cst-to-ast.md) does. It takes the CST we get form Ohm and turn into an AST.
 
@@ -226,7 +226,7 @@ This [third stage](./parser-stage-3-ast-to-augmented-ast.md) takes the AST and t
 
 ### Breadth first
 
-- [The parser](parser.md)
+- [The printer](printer.md)
 
 ### Depth first
 
