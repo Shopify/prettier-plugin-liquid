@@ -100,7 +100,7 @@ function print(ast: AST, config: Config): string {
 const prettyCode: string = print(ast, getPrettierRcConfig());
 ```
 
-So our formatter is really just the combination of the two:
+So our formatter is the combination of the two:
 
 ```typescript
 function format(sourceCode: string, config: Config): string {
