@@ -54,7 +54,7 @@ That is, if we take the following Liquid+HTML code as example:
 {%endfor %}
 ```
 
-The problem with both is that neither understand both languages and use strings to represent the parts they don't understand:
+The problem is that neither parser understand both languages. They use strings to represent the parts they don't understand:
 
 ```mermaid
 %%{init: { 'theme': 'dark', 'themeVariables': { 'fontFamily': 'monospace'} } }%%
