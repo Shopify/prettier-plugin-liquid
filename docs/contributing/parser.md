@@ -190,27 +190,25 @@ More details to follow...
 
 ### Problems with OhmJS
 
-The problem with parser generators, however, is that they only spit out Trees for [_context-free grammars_](https://en.wikipedia.org/wiki/Context-free_grammar).
+The problem with parser generators, however, is that they only spit out Trees for [context-free grammars](https://en.wikipedia.org/wiki/Context-free_grammar).
 
-And since HTML and Liquid are _both_ [context-sensitive grammars](https://en.wikipedia.org/wiki/Context-sensitive_grammar), we can't parse both together in one go.
+And since HTML and Liquid are [context-sensitive](https://en.wikipedia.org/wiki/Context-sensitive_grammar), we can't parse both together in one go.
 
-However, we recognized that the _tokens_ contained in HTML and Liquid _are_ context-free.
+But... If we relax what we parse and look at open/close tags as _separate_ nodes, then the grammar is actually context-free.
 
-That is, you could parse `<a class="link"><a>hi</a></a>` as a series of five independent nodes, but not as a tree two child deep.
-
-In other words, you can parse open and close tags independently, but not recognize the parent/child relationship just yet.
-
-So, we're left with a series of context-free nodes:
+Which means that Ohm can let us parse `<a class="link"><a>hi</a></a>` as a series of five independent nodes.
 
 ![ohm-cst-illustration](../images/ohm-nodes.png)
 
-Since those are rather useful (!), [our first stage](./parser-stage-1-cst-to-ast.md) takes source code and turns it into what we call the **Concrete Syntax Tree[^1].**
+It's not what we want, but it's close!
 
 ### Solution to OhmJS
 
-But—like we said—a CST isn't exactly what we desire. We're almost there but not quite.
+But—like we said—a CST isn't exactly what we desire.
 
-This is what [our second stage](./parser-stage-2-cst-to-ast.md) does. It takes the CST we get form Ohm and turn into an AST.
+This is what [our second stage](./parser-stage-2-cst-to-ast.md) does:
+
+It takes the CST we get form Ohm and turn into an AST.
 
 ### Oh and one more thing
 
