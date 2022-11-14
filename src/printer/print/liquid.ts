@@ -469,6 +469,7 @@ export function printLiquidRawTag(
         ' ',
         node.name,
         ' ',
+        node.markup ? `${node.markup} ` : '',
         node.whitespaceEnd,
         '%}',
       ]);
