@@ -95,10 +95,7 @@ export function hasNonTextChild(node: LiquidHtmlNode) {
   );
 }
 
-export function shouldPreserveContent(
-  node: LiquidHtmlNode,
-  _options: LiquidParserOptions,
-) {
+export function shouldPreserveContent(node: LiquidHtmlNode) {
   // // unterminated node in ie conditional comment
   // // e.g. <!--[if lt IE 9]><html><![endif]-->
   // if (
@@ -116,12 +113,8 @@ export function shouldPreserveContent(
   //   return true;
   // }
 
-  // TODO: handle non-text children in <pre>
-  if (
-    isPreLikeNode(node) &&
-    (node as any).children &&
-    (node as any).children.some((child: any) => !isTextLikeNode(child))
-  ) {
+  // TODO: Handle pre correctly?
+  if (isPreLikeNode(node)) {
     return true;
   }
 

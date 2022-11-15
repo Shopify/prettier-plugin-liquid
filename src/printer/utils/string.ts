@@ -29,7 +29,7 @@ export function reindent(lines: string[], skipFirst = false): string[] {
     return lines;
   }
 
-  const indentStrip = new RegExp('^' + ' '.repeat(minIndentLevel));
+  const indentStrip = new RegExp('^' + '\\s'.repeat(minIndentLevel));
   return lines.map((line) => line.replace(indentStrip, '')).map(trimEnd);
 }
 

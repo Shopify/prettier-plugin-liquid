@@ -1,8 +1,9 @@
 // A lot in here is adapted from prettier/prettier.
 
-import { HtmlNodeTypes, NodeTypes, WithFamily } from '~/types';
+import { HtmlNodeTypes, LiquidNodeTypes, NodeTypes, WithFamily } from '~/types';
 import {
   CSS_WHITE_SPACE_DEFAULT,
+  CSS_WHITE_SPACE_LIQUID_TAGS,
   CSS_WHITE_SPACE_TAGS,
 } from '~/constants.evaluate';
 import {
@@ -355,6 +356,17 @@ export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
   return HtmlNodeTypes.includes(node.type as any);
 }
 
+type LiquidNode = Extract<
+  AugmentedAstNode,
+  { type: typeof LiquidNodeTypes[number] }
+>;
+
+export function isLiquidNode(
+  node: AugmentedAstNode | undefined,
+): node is LiquidNode {
+  return !!node && LiquidNodeTypes.includes(node.type as any);
+}
+
 export function isParentNode(node: AugmentedAstNode): node is ParentNode {
   return 'children' in node;
 }
@@ -480,6 +492,10 @@ function getNodeCssStyleWhiteSpace(node: AugmentedAstNode) {
     (isHtmlNode(node) &&
       typeof node.name === 'string' &&
       CSS_WHITE_SPACE_TAGS[node.name]) ||
+    (isLiquidNode(node) &&
+      'name' in node &&
+      typeof node.name === 'string' &&
+      CSS_WHITE_SPACE_LIQUID_TAGS[node.name]) ||
     CSS_WHITE_SPACE_DEFAULT
   );
 }

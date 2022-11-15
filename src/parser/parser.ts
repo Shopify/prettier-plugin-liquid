@@ -2,7 +2,7 @@ import { Parser, ParserOptions } from 'prettier';
 import { locEnd, locStart } from '~/utils';
 import { toLiquidHtmlAST, LiquidHtmlNode } from '~/parser/ast';
 
-function parse(
+export function parse(
   text: string,
   _parsers: Parsers,
   _opts: ParserOptions<LiquidHtmlNode>,

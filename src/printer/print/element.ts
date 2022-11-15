@@ -21,22 +21,68 @@ import {
   LiquidParserOptions,
   LiquidPrinter,
   HtmlNode,
-  HtmlComment,
+  LiquidPrinterArgs,
+  HtmlRawNode,
 } from '~/types';
+import { RawMarkupKinds } from '~/parser';
 
 const {
-  builders: { breakParent, dedentToRoot, group, indent, line, softline },
+  builders: {
+    breakParent,
+    dedentToRoot,
+    group,
+    indent,
+    hardline,
+    line,
+    softline,
+  },
 } = doc;
 const { replaceTextEndOfLine } = doc.utils as any;
 
-export function printElement(
-  path: AstPath<Exclude<HtmlNode, HtmlComment>>,
+export function printRawElement(
+  path: AstPath<HtmlRawNode>,
   options: LiquidParserOptions,
   print: LiquidPrinter,
+  _args: LiquidPrinterArgs,
+) {
+  const node = path.getValue();
+  const attrGroupId = Symbol('element-attr-group-id');
+  let body: Doc = [];
+  const hasEmptyBody = node.body.value.trim() === '';
+  const shouldIndentBody = node.body.kind !== RawMarkupKinds.markdown;
+
+  if (!hasEmptyBody) {
+    if (shouldIndentBody) {
+      body = [indent([hardline, path.call(print, 'body')]), hardline];
+    } else {
+      body = [dedentToRoot([hardline, path.call(print, 'body')]), hardline];
+    }
+  }
+
+  return group([
+    printOpeningTagPrefix(node, options),
+    group(printOpeningTag(path, options, print, attrGroupId), {
+      id: attrGroupId,
+    }),
+    ...body,
+    ...printClosingTag(node, options),
+    printClosingTagSuffix(node, options),
+  ]);
+}
+
+export function printElement(
+  path: AstPath<HtmlNode>,
+  options: LiquidParserOptions,
+  print: LiquidPrinter,
+  args: LiquidPrinterArgs,
 ) {
   const node = path.getValue();
   const attrGroupId = Symbol('element-attr-group-id');
   const elementGroupId = Symbol('element-group-id');
+
+  if (node.type === NodeTypes.HtmlRawNode) {
+    return printRawElement(path as AstPath<HtmlRawNode>, options, print, args);
+  }
 
   if (hasNoCloseMarker(node)) {
     // TODO, broken for HtmlComment but this code path is not used (so far).
@@ -49,10 +95,7 @@ export function printElement(
     ];
   }
 
-  if (
-    shouldPreserveContent(node, options) ||
-    node.type === NodeTypes.HtmlRawNode
-  ) {
+  if (shouldPreserveContent(node)) {
     return [
       printOpeningTagPrefix(node, options),
       group(printOpeningTag(path, options, print, attrGroupId), {

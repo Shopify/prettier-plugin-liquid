@@ -6,3 +6,12 @@ printWidth: 1
 {%- capture
 varName
 -%}{% endcapture %}
+
+It should be indentation sensitive
+<p>{% capture var %}
+    # heading
+
+    - list
+      * elem
+  {% endcapture %}
+</p>

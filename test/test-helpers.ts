@@ -3,6 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as prettier from 'prettier';
 import * as plugin from '../src';
+import { parse } from '../src/parser/parser';
+import { preprocess } from '../src/printer/print-preprocess';
 import { LiquidParserOptions } from '../src/types';
 
 const PARAGRAPH_SPLITTER =
@@ -172,6 +174,8 @@ export function printToDoc(content: string, options: any = {}) {
 }
 
 export function debug(content: string, options: any = {}) {
+  const ast = parse(content, plugin.parsers!, options);
+  const processedAST = preprocess(ast, options);
   const printed = format(content, options);
   const doc = printToDoc(content, options);
   debugger;
@@ -189,10 +193,7 @@ export function debug(content: string, options: any = {}) {
  *
  * And it will be as though function() was at indent 0 and foo was indent 1.
  */
-export function reindent(
-  strs: TemplateStringsArray,
-  ...keys: any[] | undefined
-): string {
+export function reindent(strs: TemplateStringsArray, ...keys: any[]): string {
   const s = strs.reduce((acc, next, i) => {
     if (keys[i] !== undefined) {
       return acc + next + keys[i];

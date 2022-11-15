@@ -153,13 +153,12 @@ export function printClosingTagEndMarker(
 
 function shouldNotPrintClosingTag(
   node: LiquidHtmlNode,
-  options: LiquidParserOptions,
+  _options: LiquidParserOptions,
 ) {
   return (
     !hasNoCloseMarker(node) &&
     !(node as any).blockEndPosition &&
-    (hasPrettierIgnore(node) ||
-      shouldPreserveContent(node.parentNode!, options))
+    (hasPrettierIgnore(node) || shouldPreserveContent(node.parentNode!))
   );
 }
 
