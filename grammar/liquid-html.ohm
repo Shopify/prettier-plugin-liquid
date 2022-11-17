@@ -30,6 +30,7 @@ Helpers {
 Liquid <: Helpers {
   Node := (liquidNode | TextNode)*
   openControl := "{{" | "{%"
+  endOfIdentifier = space | "-%}" | "%}"
 
   liquidNode =
     | liquidBlockComment
@@ -166,13 +167,14 @@ Liquid <: Helpers {
     | liquidRawTagImpl<"raw">
     | liquidRawTagImpl<"javascript">
     | liquidRawTagImpl<"schema">
+    | liquidRawTagImpl<"stylesheet">
     | liquidRawTagImpl<"style">
   liquidRawTagImpl<name> =
-    "{%" "-"? space* name space* tagMarkup "-"? "%}"
+    "{%" "-"? space* (name &endOfIdentifier) space* tagMarkup "-"? "%}"
     anyExceptStar<liquidRawTagClose<name>>
-    "{%" "-"? space* "end" name space* "-"? "%}"
+    "{%" "-"? space* "end" (name &endOfIdentifier) space* "-"? "%}"
   liquidRawTagClose<name> =
-    "{%" "-"? space* "end" name space* "-"? "%}"
+    "{%" "-"? space* "end" (name &endOfIdentifier) space* "-"? "%}"
 
   liquidBlockComment =
     commentBlockStart

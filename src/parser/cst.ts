@@ -137,6 +137,7 @@ export interface ConcreteLiquidRawTag
   extends ConcreteBasicLiquidNode<ConcreteNodeTypes.LiquidRawTag> {
   name: string;
   body: string;
+  markup: string;
   delimiterWhitespaceStart: null | '-';
   delimiterWhitespaceEnd: null | '-';
   blockStartLocStart: number;
@@ -510,17 +511,18 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     liquidRawTagImpl: {
       type: ConcreteNodeTypes.LiquidRawTag,
       name: 3,
-      body: 8,
+      body: 9,
+      markup: 6,
       whitespaceStart: 1,
-      whitespaceEnd: 6,
-      delimiterWhitespaceStart: 10,
-      delimiterWhitespaceEnd: 15,
+      whitespaceEnd: 7,
+      delimiterWhitespaceStart: 11,
+      delimiterWhitespaceEnd: 17,
       locStart,
       locEnd,
       blockStartLocStart: (tokens: Node[]) => tokens[0].source.startIdx,
-      blockStartLocEnd: (tokens: Node[]) => tokens[7].source.endIdx,
-      blockEndLocStart: (tokens: Node[]) => tokens[9].source.startIdx,
-      blockEndLocEnd: (tokens: Node[]) => tokens[16].source.endIdx,
+      blockStartLocEnd: (tokens: Node[]) => tokens[8].source.endIdx,
+      blockEndLocStart: (tokens: Node[]) => tokens[10].source.startIdx,
+      blockEndLocEnd: (tokens: Node[]) => tokens[18].source.endIdx,
     },
     liquidBlockComment: {
       type: ConcreteNodeTypes.LiquidRawTag,

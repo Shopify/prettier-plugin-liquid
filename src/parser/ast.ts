@@ -108,6 +108,7 @@ export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
    * e.g. raw, style, javascript
    */
   name: string;
+  markup: string;
 
   /**
    * String body of the tag. So we don't try to parse it.
@@ -627,6 +628,7 @@ export function cstToAst(
       case ConcreteNodeTypes.LiquidRawTag: {
         builder.push({
           type: NodeTypes.LiquidRawTag,
+          markup: markup(node.name, node.markup),
           name: node.name,
           body: toRawMarkup(node, source),
           whitespaceStart: node.whitespaceStart ?? '',
@@ -1181,6 +1183,7 @@ function toRawMarkupKindFromLiquidNode(
   switch (node.name) {
     case 'javascript':
       return RawMarkupKinds.javascript;
+    case 'stylesheet':
     case 'style':
       if (liquidToken.test(node.body)) {
         return RawMarkupKinds.text;
