@@ -1,3 +1,38 @@
+/**
+ * This is the second stage of the parser.
+ *
+ * Input:
+ *  - A Concrete Syntax Tree (CST)
+ *
+ * Output:
+ *  - An Abstract Syntax Tree (AST)
+ *
+ * This stage traverses the flat tree we get from the previous stage and
+ * establishes the parent/child relationship between the nodes.
+ *
+ * Recall the Liquid example we had in the first stage:
+ *   {% if cond %}hi <em>there!</em>{% endif %}
+ *
+ * Whereas the previous stage gives us this CST:
+ *   - LiquidTagOpen/if
+ *     condition: LiquidVariableExpression/cond
+ *   - TextNode/"hi "
+ *   - HtmlTagOpen/em
+ *   - TextNode/"there!"
+ *   - HtmlTagClose/em
+ *   - LiquidTagClose/if
+ *
+ * We now traverse all the nodes and turn that into a proper AST:
+ *   - LiquidTag/if
+ *     condition: LiquidVariableExpression
+ *     children:
+ *       - TextNode/"hi "
+ *       - HtmlElement/em
+ *         children:
+ *           - TextNode/"there!"
+ *
+ */
+
 import {
   ConcreteAttributeNode,
   ConcreteHtmlTagClose,
@@ -34,7 +69,7 @@ import {
   ConcreteLiquidTagCycleMarkup,
   ConcreteHtmlRawTag,
   ConcreteLiquidRawTag,
-} from '~/parser/cst';
+} from '~/parser/stage-1-cst';
 import {
   Comparators,
   isLiquidHtmlNode,

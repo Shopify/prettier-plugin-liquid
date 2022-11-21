@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { toLiquidHtmlAST, LiquidHtmlNode } from '~/parser/ast';
+import { toLiquidHtmlAST, LiquidHtmlNode } from '~/parser/stage-2-ast';
 import { deepGet } from '~/utils';
 
 describe('Unit: toLiquidHtmlAST', () => {

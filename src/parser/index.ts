@@ -5,7 +5,7 @@ import {
   liquidHtmlLanguageName,
 } from '~/parser/parser';
 
-export * from '~/parser/ast';
+export * from '~/parser/stage-2-ast';
 
 export { liquidHtmlLanguageName, liquidHtmlAstFormat };
 

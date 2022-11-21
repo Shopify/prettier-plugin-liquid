@@ -14,7 +14,7 @@ import {
   LiquidRawTag,
   LiquidStatement,
 } from '~/types';
-import { isBranchedTag } from '~/parser/ast';
+import { isBranchedTag } from '~/parser/stage-2-ast';
 import { assertNever } from '~/utils';
 
 import {
