@@ -91,6 +91,7 @@ export interface Parsers {
 
 export interface ConcreteBasicNode<T> {
   type: T;
+  source: string;
   locStart: number;
   locEnd: number;
 }
@@ -474,6 +475,7 @@ interface TemplateMapping {
   type: ConcreteNodeTypes;
   locStart: (node: Node[]) => number;
   locEnd: (node: Node[]) => number;
+  source: string;
   [k: string]: FunctionMapping | string | number | boolean | object | null;
 }
 
@@ -484,7 +486,7 @@ const markup = (i: number) => (tokens: Node[]) => tokens[i].sourceString.trim();
 const markupTrimEnd = (i: number) => (tokens: Node[]) =>
   tokens[i].sourceString.trimEnd();
 
-export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
+export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
   // When we switch parser, our locStart and locEnd functions must account
   // for the offset of the {% liquid %} markup
   let liquidStatementOffset = 0;
@@ -502,9 +504,10 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
     },
     locStart,
     locEnd,
+    source,
   };
 
-  const res = liquidHtmlGrammar.match(text, 'Node');
+  const res = liquidHtmlGrammar.match(source, 'Node');
   if (res.failed()) {
     throw new LiquidHTMLCSTParsingError(res);
   }
@@ -551,6 +554,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       delimiterWhitespaceEnd: 17,
       locStart,
       locEnd,
+      source,
       blockStartLocStart: (tokens: Node[]) => tokens[0].source.startIdx,
       blockStartLocEnd: (tokens: Node[]) => tokens[8].source.endIdx,
       blockEndLocStart: (tokens: Node[]) => tokens[10].source.startIdx,
@@ -568,6 +572,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
         tokens[2].children[6].sourceString,
       locStart,
       locEnd,
+      source,
       blockStartLocStart: (tokens: Node[]) => tokens[0].source.startIdx,
       blockStartLocEnd: (tokens: Node[]) => tokens[0].source.endIdx,
       blockEndLocStart: (tokens: Node[]) => tokens[2].source.startIdx,
@@ -581,6 +586,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: 6,
       locStart,
       locEnd,
+      source,
     },
 
     liquidTagOpen: 0,
@@ -600,6 +606,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: 6,
       locStart,
       locEnd,
+      source,
     },
 
     liquidTagOpenCapture: 0,
@@ -614,6 +621,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       args: 8,
       locStart,
       locEnd,
+      source,
     },
     liquidTagOpenTablerow: 0,
     liquidTagOpenPaginate: 0,
@@ -624,6 +632,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       args: 6,
       locStart,
       locEnd,
+      source,
     },
     liquidTagOpenCase: 0,
     liquidTagOpenCaseMarkup: 0,
@@ -639,6 +648,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       expression: 2,
       locStart,
       locEnd,
+      source,
     },
     comparison: {
       type: ConcreteNodeTypes.Comparison,
@@ -647,6 +657,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       right: 4,
       locStart,
       locEnd,
+      source,
     },
 
     liquidTagClose: {
@@ -656,6 +667,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: 7,
       locStart,
       locEnd,
+      source,
     },
 
     liquidTag: 0,
@@ -682,6 +694,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       },
       whitespaceStart: 1,
       whitespaceEnd: 6,
+      source,
       locStart,
       locEnd,
     },
@@ -718,6 +731,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 4,
       locStart,
       locEnd,
+      source,
     },
 
     liquidTagCycleMarkup: {
@@ -726,6 +740,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       args: 3,
       locStart,
       locEnd,
+      source,
     },
 
     liquidTagRenderMarkup: {
@@ -736,6 +751,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       args: 4,
       locStart,
       locEnd,
+      source,
     },
     snippetExpression: 0,
     renderVariableExpression: {
@@ -744,6 +760,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       name: 3,
       locStart,
       locEnd,
+      source,
     },
     renderAliasExpression: 3,
 
@@ -754,6 +771,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: 4,
       locStart,
       locEnd,
+      source,
     },
 
     liquidDropCases: 0,
@@ -764,13 +782,14 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       expression: 0,
       filters: 1,
       rawSource: (tokens: Node[]) =>
-        text
+        source
           .slice(locStart(tokens), tokens[tokens.length - 2].source.endIdx)
           .trimEnd(),
       locStart,
       // The last node of this rule is a positive lookahead, we don't
       // want its endIdx, we want the endIdx of the previous one.
       locEnd: (tokens: Node[]) => tokens[tokens.length - 2].source.endIdx,
+      source,
     },
 
     liquidFilter: {
@@ -778,6 +797,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       name: 3,
       locStart,
       locEnd,
+      source,
       args(nodes: Node[]) {
         // Traditinally, this would get transformed into null or array. But
         // it's better if we have an empty array instead of null here.
@@ -797,6 +817,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 4,
       locStart,
       locEnd,
+      source,
     },
 
     liquidString: 0,
@@ -806,6 +827,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 1,
       locStart,
       locEnd,
+      source,
     },
     liquidSingleQuotedString: {
       type: ConcreteNodeTypes.String,
@@ -813,6 +835,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 1,
       locStart,
       locEnd,
+      source,
     },
 
     liquidNumber: {
@@ -820,6 +843,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 0,
       locStart,
       locEnd,
+      source,
     },
 
     liquidLiteral: {
@@ -832,6 +856,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       keyword: 0,
       locStart,
       locEnd,
+      source,
     },
 
     liquidRange: {
@@ -840,6 +865,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       end: 6,
       locStart,
       locEnd,
+      source,
     },
 
     liquidVariableLookup: {
@@ -848,6 +874,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       lookups: 1,
       locStart,
       locEnd,
+      source,
     },
     variableSegmentAsLookupMarkup: 0,
     variableSegmentAsLookup: {
@@ -856,6 +883,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       lookups: () => [],
       locStart,
       locEnd,
+      source,
     },
 
     lookup: 0,
@@ -865,6 +893,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 3,
       locStart: (nodes: Node[]) => nodes[2].source.startIdx,
       locEnd: (nodes: Node[]) => nodes[nodes.length - 1].source.endIdx,
+      source,
     },
 
     // trim on both sides
@@ -888,6 +917,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: null,
       locStart,
       locEnd: locEndSecondToLast,
+      source,
     },
 
     liquidTagClose: {
@@ -897,6 +927,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: null,
       locStart,
       locEnd: locEndSecondToLast,
+      source,
     },
 
     liquidTagRule: {
@@ -914,6 +945,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: null,
       locStart,
       locEnd: locEndSecondToLast,
+      source,
     },
 
     liquidRawTagImpl: {
@@ -926,6 +958,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       delimiterWhitespaceEnd: null,
       locStart,
       locEnd: locEndSecondToLast,
+      source,
       blockStartLocStart: (tokens: Node[]) =>
         liquidStatementOffset + tokens[0].source.startIdx,
       blockStartLocEnd: (tokens: Node[]) =>
@@ -953,6 +986,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       delimiterWhitespaceEnd: '',
       locStart,
       locEnd,
+      source,
       blockStartLocStart: (tokens: Node[]) =>
         liquidStatementOffset + tokens[0].source.startIdx,
       blockStartLocEnd: (tokens: Node[]) =>
@@ -971,6 +1005,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       whitespaceEnd: null,
       locStart,
       locEnd: locEndSecondToLast,
+      source,
     },
   };
 
@@ -990,6 +1025,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       body: 2,
       locStart,
       locEnd,
+      source,
     },
 
     HtmlDoctype: {
@@ -997,6 +1033,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       legacyDoctypeString: 4,
       locStart,
       locEnd,
+      source,
     },
 
     HtmlComment: {
@@ -1004,6 +1041,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       body: markup(1),
       locStart,
       locEnd,
+      source,
     },
 
     HtmlRawTagImpl: {
@@ -1013,6 +1051,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       body: 4,
       locStart,
       locEnd,
+      source,
       blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
       blockStartLocEnd: (tokens: any) => tokens[3].source.endIdx,
       blockEndLocStart: (tokens: any) => tokens[5].source.startIdx,
@@ -1025,6 +1064,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       attrList: 3,
       locStart,
       locEnd,
+      source,
     },
 
     HtmlSelfClosingElement: {
@@ -1033,6 +1073,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       attrList: 2,
       locStart,
       locEnd,
+      source,
     },
 
     HtmlTagOpen: {
@@ -1041,6 +1082,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       attrList: 2,
       locStart,
       locEnd,
+      source,
     },
 
     HtmlTagClose: {
@@ -1048,6 +1090,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       name: 1,
       locStart,
       locEnd,
+      source,
     },
 
     tagNameOrLiquidDrop: 0,
@@ -1058,6 +1101,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 2,
       locStart,
       locEnd,
+      source,
     },
 
     AttrSingleQuoted: {
@@ -1066,6 +1110,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 3,
       locStart,
       locEnd,
+      source,
     },
 
     AttrDoubleQuoted: {
@@ -1074,6 +1119,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       value: 3,
       locStart,
       locEnd,
+      source,
     },
 
     attrEmpty: {
@@ -1081,6 +1127,7 @@ export function toLiquidHtmlCST(text: string): LiquidHtmlCST {
       name: 0,
       locStart,
       locEnd,
+      source,
     },
 
     attrDoubleQuotedValue: 0,
