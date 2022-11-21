@@ -1,3 +1,38 @@
+/**
+ * This is the second stage of the parser.
+ *
+ * Input:
+ *  - A Concrete Syntax Tree (CST)
+ *
+ * Output:
+ *  - An Abstract Syntax Tree (AST)
+ *
+ * This stage traverses the flat tree we get from the previous stage and
+ * establishes the parent/child relationship between the nodes.
+ *
+ * Recall the Liquid example we had in the first stage:
+ *   {% if cond %}hi <em>there!</em>{% endif %}
+ *
+ * Whereas the previous stage gives us this CST:
+ *   - LiquidTagOpen/if
+ *     condition: LiquidVariableExpression/cond
+ *   - TextNode/"hi "
+ *   - HtmlTagOpen/em
+ *   - TextNode/"there!"
+ *   - HtmlTagClose/em
+ *   - LiquidTagClose/if
+ *
+ * We now traverse all the nodes and turn that into a proper AST:
+ *   - LiquidTag/if
+ *     condition: LiquidVariableExpression
+ *     children:
+ *       - TextNode/"hi "
+ *       - HtmlElement/em
+ *         children:
+ *           - TextNode/"there!"
+ *
+ */
+
 import {
   ConcreteAttributeNode,
   ConcreteHtmlTagClose,
@@ -34,7 +69,7 @@ import {
   ConcreteLiquidTagCycleMarkup,
   ConcreteHtmlRawTag,
   ConcreteLiquidRawTag,
-} from '~/parser/cst';
+} from '~/parser/stage-1-cst';
 import {
   Comparators,
   isLiquidHtmlNode,
@@ -463,16 +498,16 @@ function isLiquidBranchDisguisedAsTag(
   );
 }
 
-export function toLiquidHtmlAST(text: string): DocumentNode {
-  const cst = toLiquidHtmlCST(text);
+export function toLiquidHtmlAST(source: string): DocumentNode {
+  const cst = toLiquidHtmlCST(source);
   const root: DocumentNode = {
     type: NodeTypes.Document,
-    source: text,
-    children: cstToAst(cst, text),
+    source: source,
+    children: cstToAst(cst),
     name: '#document',
     position: {
       start: 0,
-      end: text.length,
+      end: source.length,
     },
   };
   return root;
@@ -508,7 +543,7 @@ class ASTBuilder {
     this.cursor.push('children');
 
     if (isBranchedTag(node)) {
-      this.open(toUnnamedLiquidBranch(node, this.source));
+      this.open(toUnnamedLiquidBranch(node));
     }
   }
 
@@ -519,7 +554,7 @@ class ASTBuilder {
     ) {
       this.cursor.pop();
       this.cursor.pop();
-      this.open(toNamedLiquidBranchBaseCase(node, this.source));
+      this.open(toNamedLiquidBranchBaseCase(node));
     } else if (node.type === NodeTypes.LiquidBranch) {
       this.cursor.pop();
       this.cursor.pop();
@@ -589,9 +624,9 @@ function getName(
 
 export function cstToAst(
   cst: LiquidHtmlCST | ConcreteAttributeNode[],
-  source: string,
 ): LiquidHtmlNode[] {
-  const builder = new ASTBuilder(source);
+  if (cst.length === 0) return [];
+  const builder = new ASTBuilder(cst[0].source);
 
   for (const node of cst) {
     switch (node.type) {
@@ -600,18 +635,18 @@ export function cstToAst(
           type: NodeTypes.TextNode,
           value: node.value,
           position: position(node),
-          source,
+          source: node.source,
         });
         break;
       }
 
       case ConcreteNodeTypes.LiquidDrop: {
-        builder.push(toLiquidDrop(node, source));
+        builder.push(toLiquidDrop(node));
         break;
       }
 
       case ConcreteNodeTypes.LiquidTagOpen: {
-        builder.open(toLiquidTag(node, source, { isBlockTag: true }));
+        builder.open(toLiquidTag(node, { isBlockTag: true }));
         break;
       }
 
@@ -621,7 +656,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.LiquidTag: {
-        builder.push(toLiquidTag(node, source));
+        builder.push(toLiquidTag(node));
         break;
       }
 
@@ -630,7 +665,7 @@ export function cstToAst(
           type: NodeTypes.LiquidRawTag,
           markup: markup(node.name, node.markup),
           name: node.name,
-          body: toRawMarkup(node, source),
+          body: toRawMarkup(node),
           whitespaceStart: node.whitespaceStart ?? '',
           whitespaceEnd: node.whitespaceEnd ?? '',
           delimiterWhitespaceStart: node.delimiterWhitespaceStart ?? '',
@@ -644,13 +679,13 @@ export function cstToAst(
             start: node.blockEndLocStart,
             end: node.blockEndLocEnd,
           },
-          source,
+          source: node.source,
         });
         break;
       }
 
       case ConcreteNodeTypes.HtmlTagOpen: {
-        builder.open(toHtmlElement(node, source));
+        builder.open(toHtmlElement(node));
         break;
       }
 
@@ -660,12 +695,12 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlVoidElement: {
-        builder.push(toHtmlVoidElement(node, source));
+        builder.push(toHtmlVoidElement(node));
         break;
       }
 
       case ConcreteNodeTypes.HtmlSelfClosingElement: {
-        builder.push(toHtmlSelfClosingElement(node, source));
+        builder.push(toHtmlSelfClosingElement(node));
         break;
       }
 
@@ -674,7 +709,7 @@ export function cstToAst(
           type: NodeTypes.HtmlDoctype,
           legacyDoctypeString: node.legacyDoctypeString,
           position: position(node),
-          source,
+          source: node.source,
         });
         break;
       }
@@ -684,7 +719,7 @@ export function cstToAst(
           type: NodeTypes.HtmlComment,
           body: node.body,
           position: position(node),
-          source,
+          source: node.source,
         });
         break;
       }
@@ -693,10 +728,10 @@ export function cstToAst(
         builder.push({
           type: NodeTypes.HtmlRawNode,
           name: node.name,
-          body: toRawMarkup(node, source),
-          attributes: toAttributes(node.attrList || [], source),
+          body: toRawMarkup(node),
+          attributes: toAttributes(node.attrList || []),
           position: position(node),
-          source,
+          source: node.source,
           blockStartPosition: {
             start: node.blockStartLocStart,
             end: node.blockStartLocEnd,
@@ -714,7 +749,7 @@ export function cstToAst(
           type: NodeTypes.AttrEmpty,
           name: node.name,
           position: position(node),
-          source,
+          source: node.source,
         });
         break;
       }
@@ -730,13 +765,13 @@ export function cstToAst(
               | NodeTypes.AttrUnquoted,
             name: node.name,
             position: position(node),
-            source,
+            source: node.source,
 
             // placeholders
             attributePosition: { start: -1, end: -1 },
             value: [],
           };
-        const value = toAttributeValue(node.value, source);
+        const value = toAttributeValue(node.value);
         abstractNode.value = value;
         abstractNode.attributePosition = toAttributePosition(node, value);
         builder.push(abstractNode);
@@ -748,7 +783,7 @@ export function cstToAst(
           type: NodeTypes.YAMLFrontmatter,
           body: node.body,
           position: position(node),
-          source,
+          source: node.source,
         });
         break;
       }
@@ -794,26 +829,21 @@ function toAttributePosition(
 
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
-  source: string,
 ): (LiquidNode | TextNode)[] {
-  return cstToAst(value, source) as (LiquidNode | TextNode)[];
+  return cstToAst(value) as (LiquidNode | TextNode)[];
 }
 
-function toAttributes(
-  attrList: ConcreteAttributeNode[],
-  source: string,
-): AttributeNode[] {
-  return cstToAst(attrList, source) as AttributeNode[];
+function toAttributes(attrList: ConcreteAttributeNode[]): AttributeNode[] {
+  return cstToAst(attrList) as AttributeNode[];
 }
 
-function toName(name: string | ConcreteLiquidDrop, source: string) {
+function toName(name: string | ConcreteLiquidDrop) {
   if (typeof name === 'string') return name;
-  return toLiquidDrop(name, source);
+  return toLiquidDrop(name);
 }
 
 function liquidTagBaseAttributes(
   node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
-  source: string,
 ): Omit<LiquidTag, 'name' | 'markup'> {
   return {
     type: NodeTypes.LiquidTag,
@@ -821,13 +851,12 @@ function liquidTagBaseAttributes(
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     blockStartPosition: position(node),
-    source,
+    source: node.source,
   };
 }
 
 function liquidBranchBaseAttributes(
   node: ConcreteLiquidTag,
-  source: string,
 ): Omit<LiquidBranch, 'name' | 'markup'> {
   return {
     type: NodeTypes.LiquidBranch,
@@ -836,75 +865,73 @@ function liquidBranchBaseAttributes(
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     blockStartPosition: position(node),
-    source,
+    source: node.source,
   };
 }
 
 function toLiquidTag(
   node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
-  source: string,
   { isBlockTag } = { isBlockTag: false },
 ): LiquidTag | LiquidBranch {
   if (typeof node.markup !== 'string') {
-    return toNamedLiquidTag(node as ConcreteLiquidTagNamed, source);
+    return toNamedLiquidTag(node as ConcreteLiquidTagNamed);
   } else if (isBlockTag) {
     return {
       name: node.name,
       markup: markup(node.name, node.markup),
       children: isBlockTag ? [] : undefined,
-      ...liquidTagBaseAttributes(node, source),
+      ...liquidTagBaseAttributes(node),
     };
   }
   return {
     name: node.name,
     markup: markup(node.name, node.markup),
-    ...liquidTagBaseAttributes(node, source),
+    ...liquidTagBaseAttributes(node),
   };
 }
 
 function toNamedLiquidTag(
   node: ConcreteLiquidTagNamed | ConcreteLiquidTagOpenNamed,
-  source: string,
 ): LiquidTagNamed | LiquidBranchNamed {
   switch (node.name) {
     case NamedTags.echo: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: NamedTags.echo,
-        markup: toLiquidVariable(node.markup, source),
+        markup: toLiquidVariable(node.markup),
       };
     }
 
     case NamedTags.assign: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: NamedTags.assign,
-        markup: toAssignMarkup(node.markup, source),
+        markup: toAssignMarkup(node.markup),
       };
     }
 
     case NamedTags.cycle: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toCycleMarkup(node.markup, source),
+        markup: toCycleMarkup(node.markup),
       };
     }
 
     case NamedTags.increment:
     case NamedTags.decrement: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toExpression(node.markup, source) as LiquidVariableLookup,
+        markup: toExpression(node.markup) as LiquidVariableLookup,
       };
     }
 
     case NamedTags.capture: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toExpression(node.markup, source) as LiquidVariableLookup,
+        markup: toExpression(node.markup) as LiquidVariableLookup,
         children: [],
       };
     }
@@ -912,26 +939,26 @@ function toNamedLiquidTag(
     case NamedTags.include:
     case NamedTags.render: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toRenderMarkup(node.markup, source),
+        markup: toRenderMarkup(node.markup),
       };
     }
 
     case NamedTags.layout:
     case NamedTags.section: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toExpression(node.markup, source) as LiquidString,
+        markup: toExpression(node.markup) as LiquidString,
       };
     }
 
     case NamedTags.form: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: node.markup.map((arg) => toLiquidArgument(arg, source)),
+        markup: node.markup.map(toLiquidArgument),
         children: [],
       };
     }
@@ -939,18 +966,18 @@ function toNamedLiquidTag(
     case NamedTags.tablerow:
     case NamedTags.for: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toForMarkup(node.markup, source),
+        markup: toForMarkup(node.markup),
         children: [],
       };
     }
 
     case NamedTags.paginate: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toPaginateMarkup(node.markup, source),
+        markup: toPaginateMarkup(node.markup),
         children: [],
       };
     }
@@ -958,43 +985,43 @@ function toNamedLiquidTag(
     case NamedTags.if:
     case NamedTags.unless: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toConditionalExpression(node.markup, source),
+        markup: toConditionalExpression(node.markup),
         children: [],
       };
     }
 
     case NamedTags.elsif: {
       return {
-        ...liquidBranchBaseAttributes(node, source),
+        ...liquidBranchBaseAttributes(node),
         name: node.name,
-        markup: toConditionalExpression(node.markup, source),
+        markup: toConditionalExpression(node.markup),
       };
     }
 
     case NamedTags.case: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: toExpression(node.markup, source),
+        markup: toExpression(node.markup),
         children: [],
       };
     }
 
     case NamedTags.when: {
       return {
-        ...liquidBranchBaseAttributes(node, source),
+        ...liquidBranchBaseAttributes(node),
         name: node.name,
-        markup: node.markup.map((arg) => toExpression(arg, source)),
+        markup: node.markup.map(toExpression),
       };
     }
 
     case NamedTags.liquid: {
       return {
-        ...liquidTagBaseAttributes(node, source),
+        ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: cstToAst(node.markup, source) as LiquidStatement[],
+        markup: cstToAst(node.markup) as LiquidStatement[],
       };
     }
 
@@ -1006,7 +1033,6 @@ function toNamedLiquidTag(
 
 function toNamedLiquidBranchBaseCase(
   node: LiquidTagBaseCase,
-  source: string,
 ): LiquidBranchBaseCase {
   return {
     name: node.name,
@@ -1017,13 +1043,12 @@ function toNamedLiquidBranchBaseCase(
     blockStartPosition: { ...node.position },
     whitespaceStart: node.whitespaceStart,
     whitespaceEnd: node.whitespaceEnd,
-    source,
+    source: node.source,
   };
 }
 
 function toUnnamedLiquidBranch(
   parentNode: LiquidHtmlNode,
-  source: string,
 ): LiquidBranchUnnamed {
   return {
     type: NodeTypes.LiquidBranch,
@@ -1040,68 +1065,55 @@ function toUnnamedLiquidBranch(
     children: [],
     whitespaceStart: '',
     whitespaceEnd: '',
-    source,
+    source: parentNode.source,
   };
 }
 
-function toAssignMarkup(
-  node: ConcreteLiquidTagAssignMarkup,
-  source: string,
-): AssignMarkup {
+function toAssignMarkup(node: ConcreteLiquidTagAssignMarkup): AssignMarkup {
   return {
     type: NodeTypes.AssignMarkup,
     name: node.name,
-    value: toLiquidVariable(node.value, source),
+    value: toLiquidVariable(node.value),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toCycleMarkup(
-  node: ConcreteLiquidTagCycleMarkup,
-  source: string,
-): CycleMarkup {
+function toCycleMarkup(node: ConcreteLiquidTagCycleMarkup): CycleMarkup {
   return {
     type: NodeTypes.CycleMarkup,
-    groupName: node.groupName ? toExpression(node.groupName, source) : null,
-    args: node.args.map((arg) => toExpression(arg, source)),
+    groupName: node.groupName ? toExpression(node.groupName) : null,
+    args: node.args.map(toExpression),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toForMarkup(
-  node: ConcreteLiquidTagForMarkup,
-  source: string,
-): ForMarkup {
+function toForMarkup(node: ConcreteLiquidTagForMarkup): ForMarkup {
   return {
     type: NodeTypes.ForMarkup,
     variableName: node.variableName,
-    collection: toExpression(node.collection, source),
-    args: node.args.map((arg) => toNamedArgument(arg, source)),
+    collection: toExpression(node.collection),
+    args: node.args.map(toNamedArgument),
     reversed: !!node.reversed,
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toPaginateMarkup(
-  node: ConcretePaginateMarkup,
-  source: string,
-): PaginateMarkup {
+function toPaginateMarkup(node: ConcretePaginateMarkup): PaginateMarkup {
   return {
     type: NodeTypes.PaginateMarkup,
-    collection: toExpression(node.collection, source),
-    pageSize: toExpression(node.pageSize, source),
+    collection: toExpression(node.collection),
+    pageSize: toExpression(node.pageSize),
     position: position(node),
-    args: node.args ? node.args.map((arg) => toNamedArgument(arg, source)) : [],
-    source,
+    args: node.args ? node.args.map(toNamedArgument) : [],
+    source: node.source,
   };
 }
 
 function toRawMarkup(
   node: ConcreteHtmlRawTag | ConcreteLiquidRawTag,
-  source: string,
 ): RawMarkup {
   return {
     type: NodeTypes.RawMarkup,
@@ -1111,7 +1123,7 @@ function toRawMarkup(
       start: node.blockStartLocEnd,
       end: node.blockEndLocStart,
     },
-    source,
+    source: node.source,
   };
 }
 
@@ -1196,43 +1208,36 @@ function toRawMarkupKindFromLiquidNode(
   }
 }
 
-function toRenderMarkup(
-  node: ConcreteLiquidTagRenderMarkup,
-  source: string,
-): RenderMarkup {
+function toRenderMarkup(node: ConcreteLiquidTagRenderMarkup): RenderMarkup {
   return {
     type: NodeTypes.RenderMarkup,
-    snippet: toExpression(node.snippet, source) as
-      | LiquidString
-      | LiquidVariableLookup,
+    snippet: toExpression(node.snippet) as LiquidString | LiquidVariableLookup,
     alias: node.alias,
-    variable: toRenderVariableExpression(node.variable, source),
-    args: node.args.map((arg) => toNamedArgument(arg, source)),
+    variable: toRenderVariableExpression(node.variable),
+    args: node.args.map(toNamedArgument),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
 function toRenderVariableExpression(
   node: ConcreteRenderVariableExpression | null,
-  source: string,
 ): RenderVariableExpression | null {
   if (!node) return null;
   return {
     type: NodeTypes.RenderVariableExpression,
     kind: node.kind,
-    name: toExpression(node.name, source),
+    name: toExpression(node.name),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
 function toConditionalExpression(
   nodes: ConcreteLiquidCondition[],
-  source: string,
 ): LiquidConditionalExpression {
   if (nodes.length === 1) {
-    return toComparisonOrExpression(nodes[0], source);
+    return toComparisonOrExpression(nodes[0]);
   }
 
   const [first, second] = nodes;
@@ -1240,75 +1245,65 @@ function toConditionalExpression(
   return {
     type: NodeTypes.LogicalExpression,
     relation: second.relation as 'and' | 'or',
-    left: toComparisonOrExpression(first, source),
-    right: toConditionalExpression(rest, source),
+    left: toComparisonOrExpression(first),
+    right: toConditionalExpression(rest),
     position: {
       start: first.locStart,
       end: nodes[nodes.length - 1].locEnd,
     },
-    source,
+    source: first.source,
   };
 }
 
 function toComparisonOrExpression(
   node: ConcreteLiquidCondition,
-  source: string,
 ): LiquidComparison | LiquidExpression {
   const expression = node.expression;
   switch (expression.type) {
     case ConcreteNodeTypes.Comparison:
-      return toComparison(expression, source);
+      return toComparison(expression);
     default:
-      return toExpression(expression, source);
+      return toExpression(expression);
   }
 }
 
-function toComparison(
-  node: ConcreteLiquidComparison,
-  source: string,
-): LiquidComparison {
+function toComparison(node: ConcreteLiquidComparison): LiquidComparison {
   return {
     type: NodeTypes.Comparison,
     comparator: node.comparator,
-    left: toExpression(node.left, source),
-    right: toExpression(node.right, source),
+    left: toExpression(node.left),
+    right: toExpression(node.right),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toLiquidDrop(node: ConcreteLiquidDrop, source: string): LiquidDrop {
+function toLiquidDrop(node: ConcreteLiquidDrop): LiquidDrop {
   return {
     type: NodeTypes.LiquidDrop,
     markup:
       typeof node.markup === 'string'
         ? node.markup
-        : toLiquidVariable(node.markup, source),
+        : toLiquidVariable(node.markup),
     whitespaceStart: node.whitespaceStart ?? '',
     whitespaceEnd: node.whitespaceEnd ?? '',
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toLiquidVariable(
-  node: ConcreteLiquidVariable,
-  source: string,
-): LiquidVariable {
+function toLiquidVariable(node: ConcreteLiquidVariable): LiquidVariable {
   return {
     type: NodeTypes.LiquidVariable,
-    expression: toExpression(node.expression, source),
-    filters: node.filters.map((filter) => toFilter(filter, source)),
+    expression: toExpression(node.expression),
+    filters: node.filters.map(toFilter),
     position: position(node),
     rawSource: node.rawSource,
-    source,
+    source: node.source,
   };
 }
 
-function toExpression(
-  node: ConcreteLiquidExpression,
-  source: string,
-): LiquidExpression {
+function toExpression(node: ConcreteLiquidExpression): LiquidExpression {
   switch (node.type) {
     case ConcreteNodeTypes.String: {
       return {
@@ -1316,7 +1311,7 @@ function toExpression(
         position: position(node),
         single: node.single,
         value: node.value,
-        source,
+        source: node.source,
       };
     }
     case ConcreteNodeTypes.Number: {
@@ -1324,7 +1319,7 @@ function toExpression(
         type: NodeTypes.Number,
         position: position(node),
         value: node.value,
-        source,
+        source: node.source,
       };
     }
     case ConcreteNodeTypes.LiquidLiteral: {
@@ -1333,25 +1328,25 @@ function toExpression(
         position: position(node),
         value: node.value,
         keyword: node.keyword,
-        source,
+        source: node.source,
       };
     }
     case ConcreteNodeTypes.Range: {
       return {
         type: NodeTypes.Range,
-        start: toExpression(node.start, source),
-        end: toExpression(node.end, source),
+        start: toExpression(node.start),
+        end: toExpression(node.end),
         position: position(node),
-        source,
+        source: node.source,
       };
     }
     case ConcreteNodeTypes.VariableLookup: {
       return {
         type: NodeTypes.VariableLookup,
         name: node.name,
-        lookups: node.lookups.map((lookup) => toExpression(lookup, source)),
+        lookups: node.lookups.map(toExpression),
         position: position(node),
-        source,
+        source: node.source,
       };
     }
     default: {
@@ -1360,81 +1355,73 @@ function toExpression(
   }
 }
 
-function toFilter(node: ConcreteLiquidFilter, source: string): LiquidFilter {
+function toFilter(node: ConcreteLiquidFilter): LiquidFilter {
   return {
     type: NodeTypes.LiquidFilter,
     name: node.name,
-    args: node.args.map((arg) => toLiquidArgument(arg, source)),
+    args: node.args.map(toLiquidArgument),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toLiquidArgument(
-  node: ConcreteLiquidArgument,
-  source: string,
-): LiquidArgument {
+function toLiquidArgument(node: ConcreteLiquidArgument): LiquidArgument {
   switch (node.type) {
     case ConcreteNodeTypes.NamedArgument: {
-      return toNamedArgument(node, source);
+      return toNamedArgument(node);
     }
     default: {
-      return toExpression(node, source);
+      return toExpression(node);
     }
   }
 }
 
 function toNamedArgument(
   node: ConcreteLiquidNamedArgument,
-  source: string,
 ): LiquidNamedArgument {
   return {
     type: NodeTypes.NamedArgument,
     name: node.name,
-    value: toExpression(node.value, source),
+    value: toExpression(node.value),
     position: position(node),
-    source,
+    source: node.source,
   };
 }
 
-function toHtmlElement(node: ConcreteHtmlTagOpen, source: string): HtmlElement {
+function toHtmlElement(node: ConcreteHtmlTagOpen): HtmlElement {
   return {
     type: NodeTypes.HtmlElement,
-    name: toName(node.name, source),
-    attributes: toAttributes(node.attrList || [], source),
+    name: toName(node.name),
+    attributes: toAttributes(node.attrList || []),
     position: position(node),
     blockStartPosition: position(node),
     blockEndPosition: { start: -1, end: -1 },
     children: [],
-    source,
+    source: node.source,
   };
 }
 
-function toHtmlVoidElement(
-  node: ConcreteHtmlVoidElement,
-  source: string,
-): HtmlVoidElement {
+function toHtmlVoidElement(node: ConcreteHtmlVoidElement): HtmlVoidElement {
   return {
     type: NodeTypes.HtmlVoidElement,
     name: node.name,
-    attributes: toAttributes(node.attrList || [], source),
+    attributes: toAttributes(node.attrList || []),
     position: position(node),
     blockStartPosition: position(node),
-    source,
+    source: node.source,
   };
 }
 
 function toHtmlSelfClosingElement(
   node: ConcreteHtmlSelfClosingElement,
-  source: string,
 ): HtmlSelfClosingElement {
   return {
     type: NodeTypes.HtmlSelfClosingElement,
-    name: toName(node.name, source),
-    attributes: toAttributes(node.attrList || [], source),
+    name: toName(node.name),
+    attributes: toAttributes(node.attrList || []),
     position: position(node),
     blockStartPosition: position(node),
-    source,
+    source: node.source,
   };
 }
 

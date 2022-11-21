@@ -1,4 +1,4 @@
-import * as AST from '~/parser/ast';
+import * as AST from '~/parser/stage-2-ast';
 import { LiquidParserOptions, DocumentNode } from '~/types';
 import { AUGMENTATION_PIPELINE } from '~/printer/preprocess';
 

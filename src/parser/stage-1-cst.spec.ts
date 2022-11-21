@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { LiquidHtmlCST, toLiquidHtmlCST } from '~/parser/cst';
+import { LiquidHtmlCST, toLiquidHtmlCST } from '~/parser/stage-1-cst';
 import { BLOCKS, VOID_ELEMENTS } from '~/parser/grammar';
 import { NamedTags } from '~/types';
 import { deepGet } from '~/utils';

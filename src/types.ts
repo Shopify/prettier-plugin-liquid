@@ -1,5 +1,5 @@
 import { Doc, AstPath, ParserOptions } from 'prettier';
-import * as AST from '~/parser/ast';
+import * as AST from '~/parser/stage-2-ast';
 
 export interface Position {
   start: number;
