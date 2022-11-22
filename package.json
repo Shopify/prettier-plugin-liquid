@@ -1,6 +1,6 @@
 {
   "name": "@shopify/prettier-plugin-liquid",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Prettier Liquid/HTML plugin by Shopify",
   "repository": "shopify/prettier-plugin-liquid",
   "author": "CP Clermont <@charlespwd>",

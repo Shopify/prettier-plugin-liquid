@@ -1,4 +1,16 @@
 
+0.4.1 / 2022-11-22
+==================
+
+## Fixes
+
+  * Fix support of legacy HTML doctypes. ([#96](https://github.com/shopify/prettier-plugin-liquid/issues/96), [#102](https://github.com/shopify/prettier-plugin-liquid/issues/102))
+  * Fix unnecessary whitespace stripping on liquid html attribute break ([#102](https://github.com/shopify/prettier-plugin-liquid/issues/102))
+  * Fix indentation sensitivity of `{% capture %}` tag. ([#114](https://github.com/shopify/prettier-plugin-liquid/issues/114))
+  * Fix `useTabs` bugs ([#89](https://github.com/shopify/prettier-plugin-liquid/issues/89), [#114](https://github.com/shopify/prettier-plugin-liquid/issues/114))
+  * Add missing support for `{% stylesheet %}` tag ([#117](https://github.com/shopify/prettier-plugin-liquid/issues/117))
+  * Add missing support for nested comments ([#108](https://github.com/shopify/prettier-plugin-liquid/issues/108))
+
 0.4.0 / 2022-09-09
 ==================
 
