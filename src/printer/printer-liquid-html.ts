@@ -47,6 +47,10 @@ import {
 import { printChildren } from '~/printer/print/children';
 import { embed } from '~/printer/embed';
 import { RawMarkupKinds } from '~/parser';
+import {
+  getConditionalComment,
+  isConditionalComment,
+} from '~/parser/conditional-comment';
 
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
@@ -283,6 +287,18 @@ function printNode(
     }
 
     case NodeTypes.HtmlComment: {
+      const conditionalComment = getConditionalComment(node.source);
+      if (conditionalComment) {
+        const { startTag, body, endTag } = conditionalComment;
+        return [
+          startTag,
+          group([
+            indent([line, join(hardline, reindent(bodyLines(body), true))]),
+            line,
+          ]),
+          endTag,
+        ];
+      }
       return [
         '<!--',
         group([
