@@ -1,8 +1,11 @@
 
-0.4.1 / 2022-11-22
+0.4.2 / 2022-11-24
 ==================
 
-## Fixes
+  * Fix the formatting of HTML tags with one attribute that is multiline ([#121](https://github.com/shopify/prettier-plugin-liquid/issues/121))
+
+0.4.1 / 2022-11-22
+==================
 
   * Fix support of legacy HTML doctypes. ([#96](https://github.com/shopify/prettier-plugin-liquid/issues/96), [#102](https://github.com/shopify/prettier-plugin-liquid/issues/102))
   * Fix unnecessary whitespace stripping on liquid html attribute break ([#102](https://github.com/shopify/prettier-plugin-liquid/issues/102))
