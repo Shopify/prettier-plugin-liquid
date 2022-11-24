@@ -47,10 +47,7 @@ import {
 import { printChildren } from '~/printer/print/children';
 import { embed } from '~/printer/embed';
 import { RawMarkupKinds } from '~/parser';
-import {
-  getConditionalComment,
-  isConditionalComment,
-} from '~/parser/conditional-comment';
+import { getConditionalComment } from '~/parser/conditional-comment';
 
 const { builders } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
