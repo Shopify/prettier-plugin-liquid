@@ -26,6 +26,7 @@ import {
   isMultilineLiquidTag,
   hasMeaningfulLackOfLeadingWhitespace,
   hasMeaningfulLackOfTrailingWhitespace,
+  last,
 } from '~/printer/utils';
 
 const {
@@ -310,6 +311,13 @@ function printAttributes(
       : print(attributePath, { trailingSpaceGroupId: attrGroupId });
   }, 'attributes');
 
+  const forceBreakAttrContent =
+    node.attributes &&
+    node.attributes.length > 0 &&
+    node.source
+      .slice(node.blockStartPosition.start, last(node.attributes).position.end)
+      .includes('\n');
+
   const forceNotToBreakAttrContent =
     (options.singleLineLinkTags &&
       typeof node.name === 'string' &&
@@ -317,14 +325,10 @@ function printAttributes(
     ((isSelfClosing(node) ||
       isVoidElement(node) ||
       (isHtmlElement(node) && node.children.length > 0)) &&
+      !forceBreakAttrContent &&
       node.attributes &&
       node.attributes.length === 1 &&
       !isLiquidNode(node.attributes[0]));
-
-  const forceBreakAttrContent =
-    node.source
-      .slice(node.blockStartPosition.start, node.blockStartPosition.end)
-      .indexOf('\n') !== -1;
 
   const attributeLine = forceNotToBreakAttrContent
     ? ' '
