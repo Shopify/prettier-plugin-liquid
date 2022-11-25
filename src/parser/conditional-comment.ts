@@ -5,7 +5,7 @@ export const getConditionalComment = (comment: string) => {
   if (matches) {
     return {
       startTag: matches[1],
-      body: matches[2],
+      body: matches[2].trim(),
       endTag: matches[4],
     };
   }
