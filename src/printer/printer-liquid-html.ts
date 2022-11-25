@@ -284,7 +284,9 @@ function printNode(
     }
 
     case NodeTypes.HtmlComment: {
-      const conditionalComment = getConditionalComment(node.source);
+      const conditionalComment = getConditionalComment(
+        node.source.slice(node.position.start, node.position.end),
+      );
       if (conditionalComment) {
         const { startTag, body, endTag } = conditionalComment;
         return [
