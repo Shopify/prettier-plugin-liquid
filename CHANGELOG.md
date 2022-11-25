@@ -1,4 +1,9 @@
 
+0.4.3 / 2022-11-25
+==================
+
+  * Fix IE conditional comments formatting ([#122](https://github.com/shopify/prettier-plugin-liquid/issues/122))
+
 0.4.2 / 2022-11-24
 ==================
 
