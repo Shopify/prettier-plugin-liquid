@@ -15,16 +15,14 @@ printWidth: 1
 <!-- display: block -->
 <span>{{ hi }}</span>
 
-<!-- MSO conditional comments should be preserved inline -->
-
+It should preserve MSO conditional comments
 <!--[if mso]>
 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="570" align="center">
 <tr>
 <td bgcolor="#054A49">&nbsp
 <![endif]-->
 
-<!-- IE Comments & operator -->
-
+It should support the IE Comment '&' operators
 <!--[if (gt IE 5)&(lt IE 7)]>
 <script src="DD_belatedPNG.js"></script>
 <script>
@@ -32,9 +30,7 @@ printWidth: 1
 </script>
 <![endif]-->
 
-
-<!-- IE Comments | operator -->
-
+It should support the IE Comment '|' operators
 <!--[if (IE 6)|(IE 7)]>
 <style type="text/css">
 a		{ color:#fff; }
