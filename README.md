@@ -72,6 +72,28 @@ Prettier for Liquid supports the following options.
 | `singleLineLinkTags`        | `false`   | If set to `true`, will print `<link>` tags on a single line to remove clutter                                                                                            |
 | `indentSchema`              | `false`   | If set to `true`, will indent the contents of the `{% schema %}` tag                                                                                                     |
 
+## Ignoring code
+
+We support the following comments (either via HTML or Liquid comments):
+
+- `prettier-ignore`
+- `prettier-ignore-attribute`
+- `prettier-ignore-attributes` (alias)
+
+They target the next node in the tree. Unparseable code can't be ignored and will throw an error.
+
+```liquid
+{% # prettier-ignore %}
+<div         class="x"       >hello world</div            >
+
+{% # prettier-ignore-attributes %}
+<div
+  [[#if Condition]]
+    class="a b c"
+  [[/if ]]
+></div>
+```
+
 ## Known issues
 
 Take a look at our [known issues](./KNOWN_ISSUES.md) and [open issues](https://github.com/Shopify/prettier-plugin-liquid/issues).

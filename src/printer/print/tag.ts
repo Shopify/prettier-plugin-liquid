@@ -16,17 +16,17 @@ import {
   isVoidElement,
   isHtmlElement,
   isLiquidNode,
-  isNonEmptyArray,
   isPreLikeNode,
   hasNoCloseMarker,
   isTextLikeNode,
   shouldPreserveContent,
   isSelfClosing,
   isHtmlComment,
-  isMultilineLiquidTag,
   hasMeaningfulLackOfLeadingWhitespace,
   hasMeaningfulLackOfTrailingWhitespace,
   last,
+  first,
+  isPrettierIgnoreAttributeNode,
 } from '~/printer/utils';
 
 const {
@@ -237,20 +237,6 @@ export function needsToBorrowNextOpeningTagStartMarker(node: LiquidHtmlNode) {
   );
 }
 
-function getPrettierIgnoreAttributeCommentData(value: string) {
-  const match = value.trim().match(/^prettier-ignore-attribute(?:\s+(.+))?$/s);
-
-  if (!match) {
-    return false;
-  }
-
-  if (!match[1]) {
-    return true;
-  }
-
-  return match[1].split(/\s+/);
-}
-
 export function needsToBorrowParentOpeningTagEndMarker(node: LiquidHtmlNode) {
   /**
    *     <p
@@ -269,6 +255,9 @@ export function needsToBorrowParentOpeningTagEndMarker(node: LiquidHtmlNode) {
   );
 }
 
+/**
+ * This is so complicated :')
+ */
 function printAttributes(
   path: AstPath<HtmlNode>,
   options: LiquidParserOptions,
@@ -276,11 +265,10 @@ function printAttributes(
   attrGroupId: symbol,
 ) {
   const node = path.getValue();
-  const { locStart, locEnd } = options;
 
   if (isHtmlComment(node)) return '';
 
-  if (!isNonEmptyArray(node.attributes)) {
+  if (node.attributes.length === 0) {
     return isSelfClosing(node)
       ? /**
          *     <br />
@@ -290,60 +278,49 @@ function printAttributes(
       : '';
   }
 
-  const ignoreAttributeData =
-    node.prev &&
-    node.prev.type === NodeTypes.HtmlComment &&
-    getPrettierIgnoreAttributeCommentData(node.prev.body);
+  const prettierIgnoreAttributes = isPrettierIgnoreAttributeNode(node.prev);
 
-  const hasPrettierIgnoreAttribute =
-    typeof ignoreAttributeData === 'boolean'
-      ? () => ignoreAttributeData
-      : Array.isArray(ignoreAttributeData)
-      ? (attribute: any) => ignoreAttributeData.includes(attribute.rawName)
-      : () => false;
+  const printedAttributes = path.map(
+    (attr) => print(attr, { trailingSpaceGroupId: attrGroupId }),
+    'attributes',
+  );
 
-  const printedAttributes = path.map((attributePath) => {
-    const attribute = attributePath.getValue();
-    return hasPrettierIgnoreAttribute(attribute)
-      ? replaceTextEndOfLine(
-          options.originalText.slice(locStart(attribute), locEnd(attribute)),
-        )
-      : print(attributePath, { trailingSpaceGroupId: attrGroupId });
-  }, 'attributes');
+  const forceBreakAttrContent = node.source
+    .slice(node.blockStartPosition.start, last(node.attributes).position.end)
+    .includes('\n');
 
-  const forceBreakAttrContent =
-    node.attributes &&
-    node.attributes.length > 0 &&
-    node.source
-      .slice(node.blockStartPosition.start, last(node.attributes).position.end)
-      .includes('\n');
+  const isSingleLineLinkTagException =
+    options.singleLineLinkTags &&
+    typeof node.name === 'string' &&
+    node.name === 'link';
+
+  const shouldNotBreakAttributes =
+    ((isHtmlElement(node) && node.children.length > 0) ||
+      isVoidElement(node) ||
+      isSelfClosing(node)) &&
+    !forceBreakAttrContent &&
+    node.attributes.length === 1 &&
+    !isLiquidNode(node.attributes[0]);
 
   const forceNotToBreakAttrContent =
-    (options.singleLineLinkTags &&
-      typeof node.name === 'string' &&
-      node.name === 'link') ||
-    ((isSelfClosing(node) ||
-      isVoidElement(node) ||
-      (isHtmlElement(node) && node.children.length > 0)) &&
-      !forceBreakAttrContent &&
-      node.attributes &&
-      node.attributes.length === 1 &&
-      !isLiquidNode(node.attributes[0]));
+    isSingleLineLinkTagException || shouldNotBreakAttributes;
 
-  const attributeLine = forceNotToBreakAttrContent
+  const whitespaceBetweenAttributes = forceNotToBreakAttrContent
     ? ' '
     : options.singleAttributePerLine && node.attributes.length > 1
     ? hardline
     : line;
 
-  const parts: Doc[] = [
-    indent([
-      forceNotToBreakAttrContent ? ' ' : line,
-      forceBreakAttrContent ? breakParent : '',
-      join(attributeLine, printedAttributes),
-    ]),
-  ];
+  const attributes = prettierIgnoreAttributes
+    ? replaceTextEndOfLine(
+        node.source.slice(
+          first(node.attributes).position.start,
+          last(node.attributes).position.end,
+        ),
+      )
+    : join(whitespaceBetweenAttributes, printedAttributes);
 
+  let trailingInnerWhitespace: Doc;
   if (
     /**
      *     123<a
@@ -363,20 +340,25 @@ function printAttributes(
       needsToBorrowLastChildClosingTagEndMarker(node.parentNode!)) ||
     forceNotToBreakAttrContent
   ) {
-    parts.push(isSelfClosing(node) ? ' ' : '');
+    trailingInnerWhitespace = isSelfClosing(node) ? ' ' : '';
   } else {
-    parts.push(
-      options.bracketSameLine
-        ? isSelfClosing(node)
-          ? ' '
-          : ''
-        : isSelfClosing(node)
-        ? line
-        : softline,
-    );
+    trailingInnerWhitespace = options.bracketSameLine
+      ? isSelfClosing(node)
+        ? ' '
+        : ''
+      : isSelfClosing(node)
+      ? line
+      : softline;
   }
 
-  return parts;
+  return [
+    indent([
+      forceNotToBreakAttrContent ? ' ' : line,
+      forceBreakAttrContent ? breakParent : '',
+      attributes,
+    ]),
+    trailingInnerWhitespace,
+  ];
 }
 
 function printOpeningTagEnd(node: LiquidHtmlNode) {

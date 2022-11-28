@@ -28,6 +28,16 @@ describe('Unit: liquidHtmlGrammar', () => {
         </body>
       </html>
     `).to.be.true;
+    expectMatchSucceeded(`
+      <input
+        class="[[ cssClasses.checkbox ]] form-checkbox sm:text-[8px]"
+        type="checkbox"
+
+        [[# isRefined ]]
+          checked
+        [[/ isRefined ]]
+      />
+    `).to.be.true;
     expectMatchSucceeded('<img {% if aboveFold %} loading="lazy"{% endif %} />').to.be.true;
     expectMatchSucceeded('<svg><use></svg>').to.be.true;
   });
