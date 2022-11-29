@@ -1,4 +1,16 @@
 
+1.0.0-rc.0 / 2022-11-29
+=======================
+
+## Features
+
+  * It's supposed to be stable now :)
+  * Add support for `prettier-ignore-attributes` ([#125](https://github.com/shopify/prettier-plugin-liquid/issues/125))
+
+## Fixes
+
+  * Fix secondary templating parsing issue ([#125](https://github.com/shopify/prettier-plugin-liquid/issues/125))
+
 0.4.3 / 2022-11-25
 ==================
 
