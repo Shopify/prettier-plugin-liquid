@@ -127,7 +127,7 @@ export function isPrettierIgnoreHtmlNode(
   return (
     !!node &&
     node.type === NodeTypes.HtmlComment &&
-    /^\s*prettier-ignore/m.test(node.body)
+    /^\s*prettier-ignore(?=\s|$)/m.test(node.body)
   );
 }
 
@@ -138,7 +138,7 @@ export function isPrettierIgnoreLiquidNode(
     !!node &&
     node.type === NodeTypes.LiquidTag &&
     node.name === '#' &&
-    /^\s*prettier-ignore/m.test(node.markup)
+    /^\s*prettier-ignore(?=\s|$)/m.test(node.markup)
   );
 }
 
@@ -150,6 +150,48 @@ export function isPrettierIgnoreNode(
 
 export function hasPrettierIgnore(node: LiquidHtmlNode) {
   return isPrettierIgnoreNode(node) || isPrettierIgnoreNode(node.prev);
+}
+
+function getPrettierIgnoreAttributeCommentData(value: string): boolean {
+  const match = value
+    .trim()
+    .match(/prettier-ignore-attribute(?:s?)(?:\s+(.+))?$/s);
+
+  if (!match) {
+    return false;
+  }
+
+  if (!match[1]) {
+    return true;
+  }
+
+  // TODO We should support 'prettier-ignore-attribute a,b,c' and allow users to not
+  // format the insides of some attributes.
+  //
+  // But since we don't reformat the insides of attributes yet (because of
+  // issue #4), that feature doesn't really make sense.
+  //
+  // For now, we'll only support `prettier-ignore-attribute`
+  //
+  // https://github.com/Shopify/prettier-plugin-liquid/issues/4
+  //
+  // return match[1].split(/\s+/);
+  return true;
+}
+
+export function isPrettierIgnoreAttributeNode(
+  node: LiquidHtmlNode | undefined,
+): boolean {
+  if (!node) return false;
+  if (node.type === NodeTypes.HtmlComment) {
+    return getPrettierIgnoreAttributeCommentData(node.body);
+  }
+
+  if (node.type === NodeTypes.LiquidTag && node.name === '#') {
+    return getPrettierIgnoreAttributeCommentData(node.markup);
+  }
+
+  return false;
 }
 
 export function forceNextEmptyLine(node: LiquidHtmlNode | undefined) {

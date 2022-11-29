@@ -298,6 +298,9 @@ function printNode(
           endTag,
         ];
       }
+      if (node.body.includes('prettier-ignore')) {
+        return node.source.slice(node.position.start, node.position.end);
+      }
       return [
         '<!--',
         group([
