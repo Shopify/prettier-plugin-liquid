@@ -404,7 +404,8 @@ LiquidHTML <: Liquid {
   AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
 
   // https://html.spec.whatwg.org/#attributes-2
-  attrName = anyExceptPlus<(space | quotes | "=" | ">" | "/>" | "{{" | "{%" | controls | noncharacters)>
+  attrName = (liquidDrop | attrNameTextNode)+
+  attrNameTextNode = anyExceptPlus<(space | quotes | "=" | ">" | "/>" | "{{" | "{%" | controls | noncharacters)>
   attrUnquotedValue = (attrUnquotedTextNode)*
   attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
   attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*

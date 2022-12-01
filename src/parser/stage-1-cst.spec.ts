@@ -88,7 +88,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
         expectPath(cst, '0.type').to.equal('HtmlVoidElement');
         expectPath(cst, '0.name').to.equal(voidElementName);
-        expectPath(cst, '0.attrList.0.name').to.equal('disabled');
+        expectPath(cst, '0.attrList.0.name').to.eql(['disabled']);
       });
     });
 
@@ -96,7 +96,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       ['<div empty>', '<div empty >', '<div\nempty\n>'].forEach((text) => {
         cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
-        expectPath(cst, '0.attrList.0.name').to.equal('empty');
+        expectPath(cst, '0.attrList.0.name').to.eql(['empty']);
         expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
       });
     });
@@ -114,7 +114,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         ].forEach((text) => {
           cst = toLiquidHtmlCST(text);
           expectPath(cst, '0.attrList.0.type').to.equal(testConfig.type);
-          expectPath(cst, '0.attrList.0.name').to.equal(testConfig.name);
+          expectPath(cst, '0.attrList.0.name').to.eql([testConfig.name]);
           expectPath(cst, '0.attrList.0.value.0.type').to.eql('TextNode');
           expectPath(cst, '0.attrList.0.value.0.value').to.eql(testConfig.name);
         });

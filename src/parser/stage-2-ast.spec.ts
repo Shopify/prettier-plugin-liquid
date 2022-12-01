@@ -531,14 +531,14 @@ describe('Unit: toLiquidHtmlAST', () => {
     expectPath(ast, 'children.0').to.exist;
     expectPath(ast, 'children.0.type').to.eql('HtmlVoidElement');
     expectPath(ast, 'children.0.name').to.eql('img');
-    expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
+    expectPath(ast, 'children.0.attributes.0.name').to.eql(['src']);
     expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql('https://1234');
-    expectPath(ast, 'children.0.attributes.1.name').to.eql('loading');
+    expectPath(ast, 'children.0.attributes.1.name').to.eql(['loading']);
     expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql('TextNode');
     expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
-    expectPath(ast, 'children.0.attributes.2.name').to.eql('disabled');
-    expectPath(ast, 'children.0.attributes.3.name').to.eql('checked');
+    expectPath(ast, 'children.0.attributes.2.name').to.eql(['disabled']);
+    expectPath(ast, 'children.0.attributes.3.name').to.eql(['checked']);
     expectPath(ast, 'children.0.attributes.3.value.0').to.be.undefined;
 
     expectPosition(ast, 'children.0');
@@ -582,13 +582,13 @@ describe('Unit: toLiquidHtmlAST', () => {
       expectPath(ast, 'children.0.name.type').to.eql('LiquidDrop');
       expectPath(ast, 'children.0.name.markup.type').to.eql('LiquidVariable');
       expectPath(ast, 'children.0.name.markup.rawSource').to.eql('node_type');
-      expectPath(ast, 'children.0.attributes.0.name').to.eql('src');
+      expectPath(ast, 'children.0.attributes.0.name').to.eql(['src']);
       expectPath(ast, 'children.0.attributes.0.value.0.type').to.eql('TextNode');
       expectPath(ast, 'children.0.attributes.0.value.0.value').to.eql('https://1234');
-      expectPath(ast, 'children.0.attributes.1.name').to.eql('loading');
+      expectPath(ast, 'children.0.attributes.1.name').to.eql(['loading']);
       expectPath(ast, 'children.0.attributes.1.value.0.type').to.eql('TextNode');
       expectPath(ast, 'children.0.attributes.1.value.0.value').to.eql('lazy');
-      expectPath(ast, 'children.0.attributes.2.name').to.eql('disabled');
+      expectPath(ast, 'children.0.attributes.2.name').to.eql(['disabled']);
     });
   });
 
