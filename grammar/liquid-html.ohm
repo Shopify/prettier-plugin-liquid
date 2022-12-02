@@ -406,7 +406,7 @@ LiquidHTML <: Liquid {
   // https://html.spec.whatwg.org/#attributes-2
   attrName = (liquidDrop | attrNameTextNode)+
   attrNameTextNode = anyExceptPlus<(space | quotes | "=" | ">" | "/>" | "{{" | "{%" | controls | noncharacters)>
-  attrUnquotedValue = (attrUnquotedTextNode)*
+  attrUnquotedValue = (liquidDrop | attrUnquotedTextNode)*
   attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*
   attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
 

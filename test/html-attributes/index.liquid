@@ -101,3 +101,6 @@ singleQuote: true
 It should pretty print attribute names with Liquid in them without new lines
 printWidth: 1
 <div data-popup-{{section.id|upcase}}="size-{{ section.id }}"></div>
+
+It should pretty unquoted liquid drop attributes
+<div id={{ section.id }}--omg></div>
