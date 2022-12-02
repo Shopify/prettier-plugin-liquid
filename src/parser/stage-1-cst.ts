@@ -565,11 +565,11 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
       name: 'comment',
       body: (tokens: Node[]) => tokens[1].sourceString,
       whitespaceStart: (tokens: Node[]) => tokens[0].children[1].sourceString,
-      whitespaceEnd: (tokens: Node[]) => tokens[0].children[6].sourceString,
+      whitespaceEnd: (tokens: Node[]) => tokens[0].children[7].sourceString,
       delimiterWhitespaceStart: (tokens: Node[]) =>
         tokens[2].children[1].sourceString,
       delimiterWhitespaceEnd: (tokens: Node[]) =>
-        tokens[2].children[6].sourceString,
+        tokens[2].children[7].sourceString,
       locStart,
       locEnd,
       source,
@@ -595,7 +595,7 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
       type: ConcreteNodeTypes.LiquidTagOpen,
       name: 3,
       markup(nodes: Node[]) {
-        const markupNode = nodes[5];
+        const markupNode = nodes[6];
         const nameNode = nodes[3];
         if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
           return markupNode.toAST((this as any).args.mapping);
@@ -603,7 +603,7 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
         return markupNode.sourceString.trim();
       },
       whitespaceStart: 1,
-      whitespaceEnd: 6,
+      whitespaceEnd: 7,
       locStart,
       locEnd,
       source,
@@ -685,7 +685,7 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
       type: ConcreteNodeTypes.LiquidTag,
       name: 3,
       markup(nodes: Node[]) {
-        const markupNode = nodes[5];
+        const markupNode = nodes[6];
         const nameNode = nodes[3];
         if (NamedTags.hasOwnProperty(nameNode.sourceString)) {
           return markupNode.toAST((this as any).args.mapping);
@@ -693,7 +693,7 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
         return markupNode.sourceString.trim();
       },
       whitespaceStart: 1,
-      whitespaceEnd: 6,
+      whitespaceEnd: 7,
       source,
       locStart,
       locEnd,
