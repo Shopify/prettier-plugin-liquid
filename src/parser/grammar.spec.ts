@@ -12,6 +12,11 @@ describe('Unit: liquidHtmlGrammar', () => {
     expectMatchSucceeded(`{{product.feature}}`).to.be.true;
     expectMatchSucceeded(`{%- if A -%}`).to.be.true;
     expectMatchSucceeded(`{%-if A-%}`).to.be.true;
+    expectMatchSucceeded(`{%- else-%}`).to.be.true;
+    expectMatchSucceeded(`{%- liquid-%}`).to.be.true;
+    expectMatchSucceeded(`{%- schema-%}`).to.be.true;
+    expectMatchSucceeded(`{%- form-%}`).to.be.true;
+    expectMatchSucceeded(`{{ true-}}`).to.be.true;
     expectMatchSucceeded(`
       <html>
         <head>

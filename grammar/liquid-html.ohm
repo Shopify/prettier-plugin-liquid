@@ -30,7 +30,9 @@ Helpers {
 Liquid <: Helpers {
   Node := (liquidNode | TextNode)*
   openControl := "{{" | "{%"
-  endOfIdentifier = space | "-%}" | "%}"
+  endOfTagName = &("-%}" | "-}}" | "%}" | "}}")
+  endOfVarName = ~identifierCharacter
+  endOfIdentifier = endOfTagName | endOfVarName
 
   liquidNode =
     | liquidBlockComment
@@ -70,9 +72,9 @@ Liquid <: Helpers {
 
   // These two are the same but transformed differently
   liquidTagRule<name, markup> =
-    "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+    "{%" "-"? space* (name endOfIdentifier) space* markup "-"? "%}"
   liquidTagOpenRule<name, markup> =
-    "{%" "-"? space* (name ~identifierCharacter) space* markup "-"? "%}"
+    "{%" "-"? space* (name endOfIdentifier) space* markup "-"? "%}"
 
   liquidTagBaseCase = liquidTagRule<liquidTagName, tagMarkup>
 
@@ -170,18 +172,18 @@ Liquid <: Helpers {
     | liquidRawTagImpl<"stylesheet">
     | liquidRawTagImpl<"style">
   liquidRawTagImpl<name> =
-    "{%" "-"? space* (name &endOfIdentifier) space* tagMarkup "-"? "%}"
+    "{%" "-"? space* (name endOfIdentifier) space* tagMarkup "-"? "%}"
     anyExceptStar<liquidRawTagClose<name>>
-    "{%" "-"? space* "end" (name &endOfIdentifier) space* "-"? "%}"
+    "{%" "-"? space* "end" (name endOfIdentifier) space* "-"? "%}"
   liquidRawTagClose<name> =
-    "{%" "-"? space* "end" (name &endOfIdentifier) space* "-"? "%}"
+    "{%" "-"? space* "end" (name endOfIdentifier) space* "-"? "%}"
 
   liquidBlockComment =
     commentBlockStart
       (liquidBlockComment | anyExceptPlus<(commentBlockStart | commentBlockEnd)>)*
     commentBlockEnd
-  commentBlockStart = "{%" "-"? space* ("comment"    ~identifierCharacter) space* tagMarkup "-"? "%}"
-  commentBlockEnd   = "{%" "-"? space* ("endcomment" ~identifierCharacter) space* tagMarkup "-"? "%}"
+  commentBlockStart = "{%" "-"? space* ("comment"    endOfIdentifier) space* tagMarkup "-"? "%}"
+  commentBlockEnd   = "{%" "-"? space* ("endcomment" endOfIdentifier) space* tagMarkup "-"? "%}"
 
   // In order for the grammar to "fallback" to the base case, this
   // rule must pass if and only if we support what we parse. This
@@ -215,7 +217,7 @@ Liquid <: Helpers {
     | "empty"
     | "nil"
     | "null"
-    ) ~identifierCharacter
+    ) endOfIdentifier
 
   liquidRange =
     "(" space* liquidExpression space* ".." space* liquidExpression space* ")"
@@ -259,7 +261,7 @@ Liquid <: Helpers {
     | "if"
     | "unless"
     | "tablerow"
-    ) ~identifierCharacter
+    ) endOfIdentifier
 }
 
 LiquidStatement <: Liquid {
