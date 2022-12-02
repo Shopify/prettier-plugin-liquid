@@ -49,7 +49,7 @@ import { embed } from '~/printer/embed';
 import { RawMarkupKinds } from '~/parser';
 import { getConditionalComment } from '~/parser/conditional-comment';
 
-const { builders } = doc;
+const { builders, utils } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
 
 const oppositeQuotes = {
@@ -71,7 +71,9 @@ function printAttributeName(
       if (typeof value === 'string') {
         return value;
       } else {
-        return print(part as AstPath<LiquidDrop>);
+        // We want to force the LiquidDrop to be on one line to avoid weird
+        // shenanigans
+        return utils.removeLines(print(part as AstPath<LiquidDrop>));
       }
     }, 'name'),
   );

@@ -151,3 +151,9 @@ singleQuote: false
 It should pretty print attribute names with Liquid in them
 singleQuote: true
 <div data-popup-{{ section.id }}='size-{{ section.id }}'></div>
+
+It should pretty print attribute names with Liquid in them without new lines
+printWidth: 1
+<div
+  data-popup-{{ section.id | upcase }}="size-{{ section.id }}"
+></div>
