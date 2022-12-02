@@ -460,13 +460,13 @@ export interface AttrDoubleQuoted
 export interface AttrUnquoted
   extends AttributeNodeBase<NodeTypes.AttrUnquoted> {}
 export interface AttrEmpty extends ASTNode<NodeTypes.AttrEmpty> {
-  name: string;
+  name: (LiquidDrop | string)[];
 }
 
 export type ValueNode = TextNode | LiquidNode;
 
 export interface AttributeNodeBase<T> extends ASTNode<T> {
-  name: string;
+  name: (LiquidDrop | string)[];
   value: ValueNode[];
   attributePosition: Position;
 }
@@ -617,6 +617,19 @@ function getName(
       } else {
         return `{{${node.name.markup.rawSource}}}`;
       }
+    case NodeTypes.AttrUnquoted:
+    case NodeTypes.AttrDoubleQuoted:
+    case NodeTypes.AttrSingleQuoted:
+      // <a href="{{ hello }}">
+      return node.name
+        .map((part) => {
+          if (typeof part === 'string') {
+            return part;
+          } else {
+            return part.source.slice(part.position.start, part.position.end);
+          }
+        })
+        .join('');
     default:
       return node.name;
   }
@@ -747,7 +760,7 @@ export function cstToAst(
       case ConcreteNodeTypes.AttrEmpty: {
         builder.push({
           type: NodeTypes.AttrEmpty,
-          name: node.name,
+          name: toAttributeName(node.name),
           position: position(node),
           source: node.source,
         });
@@ -763,7 +776,7 @@ export function cstToAst(
               | NodeTypes.AttrSingleQuoted
               | NodeTypes.AttrDoubleQuoted
               | NodeTypes.AttrUnquoted,
-            name: node.name,
+            name: toAttributeName(node.name),
             position: position(node),
             source: node.source,
 
@@ -795,6 +808,18 @@ export function cstToAst(
   }
 
   return builder.ast;
+}
+
+function toAttributeName(
+  nameArray: (string | ConcreteLiquidDrop)[],
+): (string | LiquidDrop)[] {
+  return nameArray.map((part) => {
+    if (typeof part === 'string') {
+      return part;
+    } else {
+      return toLiquidDrop(part);
+    }
+  });
 }
 
 function toAttributePosition(
@@ -1146,8 +1171,13 @@ function toRawMarkupKindFromHtmlNode(node: ConcreteHtmlRawTag): RawMarkupKinds {
   switch (node.name) {
     case 'script': {
       const scriptAttr = node.attrList?.find(
-        (attr) => 'name' in attr && attr.name === 'type',
+        (attr) =>
+          'name' in attr &&
+          typeof attr.name !== 'string' &&
+          attr.name.length === 1 &&
+          attr.name[0] === 'type',
       );
+
       if (
         !scriptAttr ||
         !('value' in scriptAttr) ||

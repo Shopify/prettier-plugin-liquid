@@ -132,7 +132,7 @@ export interface ConcreteHtmlTagClose
   extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagClose> {}
 
 export interface ConcreteAttributeNodeBase<T> extends ConcreteBasicNode<T> {
-  name: string;
+  name: (ConcreteLiquidDrop | string)[];
   value: (ConcreteLiquidNode | ConcreteTextNode)[];
 }
 
@@ -151,7 +151,7 @@ export interface ConcreteAttrUnquoted
   extends ConcreteAttributeNodeBase<ConcreteNodeTypes.AttrUnquoted> {}
 export interface ConcreteAttrEmpty
   extends ConcreteBasicNode<ConcreteNodeTypes.AttrEmpty> {
-  name: string;
+  name: (ConcreteLiquidDrop | string)[];
 }
 
 export type ConcreteLiquidNode =
@@ -1130,6 +1130,8 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
       source,
     },
 
+    attrName: 0,
+    attrNameTextNode: 0,
     attrDoubleQuotedValue: 0,
     attrSingleQuotedValue: 0,
     attrUnquotedValue: 0,

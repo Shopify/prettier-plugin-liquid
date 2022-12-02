@@ -93,3 +93,14 @@ singleQuote: true
 If singleQuote is false, and the attribute value has liquid tags that contain double quotes, don't care.
 singleQuote: false
 <script src="{{ "styles.css" | asset_url }}"></script>
+
+It should pretty print attribute names with Liquid in them
+singleQuote: true
+<div data-popup-{{section.id}}="size-{{ section.id }}"></div>
+
+It should pretty print attribute names with Liquid in them without new lines
+printWidth: 1
+<div data-popup-{{section.id|upcase}}="size-{{ section.id }}"></div>
+
+It should pretty unquoted liquid drop attributes
+<div id={{ section.id }}--omg></div>

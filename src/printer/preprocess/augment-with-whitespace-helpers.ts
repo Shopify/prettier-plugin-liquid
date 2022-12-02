@@ -109,10 +109,20 @@ function isIndentationSensitiveNode(node: AugmentedAstNode) {
  * A node is leading whitespace sensitive when whitespace to the outer left
  * of it has meaning. Removing or adding whitespace there would alter the
  * rendered output.
+ * <div attr-{{ hi }}
  */
 function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   if (!node) {
     return false;
+  }
+
+  // <a data-{{ this }}="hi">
+  if (
+    node.parentNode &&
+    isAttributeNode(node.parentNode) &&
+    node.type === NodeTypes.LiquidDrop
+  ) {
+    return true;
   }
 
   // {{- this }}
@@ -213,6 +223,15 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
   // '{{ drop -}} text'
   if (isTrimmingOuterRight(node)) {
     return false;
+  }
+
+  // <a data-{{ this }}="hi">
+  if (
+    node.parentNode &&
+    isAttributeNode(node.parentNode) &&
+    node.type === NodeTypes.LiquidDrop
+  ) {
+    return true;
   }
 
   // 'text {{- drop }}'

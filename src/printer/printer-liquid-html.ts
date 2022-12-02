@@ -7,7 +7,6 @@ import {
   LiquidDrop,
   TextNode,
   HtmlElement,
-  AttributeNode,
   HtmlVoidElement,
   HtmlSelfClosingElement,
   HtmlRawNode,
@@ -22,6 +21,7 @@ import {
   LiquidPrinterArgs,
   DocumentNode,
   LiquidRawTag,
+  AttrEmpty,
 } from '~/types';
 import { assertNever } from '~/utils';
 
@@ -49,7 +49,7 @@ import { embed } from '~/printer/embed';
 import { RawMarkupKinds } from '~/parser';
 import { getConditionalComment } from '~/parser/conditional-comment';
 
-const { builders } = doc;
+const { builders, utils } = doc;
 const { fill, group, hardline, indent, join, line, softline } = builders;
 
 const oppositeQuotes = {
@@ -57,9 +57,31 @@ const oppositeQuotes = {
   "'": '"',
 };
 
+function printAttributeName(
+  path: AstPath<AttrEmpty | AttrSingleQuoted | AttrUnquoted | AttrDoubleQuoted>,
+  _options: LiquidParserOptions,
+  print: LiquidPrinter,
+): Doc {
+  const node = path.getValue();
+  node.name;
+  return join(
+    '',
+    (path as any).map((part: AstPath<string | LiquidDrop>) => {
+      const value = part.getValue();
+      if (typeof value === 'string') {
+        return value;
+      } else {
+        // We want to force the LiquidDrop to be on one line to avoid weird
+        // shenanigans
+        return utils.removeLines(print(part as AstPath<LiquidDrop>));
+      }
+    }, 'name'),
+  );
+}
+
 function printAttribute<
   T extends Extract<LiquidHtmlNode, { attributePosition: Position }>,
->(path: AstPath<T>, options: LiquidParserOptions, _print: LiquidPrinter) {
+>(path: AstPath<T>, options: LiquidParserOptions, print: LiquidPrinter): Doc {
   const node = path.getValue();
   const attrGroupId = Symbol('attr-group-id');
   // What should be the rule here? Should it really be "paragraph"?
@@ -102,7 +124,7 @@ function printAttribute<
     : preferredQuote;
 
   return [
-    node.name,
+    printAttributeName(path, options, print),
     '=',
     quote,
     hasLineBreakInRange(
@@ -177,7 +199,7 @@ function printNode(
   options: LiquidParserOptions,
   print: LiquidPrinter,
   args: LiquidPrinterArgs = {},
-) {
+): Doc {
   const node = path.getValue();
   switch (node.type) {
     case NodeTypes.Document: {
@@ -265,7 +287,7 @@ function printNode(
     }
 
     case NodeTypes.AttrEmpty: {
-      return node.name;
+      return printAttributeName(path as AstPath<AttrEmpty>, options, print);
     }
 
     case NodeTypes.AttrUnquoted:
