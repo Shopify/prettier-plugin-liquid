@@ -1,4 +1,13 @@
 
+1.0.0-rc.1 / 2022-12-02
+=======================
+
+## Fixes
+
+  * Fix parsing of LiquidDrop in HTML attribute names (`<a data-popup--{{ id }}="...">`) ([#101](https://github.com/shopify/prettier-plugin-liquid/issues/101))
+  * Fix parsing of unquoted LiquidDrop HTML attributes (`<a id={{ id }}--omg>`) ([#101](https://github.com/shopify/prettier-plugin-liquid/issues/101))
+  * Fix parsing of tags with missing space between whitespace stripping and tag name (`{% else-%}`) ([#126](https://github.com/shopify/prettier-plugin-liquid/issues/126))
+
 1.0.0-rc.0 / 2022-11-29
 =======================
 
