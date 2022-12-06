@@ -132,7 +132,11 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
 
     [
       { type: 'AttrSingleQuoted', name: 'single', quote: "'" },
+      { type: 'AttrSingleQuoted', name: 'single', quote: '‘' },
+      { type: 'AttrSingleQuoted', name: 'single', quote: '’' },
       { type: 'AttrDoubleQuoted', name: 'double', quote: '"' },
+      { type: 'AttrDoubleQuoted', name: 'double', quote: '“' },
+      { type: 'AttrDoubleQuoted', name: 'double', quote: '”' },
       { type: 'AttrUnquoted', name: 'unquoted', quote: '' },
     ].forEach((testConfig) => {
       it(`should parse ${testConfig.type} attributes`, () => {

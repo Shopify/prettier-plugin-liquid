@@ -22,6 +22,8 @@ Helpers {
   nonemptyOrderedListOfBoth<a, b, sep> =
     nonemptyListOf<a, sep> (sep nonemptyListOf<b, sep>)
 
+  singleQuote = "'" | "‘" | "’"
+  doubleQuote = "\"" | "“" | "”"
   controls = "\u{007F}".."\u{009F}"
   noncharacters = "\u{FDD0}".."\u{FDEF}"
   newline = "\r"? "\n"
@@ -411,8 +413,8 @@ LiquidHTML <: Liquid {
   attrEmpty = attrName
 
   AttrUnquoted = attrName "=" attrUnquotedValue
-  AttrSingleQuoted = attrName "=" "'" #(attrSingleQuotedValue "'")
-  AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
+  AttrSingleQuoted = attrName "=" singleQuote #(attrSingleQuotedValue singleQuote)
+  AttrDoubleQuoted = attrName "=" doubleQuote #(attrDoubleQuotedValue doubleQuote)
 
   attrName = (liquidDrop | attrNameTextNode)+
 
@@ -423,10 +425,10 @@ LiquidHTML <: Liquid {
   attrDoubleQuotedValue = (liquidNode | attrDoubleQuotedTextNode)*
 
   attrUnquotedTextNode = anyExceptPlus<(space | quotes | "=" | "<" | ">" | "`" | "{{" | "{%")>
-  attrSingleQuotedTextNode = anyExceptPlus<("'" | "{{" | "{%")>
-  attrDoubleQuotedTextNode = anyExceptPlus<("\""| "{{" | "{%")>
+  attrSingleQuotedTextNode = anyExceptPlus<(singleQuote | "{{" | "{%")>
+  attrDoubleQuotedTextNode = anyExceptPlus<(doubleQuote | "{{" | "{%")>
 
-  quotes =  "'" | "\""
+  quotes = singleQuote | doubleQuote
 
   // https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element
   voidElementName =
