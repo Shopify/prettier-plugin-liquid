@@ -121,6 +121,15 @@ export type LiquidPrinter = (
   args?: LiquidPrinterArgs,
 ) => Doc;
 
+// Those properties create loops that would make walking infinite
+export const nonTraversableProperties = new Set([
+  'parentNode',
+  'prev',
+  'next',
+  'firstChild',
+  'lastChild',
+]);
+
 // This one warrants a bit of an explanation 'cuz it's definitely next
 // level typescript kung-fu shit.
 //

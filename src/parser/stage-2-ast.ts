@@ -75,6 +75,7 @@ import {
   isLiquidHtmlNode,
   NamedTags,
   NodeTypes,
+  nonTraversableProperties,
   Position,
 } from '~/types';
 import { assertNever, deepGet, dropLast } from '~/utils';
@@ -1479,11 +1480,10 @@ export function walk(
   parentNode?: LiquidHtmlNode,
 ) {
   for (const key of Object.keys(ast)) {
-    if (
-      ['parentNode', 'prev', 'next', 'firstChild', 'lastChild'].includes(key)
-    ) {
+    if (nonTraversableProperties.has(key)) {
       continue;
     }
+
     const value = (ast as any)[key];
     if (Array.isArray(value)) {
       value
