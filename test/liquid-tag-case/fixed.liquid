@@ -42,3 +42,30 @@ It should join args with comma and space
   {% when foo, bar %}
     yum!
 {% endcase %}
+
+It should maintain at most one new line between cases
+{% case foo %}
+  {% when bar %}
+    <div>Something</div>
+
+  {% when baz %}
+    <div>Something else</div>
+{% endcase %}
+
+It should not maintain trailing whitespace in last case and parent
+{% case foo %}
+  {% when bar %}
+    <div>Something</div>
+
+  {% when baz %}
+    <div>Something else</div>
+{% endcase %}
+
+It should not maintain leading whitespace in default branch
+{% case foo %}
+  {% when bar %}
+    <div>Something</div>
+
+  {% when baz %}
+    <div>Something else</div>
+{% endcase %}
