@@ -29,7 +29,7 @@
 
 ## Can this be used in production?
 
-_Not yet_. We have a [list of issues](https://github.com/Shopify/prettier-plugin-liquid/issues) we're going through before it is considered stable.
+Yes! It's also available in the [Online Store Code Editor](https://shopify.dev/themes/tools/code-editor#formatting-theme-code).
 
 ## Installation
 
