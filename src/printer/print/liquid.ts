@@ -32,6 +32,7 @@ import {
   isAttributeNode,
   shouldPreserveContent,
   FORCE_FLAT_GROUP_ID,
+  last,
 } from '~/printer/utils';
 
 import { printChildren } from '~/printer/print/children';
@@ -39,7 +40,8 @@ import { printChildren } from '~/printer/print/children';
 const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 
 const { builders, utils } = doc;
-const { group, hardline, ifBreak, indent, join, line, softline } = builders;
+const { group, hardline, ifBreak, indent, join, line, softline, literalline } =
+  builders;
 const { replaceTextEndOfLine } = doc.utils as any;
 
 export function printLiquidDrop(
@@ -610,11 +612,19 @@ function printLiquidDefaultBranch(
     return ifBreak('', ' ');
   }
 
+  const shouldAddTrailingNewline =
+    branch.next &&
+    branch.children.length > 0 &&
+    branch.source
+      .slice(last(branch.children).position.end, branch.next.position.start)
+      .replace(/ |\t/g, '').length >= 2;
+
   // Otherwise print the branch as usual
   // {% if A %} content...{% endif %}
   return indent([
     innerLeadingWhitespace(parentNode),
     printChildren(path, options, print, args),
+    shouldAddTrailingNewline ? literalline : '',
   ]);
 }
 
@@ -638,6 +648,12 @@ export function printLiquidBranch(
   const shouldCollapseSpace = leftSibling && isEmpty(leftSibling.children);
   const outerLeadingWhitespace =
     branch.hasLeadingWhitespace && !shouldCollapseSpace ? line : softline;
+  const shouldAddTrailingNewline =
+    branch.next &&
+    branch.children.length > 0 &&
+    branch.source
+      .slice(last(branch.children).position.end, branch.next.position.start)
+      .replace(/ |\t/g, '').length >= 2;
 
   return [
     outerLeadingWhitespace,
@@ -645,6 +661,7 @@ export function printLiquidBranch(
     indent([
       innerLeadingWhitespace(branch),
       printChildren(path, options, print, args),
+      shouldAddTrailingNewline ? literalline : '',
     ]),
   ];
 }
