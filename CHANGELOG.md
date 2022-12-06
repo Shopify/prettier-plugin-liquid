@@ -1,4 +1,14 @@
 
+1.0.0-rc.2 / 2022-12-06
+=======================
+
+## Fixes
+
+  * Maintain at most 1 newline between Liquid branches ([#137](https://github.com/shopify/prettier-plugin-liquid/issues/137))
+  * Parse smart quotes as dumb quotes to prevent formatted copy pasting errors ([#130](https://github.com/shopify/prettier-plugin-liquid/issues/130))
+  * Add support for compound Liquid + HTML element names ([#128](https://github.com/shopify/prettier-plugin-liquid/issues/128))
+    * e.g. `<h{{ header_number}}></h{{ header_number }}>`
+
 1.0.0-rc.1 / 2022-12-02
 =======================
 
