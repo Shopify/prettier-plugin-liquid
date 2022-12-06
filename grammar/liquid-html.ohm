@@ -379,20 +379,29 @@ LiquidHTML <: Liquid {
     #("<" voidElementName &(space | "/" | ">")) AttrList "/"? ">"
 
   HtmlSelfClosingElement =
-    #("<" tagNameOrLiquidDrop) AttrList "/>"
+    #("<" tagName) AttrList "/>"
 
   HtmlTagOpen =
-    #("<" tagNameOrLiquidDrop) AttrList ">"
+    #("<" tagName) AttrList ">"
 
   HtmlTagClose =
-    #("</" tagNameOrLiquidDrop) ">"
+    #("</" tagName) ">"
 
-  tagNameOrLiquidDrop =
-    | tagName
+  tagName = leadingTagNamePart trailingTagNamePart*
+
+  // The difference here is that the first text part must start
+  // with a letter, but trailing text parts don't have that
+  // requirement
+  leadingTagNamePart =
     | liquidDrop
+    | leadingTagNameTextNode
 
-  tagName =
-    letter (alnum | "-" | ":")*
+  trailingTagNamePart =
+    | liquidDrop
+    | trailingTagNameTextNode
+
+  leadingTagNameTextNode = letter (alnum | "-" | ":")*
+  trailingTagNameTextNode = (alnum | "-" | ":")+
 
   AttrList = Attr*
 
@@ -405,8 +414,9 @@ LiquidHTML <: Liquid {
   AttrSingleQuoted = attrName "=" "'" #(attrSingleQuotedValue "'")
   AttrDoubleQuoted = attrName "=" "\"" #(attrDoubleQuotedValue "\"")
 
-  // https://html.spec.whatwg.org/#attributes-2
   attrName = (liquidDrop | attrNameTextNode)+
+
+  // https://html.spec.whatwg.org/#attributes-2
   attrNameTextNode = anyExceptPlus<(space | quotes | "=" | ">" | "/>" | "{{" | "{%" | controls | noncharacters)>
   attrUnquotedValue = (liquidDrop | attrUnquotedTextNode)*
   attrSingleQuotedValue = (liquidNode | attrSingleQuotedTextNode)*

@@ -31,9 +31,7 @@ function getCssDisplay(
 
   switch (node.type) {
     case NodeTypes.HtmlElement:
-    case NodeTypes.HtmlVoidElement:
-    case NodeTypes.HtmlSelfClosingElement:
-    case NodeTypes.HtmlRawNode: {
+    case NodeTypes.HtmlSelfClosingElement: {
       switch (options.htmlWhitespaceSensitivity) {
         case 'strict':
           return 'inline';
@@ -41,9 +39,24 @@ function getCssDisplay(
           return 'block';
         default: {
           return (
-            (typeof node.name === 'string' && CSS_DISPLAY_TAGS[node.name]) ||
+            (node.name.length === 1 &&
+              node.name[0].type === NodeTypes.TextNode &&
+              CSS_DISPLAY_TAGS[node.name[0].value]) ||
             CSS_DISPLAY_DEFAULT
           );
+        }
+      }
+    }
+
+    case NodeTypes.HtmlVoidElement:
+    case NodeTypes.HtmlRawNode: {
+      switch (options.htmlWhitespaceSensitivity) {
+        case 'strict':
+          return 'inline';
+        case 'ignore':
+          return 'block';
+        default: {
+          return CSS_DISPLAY_TAGS[node.name] || CSS_DISPLAY_DEFAULT;
         }
       }
     }
@@ -112,13 +125,18 @@ function getCssDisplay(
 function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
   switch (node.type) {
     case NodeTypes.HtmlElement:
-    case NodeTypes.HtmlVoidElement:
-    case NodeTypes.HtmlSelfClosingElement:
-    case NodeTypes.HtmlRawNode: {
+    case NodeTypes.HtmlSelfClosingElement: {
       return (
-        (typeof node.name === 'string' && CSS_WHITE_SPACE_TAGS[node.name]) ||
+        (node.name.length === 1 &&
+          node.name[0].type === NodeTypes.TextNode &&
+          CSS_WHITE_SPACE_TAGS[node.name[0].value]) ||
         CSS_WHITE_SPACE_DEFAULT
       );
+    }
+
+    case NodeTypes.HtmlVoidElement:
+    case NodeTypes.HtmlRawNode: {
+      return CSS_WHITE_SPACE_TAGS[node.name] || CSS_WHITE_SPACE_DEFAULT;
     }
 
     case NodeTypes.TextNode:

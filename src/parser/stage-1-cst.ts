@@ -97,17 +97,16 @@ export interface ConcreteBasicNode<T> {
 }
 
 export interface ConcreteHtmlNodeBase<T> extends ConcreteBasicNode<T> {
-  name: string | ConcreteLiquidDrop;
   attrList?: ConcreteAttributeNode[];
 }
 
 export interface ConcreteHtmlDoctype
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlDoctype> {
+  extends ConcreteBasicNode<ConcreteNodeTypes.HtmlDoctype> {
   legacyDoctypeString: string | null;
 }
 
 export interface ConcreteHtmlComment
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlComment> {
+  extends ConcreteBasicNode<ConcreteNodeTypes.HtmlComment> {
   body: string;
 }
 
@@ -125,14 +124,20 @@ export interface ConcreteHtmlVoidElement
   name: string;
 }
 export interface ConcreteHtmlSelfClosingElement
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlSelfClosingElement> {}
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlSelfClosingElement> {
+  name: (ConcreteTextNode | ConcreteLiquidDrop)[];
+}
 export interface ConcreteHtmlTagOpen
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagOpen> {}
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagOpen> {
+  name: (ConcreteTextNode | ConcreteLiquidDrop)[];
+}
 export interface ConcreteHtmlTagClose
-  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagClose> {}
+  extends ConcreteHtmlNodeBase<ConcreteNodeTypes.HtmlTagClose> {
+  name: (ConcreteTextNode | ConcreteLiquidDrop)[];
+}
 
 export interface ConcreteAttributeNodeBase<T> extends ConcreteBasicNode<T> {
-  name: (ConcreteLiquidDrop | string)[];
+  name: (ConcreteLiquidDrop | ConcreteTextNode)[];
   value: (ConcreteLiquidNode | ConcreteTextNode)[];
 }
 
@@ -151,7 +156,7 @@ export interface ConcreteAttrUnquoted
   extends ConcreteAttributeNodeBase<ConcreteNodeTypes.AttrUnquoted> {}
 export interface ConcreteAttrEmpty
   extends ConcreteBasicNode<ConcreteNodeTypes.AttrEmpty> {
-  name: (ConcreteLiquidDrop | string)[];
+  name: (ConcreteLiquidDrop | ConcreteTextNode)[];
 }
 
 export type ConcreteLiquidNode =
@@ -1093,7 +1098,16 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
       source,
     },
 
-    tagNameOrLiquidDrop: 0,
+    leadingTagNamePart: 0,
+    leadingTagNameTextNode: textNode,
+    trailingTagNamePart: 0,
+    trailingTagNameTextNode: textNode,
+    tagName(leadingPart: Node, trailingParts: Node) {
+      const mappings = (this as any).args.mapping;
+      return [leadingPart.toAST(mappings)].concat(
+        trailingParts.toAST(mappings),
+      );
+    },
 
     AttrUnquoted: {
       type: ConcreteNodeTypes.AttrUnquoted,
@@ -1131,7 +1145,7 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
     },
 
     attrName: 0,
-    attrNameTextNode: 0,
+    attrNameTextNode: textNode,
     attrDoubleQuotedValue: 0,
     attrSingleQuotedValue: 0,
     attrUnquotedValue: 0,

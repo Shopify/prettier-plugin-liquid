@@ -1,6 +1,7 @@
 import { AstPath, Doc, doc } from 'prettier';
 import {
   HtmlComment,
+  HtmlElement,
   HtmlNode,
   HtmlSelfClosingElement,
   HtmlVoidElement,
@@ -103,20 +104,10 @@ export function printClosingTagStartMarker(
     return '';
   }
   switch (node.type) {
-    // case 'ieConditionalComment':
-    //   return '<!';
     case NodeTypes.HtmlElement:
+      return `</${getCompoundName(node)}`;
     case NodeTypes.HtmlRawNode:
-      // if (node.hasHtmComponentClosingTag) {
-      //   return '<//';
-      // }
-      if (typeof node.name === 'string') {
-        return `</${node.name}`;
-      } else if (typeof node.name.markup === 'string') {
-        return `</{{ ${node.name.markup.trim()} }}`;
-      } else {
-        return `</{{ ${node.name.markup.rawSource} }}`;
-      }
+      return `</${node.name}`;
     default:
       return '';
   }
@@ -407,31 +398,14 @@ export function printOpeningTagPrefix(
 export function printOpeningTagStartMarker(node: LiquidHtmlNode | undefined) {
   if (!node) return '';
   switch (node.type) {
-    // case 'ieConditionalComment':
-    // case 'ieConditionalStartComment':
-    //   return `<!--[if ${node.condition}`;
-    // case 'ieConditionalEndComment':
-    //   return '<!--<!';
-    // case 'interpolation':
-    //   return '{{';
-    // case 'docType':
-    //   return '<!DOCTYPE';
     case NodeTypes.HtmlComment:
       return '<!--';
     case NodeTypes.HtmlElement:
     case NodeTypes.HtmlSelfClosingElement:
+      return `<${getCompoundName(node)}`;
     case NodeTypes.HtmlVoidElement:
     case NodeTypes.HtmlRawNode:
-      // if (node.condition) {
-      //   return `<!--[if ${node.condition}]><!--><${node.name}`;
-      // }
-      if (typeof node.name === 'string') {
-        return `<${node.name}`;
-      } else if (typeof node.name.markup === 'string') {
-        return `<{{ ${node.name.markup.trim()} }}`;
-      } else {
-        return `<{{ ${node.name.markup.rawSource} }}`;
-      }
+      return `<${node.name}`;
     default:
       return ''; // TODO
   }
@@ -484,4 +458,18 @@ export function getNodeContent(
   }
 
   return options.originalText.slice(start, end);
+}
+
+function getCompoundName(node: HtmlElement | HtmlSelfClosingElement): string {
+  return node.name
+    .map((part) => {
+      if (part.type === NodeTypes.TextNode) {
+        return part.value;
+      } else if (typeof part.markup === 'string') {
+        return `{{ ${part.markup.trim()} }}`;
+      } else {
+        return `{{ ${part.markup.rawSource} }}`;
+      }
+    })
+    .join('');
 }
