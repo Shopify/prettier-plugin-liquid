@@ -320,7 +320,10 @@ function printNode(
           endTag,
         ];
       }
-      if (node.body.includes('prettier-ignore')) {
+      if (
+        node.body.includes('prettier-ignore') ||
+        node.body.startsWith('display:')
+      ) {
         return node.source.slice(node.position.start, node.position.end);
       }
       return [

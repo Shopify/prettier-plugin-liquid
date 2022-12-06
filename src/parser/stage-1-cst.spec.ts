@@ -40,25 +40,53 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
     it('should basically parse open and close tags', () => {
       ['<div></div>', '<div ></div >'].forEach((text) => {
         cst = toLiquidHtmlCST(text);
-        expectPath(cst, '0.type').to.equal('HtmlTagOpen');
-        expectPath(cst, '0.name').to.equal('div');
-        expectPath(cst, '1.type').to.equal('HtmlTagClose');
-        expectPath(cst, '1.name').to.equal('div');
+        expectPath(cst, '0.type').to.eql('HtmlTagOpen');
+        expectPath(cst, '0.name.0.value').to.eql('div');
+        expectPath(cst, '1.type').to.eql('HtmlTagClose');
+        expectPath(cst, '1.name.0.value').to.eql('div');
       });
+    });
+
+    it('should parse compound tag names', () => {
+      cst = toLiquidHtmlCST('<{{header_type}}--header></{{header_type}}--header>');
+      expectPath(cst, '0.type').to.eql('HtmlTagOpen');
+      expectPath(cst, '0.name.0.type').to.eql('LiquidDrop');
+      expectPath(cst, '0.name.0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.name.0.markup.rawSource').to.eql('header_type');
+      expectPath(cst, '0.name.1.value').to.eql('--header');
+      expectPath(cst, '1.type').to.eql('HtmlTagClose');
+      expectPath(cst, '1.name.0.type').to.eql('LiquidDrop');
+      expectPath(cst, '1.name.0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.name.0.markup.rawSource').to.eql('header_type');
+      expectPath(cst, '1.name.1.value').to.eql('--header');
+
+      cst = toLiquidHtmlCST('<header--{{header_type}} ></header--{{header_type}} >');
+      expectPath(cst, '0.type').to.eql('HtmlTagOpen');
+      expectPath(cst, '0.name.0.type').to.eql('TextNode');
+      expectPath(cst, '0.name.0.value').to.eql('header--');
+      expectPath(cst, '0.name.1.type').to.eql('LiquidDrop');
+      expectPath(cst, '0.name.1.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.name.1.markup.rawSource').to.eql('header_type');
+      expectPath(cst, '1.type').to.eql('HtmlTagClose');
+      expectPath(cst, '1.name.0.type').to.eql('TextNode');
+      expectPath(cst, '1.name.0.value').to.eql('header--');
+      expectPath(cst, '1.name.1.type').to.eql('LiquidDrop');
+      expectPath(cst, '1.name.1.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.name.1.markup.rawSource').to.eql('header_type');
     });
 
     it('should parse liquid drop tag names', () => {
       cst = toLiquidHtmlCST('<{{ node_type }}></{{ node_type }}>');
       expectPath(cst, '0.type').to.equal('HtmlTagOpen');
-      expectPath(cst, '0.name.type').to.equal('LiquidDrop');
-      expectPath(cst, '0.name.markup.type').to.equal('LiquidVariable');
-      expectPath(cst, '0.name.markup.expression.type').to.equal('VariableLookup');
-      expectPath(cst, '0.name.markup.expression.name').to.equal('node_type');
+      expectPath(cst, '0.name.0.type').to.equal('LiquidDrop');
+      expectPath(cst, '0.name.0.markup.type').to.equal('LiquidVariable');
+      expectPath(cst, '0.name.0.markup.expression.type').to.equal('VariableLookup');
+      expectPath(cst, '0.name.0.markup.expression.name').to.equal('node_type');
       expectPath(cst, '1.type').to.equal('HtmlTagClose');
-      expectPath(cst, '1.name.type').to.equal('LiquidDrop');
-      expectPath(cst, '1.name.markup.type').to.equal('LiquidVariable');
-      expectPath(cst, '1.name.markup.expression.type').to.equal('VariableLookup');
-      expectPath(cst, '1.name.markup.expression.name').to.equal('node_type');
+      expectPath(cst, '1.name.0.type').to.equal('LiquidDrop');
+      expectPath(cst, '1.name.0.markup.type').to.equal('LiquidVariable');
+      expectPath(cst, '1.name.0.markup.expression.type').to.equal('VariableLookup');
+      expectPath(cst, '1.name.0.markup.expression.name').to.equal('node_type');
     });
 
     it('should parse script and style tags as a dump', () => {
@@ -88,7 +116,8 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         cst = toLiquidHtmlCST(`<${voidElementName} disabled>`);
         expectPath(cst, '0.type').to.equal('HtmlVoidElement');
         expectPath(cst, '0.name').to.equal(voidElementName);
-        expectPath(cst, '0.attrList.0.name').to.eql(['disabled']);
+        expectPath(cst, '0.attrList.0.name.0.type').to.eql('TextNode');
+        expectPath(cst, '0.attrList.0.name.0.value').to.eql('disabled');
       });
     });
 
@@ -96,7 +125,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       ['<div empty>', '<div empty >', '<div\nempty\n>'].forEach((text) => {
         cst = toLiquidHtmlCST(text);
         expectPath(cst, '0.attrList.0.type').to.equal('AttrEmpty');
-        expectPath(cst, '0.attrList.0.name').to.eql(['empty']);
+        expectPath(cst, '0.attrList.0.name.0.value').to.eql('empty');
         expectPath(cst, '0.name.attrList.0.value').to.be.undefined;
       });
     });
@@ -114,7 +143,7 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
         ].forEach((text) => {
           cst = toLiquidHtmlCST(text);
           expectPath(cst, '0.attrList.0.type').to.equal(testConfig.type);
-          expectPath(cst, '0.attrList.0.name').to.eql([testConfig.name]);
+          expectPath(cst, '0.attrList.0.name.0.value').to.eql(testConfig.name);
           expectPath(cst, '0.attrList.0.value.0.type').to.eql('TextNode');
           expectPath(cst, '0.attrList.0.value.0.value').to.eql(testConfig.name);
         });

@@ -1,7 +1,6 @@
 import {
   HtmlSelfClosingElement,
   LiquidHtmlNode,
-  LiquidParserOptions,
   NodeTypes,
   TextNode,
   LiquidNode,
@@ -13,6 +12,7 @@ import {
   HtmlElement,
   LiquidTag,
   AttributeNode,
+  LiquidDrop,
 } from '~/types';
 import { isEmpty } from '~/printer/utils/array';
 
@@ -214,8 +214,7 @@ export function forceBreakContent(node: LiquidHtmlNode) {
     forceBreakChildren(node) ||
     (node.type === NodeTypes.HtmlElement &&
       node.children.length > 0 &&
-      typeof node.name === 'string' &&
-      (['body', 'script', 'style'].includes(node.name) ||
+      (isTagNameIncluded(['body', 'script', 'style'], node.name) ||
         node.children.some((child) => hasNonTextChild(child)))) ||
     (node.firstChild &&
       node.firstChild === node.lastChild &&
@@ -231,8 +230,7 @@ export function forceBreakChildren(node: LiquidHtmlNode) {
   return (
     node.type === NodeTypes.HtmlElement &&
     node.children.length > 0 &&
-    typeof node.name === 'string' &&
-    (['html', 'head', 'ul', 'ol', 'select'].includes(node.name) ||
+    (isTagNameIncluded(['html', 'head', 'ul', 'ol', 'select'], node.name) ||
       (node.cssDisplay.startsWith('table') && node.cssDisplay !== 'table-cell'))
   );
 }
@@ -243,10 +241,7 @@ export function preferHardlineAsSurroundingSpaces(node: LiquidHtmlNode) {
     case NodeTypes.HtmlComment:
       return true;
     case NodeTypes.HtmlElement:
-      return (
-        typeof node.name === 'string' &&
-        ['script', 'select'].includes(node.name)
-      );
+      return isTagNameIncluded(['script', 'select'], node.name);
     case NodeTypes.LiquidTag:
       if (
         (node.prev && isTextLikeNode(node.prev)) ||
@@ -275,7 +270,8 @@ export function preferHardlineAsTrailingSpaces(node: LiquidHtmlNode) {
     (isLiquidNode(node) &&
       node.next &&
       (isLiquidNode(node.next) || isHtmlNode(node.next))) ||
-    (node.type === NodeTypes.HtmlElement && node.name === 'br') ||
+    (node.type === NodeTypes.HtmlElement &&
+      isTagNameIncluded(['br'], node.name)) ||
     hasSurroundingLineBreak(node)
   );
 }
@@ -342,4 +338,12 @@ function hasLineBreakInRange(source: string, start: number, end: number) {
 
 export function getLastDescendant(node: LiquidHtmlNode): LiquidHtmlNode {
   return node.lastChild ? getLastDescendant(node.lastChild) : node;
+}
+
+function isTagNameIncluded(
+  collection: string[],
+  name: (TextNode | LiquidDrop)[],
+): boolean {
+  if (name.length !== 1 || name[0].type !== NodeTypes.TextNode) return false;
+  return collection.includes(name[0].value);
 }

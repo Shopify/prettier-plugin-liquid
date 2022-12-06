@@ -8,6 +8,11 @@ describe('Unit: liquidHtmlGrammar', () => {
     expectMatchSucceeded('<a src="https://google.com"></b>').to.be.true;
     expectMatchSucceeded(`<img src="hello" loading='lazy' enabled=true disabled>`).to.be.true;
     expectMatchSucceeded(`<img src="hello" loading='lazy' enabled=true disabled />`).to.be.true;
+    expectMatchSucceeded(`<{{header_type}}-header>`).to.be.true;
+    expectMatchSucceeded(`<header--{{header_type}}>`).to.be.true;
+    expectMatchSucceeded(`<-nope>`).to.be.false;
+    expectMatchSucceeded(`<:nope>`).to.be.false;
+    expectMatchSucceeded(`<1nope>`).to.be.false;
     expectMatchSucceeded(`{{ product.feature }}`).to.be.true;
     expectMatchSucceeded(`{{product.feature}}`).to.be.true;
     expectMatchSucceeded(`{%- if A -%}`).to.be.true;

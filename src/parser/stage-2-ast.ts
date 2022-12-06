@@ -396,15 +396,29 @@ export type HtmlNode =
   | HtmlRawNode;
 
 export interface HtmlElement extends HtmlNodeBase<NodeTypes.HtmlElement> {
-  blockEndPosition: Position;
+  /**
+   * The name of the tag can be compound
+   * @example <{{ header_type }}--header />
+   */
+  name: (TextNode | LiquidDrop)[];
   children: LiquidHtmlNode[];
+  blockEndPosition: Position;
 }
+
+export interface HtmlSelfClosingElement
+  extends HtmlNodeBase<NodeTypes.HtmlSelfClosingElement> {
+  /**
+   * The name of the tag can be compound
+   * @example <{{ header_type }}--header />
+   */
+  name: (TextNode | LiquidDrop)[];
+}
+
 export interface HtmlVoidElement
   extends HtmlNodeBase<NodeTypes.HtmlVoidElement> {
   name: string;
 }
-export interface HtmlSelfClosingElement
-  extends HtmlNodeBase<NodeTypes.HtmlSelfClosingElement> {}
+
 export interface HtmlRawNode extends HtmlNodeBase<NodeTypes.HtmlRawNode> {
   /**
    * The innerHTML of the tag as a string. Not trimmed. Not parsed.
@@ -438,10 +452,6 @@ export interface HtmlComment extends ASTNode<NodeTypes.HtmlComment> {
 }
 
 export interface HtmlNodeBase<T> extends ASTNode<T> {
-  /**
-   * e.g. div, span, h1, h2, h3...
-   */
-  name: string | LiquidDrop;
   attributes: AttributeNode[];
   blockStartPosition: Position;
 }
@@ -460,13 +470,13 @@ export interface AttrDoubleQuoted
 export interface AttrUnquoted
   extends AttributeNodeBase<NodeTypes.AttrUnquoted> {}
 export interface AttrEmpty extends ASTNode<NodeTypes.AttrEmpty> {
-  name: (LiquidDrop | string)[];
+  name: (TextNode | LiquidDrop)[];
 }
 
 export type ValueNode = TextNode | LiquidNode;
 
 export interface AttributeNodeBase<T> extends ASTNode<T> {
-  name: (LiquidDrop | string)[];
+  name: (TextNode | LiquidDrop)[];
   value: ValueNode[];
   attributePosition: Position;
 }
@@ -609,14 +619,22 @@ function getName(
   if (!node) return null;
   switch (node.type) {
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlSelfClosingElement:
     case ConcreteNodeTypes.HtmlTagClose:
-      if (typeof node.name === 'string') {
-        return node.name;
-      } else if (typeof node.name.markup === 'string') {
-        return `{{${node.name.markup.trim()}}}`;
-      } else {
-        return `{{${node.name.markup.rawSource}}}`;
-      }
+      return node.name
+        .map((part) => {
+          if (
+            part.type === NodeTypes.TextNode ||
+            part.type == ConcreteNodeTypes.TextNode
+          ) {
+            return part.value;
+          } else if (typeof part.markup === 'string') {
+            return `{{${part.markup.trim()}}}`;
+          } else {
+            return `{{${part.markup.rawSource}}}`;
+          }
+        })
+        .join('');
     case NodeTypes.AttrUnquoted:
     case NodeTypes.AttrDoubleQuoted:
     case NodeTypes.AttrSingleQuoted:
@@ -644,12 +662,7 @@ export function cstToAst(
   for (const node of cst) {
     switch (node.type) {
       case ConcreteNodeTypes.TextNode: {
-        builder.push({
-          type: NodeTypes.TextNode,
-          value: node.value,
-          position: position(node),
-          source: node.source,
-        });
+        builder.push(toTextNode(node));
         break;
       }
 
@@ -760,7 +773,7 @@ export function cstToAst(
       case ConcreteNodeTypes.AttrEmpty: {
         builder.push({
           type: NodeTypes.AttrEmpty,
-          name: toAttributeName(node.name),
+          name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
           position: position(node),
           source: node.source,
         });
@@ -776,7 +789,7 @@ export function cstToAst(
               | NodeTypes.AttrSingleQuoted
               | NodeTypes.AttrDoubleQuoted
               | NodeTypes.AttrUnquoted,
-            name: toAttributeName(node.name),
+            name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
             position: position(node),
             source: node.source,
 
@@ -808,18 +821,6 @@ export function cstToAst(
   }
 
   return builder.ast;
-}
-
-function toAttributeName(
-  nameArray: (string | ConcreteLiquidDrop)[],
-): (string | LiquidDrop)[] {
-  return nameArray.map((part) => {
-    if (typeof part === 'string') {
-      return part;
-    } else {
-      return toLiquidDrop(part);
-    }
-  });
 }
 
 function toAttributePosition(
@@ -860,11 +861,6 @@ function toAttributeValue(
 
 function toAttributes(attrList: ConcreteAttributeNode[]): AttributeNode[] {
   return cstToAst(attrList) as AttributeNode[];
-}
-
-function toName(name: string | ConcreteLiquidDrop) {
-  if (typeof name === 'string') return name;
-  return toLiquidDrop(name);
 }
 
 function liquidTagBaseAttributes(
@@ -1175,7 +1171,8 @@ function toRawMarkupKindFromHtmlNode(node: ConcreteHtmlRawTag): RawMarkupKinds {
           'name' in attr &&
           typeof attr.name !== 'string' &&
           attr.name.length === 1 &&
-          attr.name[0] === 'type',
+          attr.name[0].type === ConcreteNodeTypes.TextNode &&
+          attr.name[0].value === 'type',
       );
 
       if (
@@ -1421,7 +1418,7 @@ function toNamedArgument(
 function toHtmlElement(node: ConcreteHtmlTagOpen): HtmlElement {
   return {
     type: NodeTypes.HtmlElement,
-    name: toName(node.name),
+    name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
     attributes: toAttributes(node.attrList || []),
     position: position(node),
     blockStartPosition: position(node),
@@ -1447,10 +1444,19 @@ function toHtmlSelfClosingElement(
 ): HtmlSelfClosingElement {
   return {
     type: NodeTypes.HtmlSelfClosingElement,
-    name: toName(node.name),
+    name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
     attributes: toAttributes(node.attrList || []),
     position: position(node),
     blockStartPosition: position(node),
+    source: node.source,
+  };
+}
+
+function toTextNode(node: ConcreteTextNode): TextNode {
+  return {
+    type: NodeTypes.TextNode,
+    value: node.value,
+    position: position(node),
     source: node.source,
   };
 }

@@ -125,29 +125,50 @@ export type LiquidPrinter = (
 // level typescript kung-fu shit.
 //
 // We have an AST, right? And we want to augment every node in the AST with
-// new properties. But we don't want to traverse the tree and repeat
-// ourselves. So we use a mapped type to map on the properties of T to do
-// the following:
+// new properties. But we don't want to have to _rewrite_ all of the types
+// of all the AST nodes that were augmented. So we use this neat little
+// trick that will surprise you:
 //
-// - If the property is an array of LiquidHtmlNode, we'll map that to an array of
-// Augmented<T[property]> instead.
+// - If the property was   LiquidNode[],
+//   then we'll map it to  Augmented<LiquidNode>[];
 //
-// - If the property is a something | LiquidHtmlNode, then we'll map that type
-// to something | Augmented<T[Property]>
+// - If the property was   (string | number)[],
+//   then we'll map it to  (string | number)[];
 //
-// So this thing will go through node.name, node.children, node.attributes,
-// and so on and give us augmented types.
+// - If the property was   string | LiquidNode,
+//   then we'll map it to  string | Augmented<LiquidNode>;
+//
+// - If the property was   LiquidNode,
+//   then we'll map it to  Augmented<LiquidNode>;
+//
+// - If the property was   string,
+//   then we'll map it to  string;
+//
+// So, Augmented<LiquidTag, WithParent> =>
+//  - LiquidTag with a parentNode,
+//  - LiquidTag.children all have a parentNode since LiquidTag.children is LiquidHtmlNode, then
+//  - LiquidTag.markup all have a parentNode since LiquidTag.markup may be LiquidTagAssignMarkup.
+//  - LiquidTag.name will remain a string
+//
+// Topics to google to understand what's going on:
+//  - TypeScript generic types (for creating types from types)
+//  - TypeScript mapped types (for mapping the input type's properties to new types)
+//  - TypeScript union types (A | B | C)
+//  - TypeScript conditional types (and the section on distribution for union types)
 //
 // prettier-ignore
 export type Augmented<T, Aug> = {
   [Property in keyof T]: [T[Property]] extends [(infer Item)[] | undefined]
-    ? [Item] extends [AST.LiquidHtmlNode]
-      ? Augmented<Item, Aug>[]
-      : Item[]
-    : T[Property] extends infer P // this here is to distribute the condition
-      ? P extends AST.LiquidHtmlNode // so string and LiquidDrop go through this check independently
-        ? Augmented<P, Aug>
-        : P
+    // First branch: property?: Item[]
+    ? [Item] extends [AST.LiquidHtmlNode] // If *all* Item extend AST.LiquidHtmlNode
+      ? Augmented<Item, Aug>[]            // If yes, => Augmented<Node>[]
+      : Item[]                            // If not, => string[], number[], etc.
+
+    // Second branch: property is NOT Item[]
+    : T[Property] extends infer P    // T[Property] to distributed P alias
+      ? P extends AST.LiquidHtmlNode // Distribute if P extends AST.LiquidHtmlNode
+        ? Augmented<P, Aug>          // => If yes, => Augmented<Node>
+        : P                          // => If not, => string, number, Position, etc.
       : never;
 } & Aug;
 
