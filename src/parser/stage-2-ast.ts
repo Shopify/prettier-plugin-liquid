@@ -582,7 +582,7 @@ class ASTBuilder {
     node: ConcreteLiquidTagClose | ConcreteHtmlTagClose,
     nodeType: NodeTypes.LiquidTag | NodeTypes.HtmlElement,
   ) {
-    if (this.parent?.type === NodeTypes.LiquidBranch) {
+    if (isLiquidBranch(this.parent)) {
       this.parent.position.end = node.locStart;
       this.cursor.pop();
       this.cursor.pop();
@@ -593,12 +593,15 @@ class ASTBuilder {
       this.parent?.type !== nodeType
     ) {
       throw new LiquidHTMLASTParsingError(
-        `Attempting to close ${nodeType} '${node.name}' before ${this.parent?.type} '${this.parent?.name}' was closed`,
+        `Attempting to close ${nodeType} '${node.name}' before ${
+          this.parent?.type
+        } '${getName(this.parent)}' was closed`,
         this.source,
         this.parent?.position?.start || 0,
         node.locEnd,
       );
     }
+
     // The parent end is the end of the outer tag.
     this.parent.position.end = node.locEnd;
     this.parent.blockEndPosition = position(node);
@@ -612,6 +615,12 @@ class ASTBuilder {
     this.cursor.pop();
     this.cursor.pop();
   }
+}
+
+function isLiquidBranch(
+  node: LiquidHtmlNode | undefined,
+): node is LiquidBranchNode<any, any> {
+  return !!node && node.type === NodeTypes.LiquidBranch;
 }
 
 function getName(
@@ -819,6 +828,17 @@ export function cstToAst(
         assertNever(node);
       }
     }
+  }
+
+  if (builder.cursor.length !== 0) {
+    throw new LiquidHTMLASTParsingError(
+      `Attempting to end parsing before ${builder.parent?.type} '${getName(
+        builder.parent,
+      )}' was closed`,
+      builder.source,
+      builder.source.length - 1,
+      builder.source.length,
+    );
   }
 
   return builder.ast;
