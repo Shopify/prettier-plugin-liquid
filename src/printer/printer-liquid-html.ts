@@ -22,6 +22,7 @@ import {
   DocumentNode,
   LiquidRawTag,
   AttrEmpty,
+  nonTraversableProperties,
 } from '~/types';
 import { assertNever } from '~/utils';
 
@@ -561,14 +562,6 @@ function printNode(
   }
 }
 
-const ignoredKeys = new Set([
-  'prev',
-  'parentNode',
-  'next',
-  'firstChild',
-  'lastChild',
-]);
-
 export const printerLiquidHtml: Printer<LiquidHtmlNode> & {
   preprocess: any;
 } & { getVisitorKeys: any } = {
@@ -577,7 +570,8 @@ export const printerLiquidHtml: Printer<LiquidHtmlNode> & {
   preprocess,
   getVisitorKeys(node: any, nonTraversableKeys: Set<string>) {
     return Object.keys(node).filter(
-      (key) => !nonTraversableKeys.has(key) && !ignoredKeys.has(key),
+      (key) =>
+        !nonTraversableKeys.has(key) && !nonTraversableProperties.has(key),
     );
   },
 };

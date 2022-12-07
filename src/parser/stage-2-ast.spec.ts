@@ -476,7 +476,7 @@ describe('Unit: toLiquidHtmlAST', () => {
             },
           },
         ].forEach(({ expression, markup }) => {
-          ast = toLiquidHtmlAST(`{% ${tagName} ${expression} -%}`);
+          ast = toLiquidHtmlAST(`{% ${tagName} ${expression} -%}{% end${tagName} %}`);
           expectPath(ast, 'children.0.type').to.equal('LiquidTag');
           expectPath(ast, 'children.0.name').to.equal(tagName);
           let cursor: any = markup;
@@ -626,6 +626,22 @@ describe('Unit: toLiquidHtmlAST', () => {
         toLiquidHtmlAST(testCase);
         expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
       } catch (e) {
+        expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
+      }
+    }
+  });
+
+  it('should throw when trying to end doc with unclosed nodes', () => {
+    const testCases = ['<p><div>', '{% if condition %}', '<script>', '<{{ node_type }}>'];
+    for (const testCase of testCases) {
+      try {
+        toLiquidHtmlAST(testCase);
+        expect(true, `expected ${testCase} to throw LiquidHTMLASTParsingError`).to.be.false;
+      } catch (e) {
+        if (e.name === 'AssertionError') {
+          console.log(e);
+        }
         expect(e.name).to.eql('LiquidHTMLParsingError');
         expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
       }

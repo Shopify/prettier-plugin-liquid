@@ -11,7 +11,7 @@ It should strip arguments from javascript tags
 {% endjavascript %}
 
 It should strip arguments from else tags
-{% else what %}
+{% if cond %}{% else what %}{% endif %}
 
 It should strip arguments from break tags
 {% break what %}
