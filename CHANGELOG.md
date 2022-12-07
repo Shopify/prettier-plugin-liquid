@@ -1,4 +1,12 @@
 
+1.0.0-rc.3 / 2022-12-07
+=======================
+
+## Fixes
+
+  * Top level unclosed tags should throw errors ([#140](https://github.com/shopify/prettier-plugin-liquid/issues/140))
+  * Change README production notice to production-ready :)
+
 1.0.0-rc.2 / 2022-12-06
 =======================
 
