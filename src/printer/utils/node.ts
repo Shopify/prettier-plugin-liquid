@@ -13,6 +13,8 @@ import {
   LiquidTag,
   AttributeNode,
   LiquidDrop,
+  HtmlDanglingMarkerOpen,
+  HtmlDanglingMarkerClose,
 } from '~/types';
 import { isEmpty } from '~/printer/utils/array';
 
@@ -28,8 +30,31 @@ export function isPreLikeNode(node: { cssWhitespace: string }) {
 // Comments are also considered self-closing.
 export function hasNoCloseMarker(
   node: LiquidHtmlNode,
-): node is HtmlComment | HtmlVoidElement | HtmlSelfClosingElement {
-  return isSelfClosing(node) || isVoidElement(node) || isHtmlComment(node);
+): node is
+  | HtmlComment
+  | HtmlVoidElement
+  | HtmlSelfClosingElement
+  | HtmlDanglingMarkerOpen
+  | HtmlDanglingMarkerClose {
+  return (
+    isSelfClosing(node) ||
+    isVoidElement(node) ||
+    isHtmlComment(node) ||
+    isHtmlDanglingMarkerOpen(node) ||
+    isHtmlDanglingMarkerClose(node)
+  );
+}
+
+export function isHtmlDanglingMarkerOpen(
+  node: LiquidHtmlNode,
+): node is HtmlDanglingMarkerOpen {
+  return node.type === NodeTypes.HtmlDanglingMarkerOpen;
+}
+
+export function isHtmlDanglingMarkerClose(
+  node: LiquidHtmlNode,
+): node is HtmlDanglingMarkerClose {
+  return node.type === NodeTypes.HtmlDanglingMarkerClose;
 }
 
 export function isHtmlComment(node: LiquidHtmlNode): node is HtmlComment {

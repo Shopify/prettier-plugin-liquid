@@ -17,6 +17,8 @@ export enum NodeTypes {
   HtmlDoctype = 'HtmlDoctype',
   HtmlComment = 'HtmlComment',
   HtmlElement = 'HtmlElement',
+  HtmlDanglingMarkerOpen = 'HtmlDanglingMarkerOpen',
+  HtmlDanglingMarkerClose = 'HtmlDanglingMarkerClose',
   HtmlRawNode = 'HtmlRawNode',
   AttrSingleQuoted = 'AttrSingleQuoted',
   AttrDoubleQuoted = 'AttrDoubleQuoted',
@@ -91,6 +93,8 @@ export enum Comparators {
 
 export const HtmlNodeTypes = [
   NodeTypes.HtmlElement,
+  NodeTypes.HtmlDanglingMarkerOpen,
+  NodeTypes.HtmlDanglingMarkerClose,
   NodeTypes.HtmlRawNode,
   NodeTypes.HtmlVoidElement,
   NodeTypes.HtmlSelfClosingElement,
@@ -246,6 +250,14 @@ export type LiquidDrop = Augmented<AST.LiquidDrop, AllAugmentations>;
 export type HtmlNode = Augmented<AST.HtmlNode, AllAugmentations>;
 export type HtmlTag = Exclude<HtmlNode, HtmlComment>;
 export type HtmlElement = Augmented<AST.HtmlElement, AllAugmentations>;
+export type HtmlDanglingMarkerOpen = Augmented<
+  AST.HtmlDanglingMarkerOpen,
+  AllAugmentations
+>;
+export type HtmlDanglingMarkerClose = Augmented<
+  AST.HtmlDanglingMarkerClose,
+  AllAugmentations
+>;
 export type HtmlVoidElement = Augmented<AST.HtmlVoidElement, AllAugmentations>;
 export type HtmlSelfClosingElement = Augmented<
   AST.HtmlSelfClosingElement,

@@ -70,6 +70,7 @@ import {
   ConcreteLiquidTagCycleMarkup,
   ConcreteHtmlRawTag,
   ConcreteLiquidRawTag,
+  LiquidHtmlConcreteNode,
 } from '~/parser/stage-1-cst';
 import {
   Comparators,
@@ -153,10 +154,13 @@ export interface HasValue {
 export interface HasName {
   name: string | LiquidDrop;
 }
+export interface HasCompoundName {
+  name: (TextNode | LiquidNode)[];
+}
 
 export type ParentNode = Extract<
   LiquidHtmlNode,
-  HasChildren | HasAttributes | HasValue | HasName
+  HasChildren | HasAttributes | HasValue | HasName | HasCompoundName
 >;
 
 export interface LiquidRawTag extends ASTNode<NodeTypes.LiquidRawTag> {
@@ -415,6 +419,8 @@ interface LiquidVariableLookup extends ASTNode<NodeTypes.VariableLookup> {
 export type HtmlNode =
   | HtmlComment
   | HtmlElement
+  | HtmlDanglingMarkerOpen
+  | HtmlDanglingMarkerClose
   | HtmlVoidElement
   | HtmlSelfClosingElement
   | HtmlRawNode;
@@ -427,6 +433,17 @@ export interface HtmlElement extends HtmlNodeBase<NodeTypes.HtmlElement> {
   name: (TextNode | LiquidDrop)[];
   children: LiquidHtmlNode[];
   blockEndPosition: Position;
+}
+
+export interface HtmlDanglingMarkerOpen
+  extends HtmlNodeBase<NodeTypes.HtmlDanglingMarkerOpen> {
+  name: (TextNode | LiquidDrop)[];
+}
+
+export interface HtmlDanglingMarkerClose
+  extends ASTNode<NodeTypes.HtmlDanglingMarkerClose> {
+  name: (TextNode | LiquidDrop)[];
+  blockStartPosition: Position;
 }
 
 export interface HtmlSelfClosingElement
@@ -536,6 +553,15 @@ function isLiquidBranchDisguisedAsTag(
   );
 }
 
+function isConcreteLiquidBranchDisguisedAsTag(
+  node: LiquidHtmlConcreteNode,
+): node is ConcreteLiquidNode & { name: 'else' | 'eslif' | 'when' } {
+  return (
+    node.type === ConcreteNodeTypes.LiquidTag &&
+    ['else', 'eslif', 'when'].includes(node.name)
+  );
+}
+
 export function toLiquidAST(source: string) {
   const cst = toLiquidCST(source);
   const root: DocumentNode = {
@@ -588,6 +614,11 @@ class ASTBuilder {
   get parent(): ParentNode | undefined {
     if (this.cursor.length == 0) return undefined;
     return deepGet<LiquidTag | HtmlElement>(dropLast(1, this.cursor), this.ast);
+  }
+
+  get grandparent(): ParentNode | undefined {
+    if (this.cursor.length < 4) return undefined;
+    return deepGet<LiquidTag | HtmlElement>(dropLast(3, this.cursor), this.ast);
   }
 
   open(node: LiquidHtmlNode) {
@@ -682,6 +713,8 @@ function getName(
   if (!node) return null;
   switch (node.type) {
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlDanglingMarkerOpen:
+    case NodeTypes.HtmlDanglingMarkerClose:
     case NodeTypes.HtmlSelfClosingElement:
     case ConcreteNodeTypes.HtmlTagClose:
       return node.name
@@ -698,6 +731,7 @@ function getName(
           }
         })
         .join('');
+    case NodeTypes.AttrEmpty:
     case NodeTypes.AttrUnquoted:
     case NodeTypes.AttrDoubleQuoted:
     case NodeTypes.AttrSingleQuoted:
@@ -745,7 +779,9 @@ function buildAst(
 ) {
   const builder = new ASTBuilder(cst[0].source);
 
-  for (const node of cst) {
+  for (let i = 0; i < cst.length; i++) {
+    const node = cst[i];
+
     switch (node.type) {
       case ConcreteNodeTypes.TextNode: {
         builder.push(toTextNode(node));
@@ -797,12 +833,20 @@ function buildAst(
       }
 
       case ConcreteNodeTypes.HtmlTagOpen: {
-        builder.open(toHtmlElement(node, options));
+        if (isAcceptableDanglingMarkerOpen(builder, cst as LiquidHtmlCST, i)) {
+          builder.push(toHtmlDanglingMarkerOpen(node, options));
+        } else {
+          builder.open(toHtmlElement(node, options));
+        }
         break;
       }
 
       case ConcreteNodeTypes.HtmlTagClose: {
-        builder.close(node, NodeTypes.HtmlElement);
+        if (isAcceptableDanglingMarkerClose(builder, cst as LiquidHtmlCST, i)) {
+          builder.push(toHtmlDanglingMarkerClose(node, options));
+        } else {
+          builder.close(node, NodeTypes.HtmlElement);
+        }
         break;
       }
 
@@ -1529,6 +1573,33 @@ function toHtmlElement(
   };
 }
 
+function toHtmlDanglingMarkerOpen(
+  node: ConcreteHtmlTagOpen,
+  options: AstBuildOptions,
+): HtmlDanglingMarkerOpen {
+  return {
+    type: NodeTypes.HtmlDanglingMarkerOpen,
+    name: cstToAst(node.name, options) as (TextNode | LiquidDrop)[],
+    attributes: toAttributes(node.attrList || [], options),
+    position: position(node),
+    blockStartPosition: position(node),
+    source: node.source,
+  };
+}
+
+function toHtmlDanglingMarkerClose(
+  node: ConcreteHtmlTagClose,
+  options: AstBuildOptions,
+): HtmlDanglingMarkerClose {
+  return {
+    type: NodeTypes.HtmlDanglingMarkerClose,
+    name: cstToAst(node.name, options) as (TextNode | LiquidDrop)[],
+    position: position(node),
+    blockStartPosition: position(node),
+    source: node.source,
+  };
+}
+
 function toHtmlVoidElement(
   node: ConcreteHtmlVoidElement,
   options: AstBuildOptions,
@@ -1564,6 +1635,89 @@ function toTextNode(node: ConcreteTextNode): TextNode {
     position: position(node),
     source: node.source,
   };
+}
+
+const MAX_NUMBER_OF_SIBLING_DANGLING_NODES = 2;
+
+function isAcceptableDanglingMarkerOpen(
+  builder: ASTBuilder,
+  cst: LiquidHtmlCST,
+  currIndex: number,
+): boolean {
+  return isAcceptableDanglingMarker(
+    builder,
+    cst,
+    currIndex,
+    ConcreteNodeTypes.HtmlTagOpen,
+  );
+}
+
+function isAcceptableDanglingMarkerClose(
+  builder: ASTBuilder,
+  cst: LiquidHtmlCST,
+  currIndex: number,
+): boolean {
+  return isAcceptableDanglingMarker(
+    builder,
+    cst,
+    currIndex,
+    ConcreteNodeTypes.HtmlTagClose,
+  );
+}
+
+function isAcceptableDanglingMarker(
+  builder: ASTBuilder,
+  cst: LiquidHtmlCST,
+  currIndex: number,
+  nodeType: ConcreteNodeTypes.HtmlTagOpen | ConcreteNodeTypes.HtmlTagClose,
+): boolean {
+  if (!isAcceptingDanglingMarkers(builder, nodeType)) {
+    return false;
+  }
+
+  const maxIndex = Math.min(
+    cst.length,
+    currIndex + MAX_NUMBER_OF_SIBLING_DANGLING_NODES - builder.current.length,
+  );
+
+  for (let i = currIndex; i <= maxIndex; i++) {
+    if (isConcreteExceptionEnd(cst[i])) {
+      return true;
+    }
+    if (cst[i].type !== nodeType) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+const DanglingMapping = {
+  [ConcreteNodeTypes.HtmlTagOpen]: NodeTypes.HtmlDanglingMarkerOpen,
+  [ConcreteNodeTypes.HtmlTagClose]: NodeTypes.HtmlDanglingMarkerClose,
+} as const;
+
+function isAcceptingDanglingMarkers(
+  builder: ASTBuilder,
+  nodeType: ConcreteNodeTypes.HtmlTagOpen | ConcreteNodeTypes.HtmlTagClose,
+) {
+  const { parent, grandparent } = builder;
+  if (!parent || !grandparent) return false;
+  return (
+    parent.type === NodeTypes.LiquidBranch &&
+    grandparent.type === NodeTypes.LiquidTag &&
+    ['if', 'unless', 'case'].includes(grandparent.name) &&
+    builder.current.every((node) => node.type === DanglingMapping[nodeType])
+  );
+}
+
+// checking that is a {% else %} or {% endif %}
+function isConcreteExceptionEnd(node: LiquidHtmlConcreteNode | undefined) {
+  return (
+    !node ||
+    node.type === ConcreteNodeTypes.LiquidTagClose ||
+    isConcreteLiquidBranchDisguisedAsTag(node)
+  );
 }
 
 function markup(name: string, markup: string) {

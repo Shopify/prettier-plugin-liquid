@@ -1,14 +1,15 @@
 import { AstPath, Doc, doc } from 'prettier';
 import {
-  HtmlComment,
+  HtmlDanglingMarkerOpen,
+  HtmlDanglingMarkerClose,
   HtmlElement,
   HtmlNode,
   HtmlSelfClosingElement,
-  HtmlVoidElement,
   LiquidHtmlNode,
   LiquidParserOptions,
   LiquidPrinter,
   NodeTypes,
+  Position,
 } from '~/types';
 import {
   getLastDescendant,
@@ -415,7 +416,10 @@ export function printOpeningTagStartMarker(node: LiquidHtmlNode | undefined) {
       return '<!--';
     case NodeTypes.HtmlElement:
     case NodeTypes.HtmlSelfClosingElement:
+    case NodeTypes.HtmlDanglingMarkerOpen:
       return `<${getCompoundName(node)}`;
+    case NodeTypes.HtmlDanglingMarkerClose:
+      return `</${getCompoundName(node)}`;
     case NodeTypes.HtmlVoidElement:
     case NodeTypes.HtmlRawNode:
       return `<${node.name}`;
@@ -435,6 +439,8 @@ export function printOpeningTagEndMarker(node: LiquidHtmlNode | undefined) {
     case NodeTypes.HtmlVoidElement:
       return '';
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlDanglingMarkerOpen:
+    case NodeTypes.HtmlDanglingMarkerClose:
     case NodeTypes.HtmlRawNode:
       return '>';
     default:
@@ -443,9 +449,9 @@ export function printOpeningTagEndMarker(node: LiquidHtmlNode | undefined) {
 }
 
 export function getNodeContent(
-  node: Exclude<
+  node: Extract<
     HtmlNode,
-    HtmlComment | HtmlVoidElement | HtmlSelfClosingElement
+    { blockStartPosition: Position; blockEndPosition: Position }
   >,
   options: LiquidParserOptions,
 ) {
@@ -473,7 +479,13 @@ export function getNodeContent(
   return options.originalText.slice(start, end);
 }
 
-function getCompoundName(node: HtmlElement | HtmlSelfClosingElement): string {
+function getCompoundName(
+  node:
+    | HtmlElement
+    | HtmlSelfClosingElement
+    | HtmlDanglingMarkerOpen
+    | HtmlDanglingMarkerClose,
+): string {
   return node.name
     .map((part) => {
       if (part.type === NodeTypes.TextNode) {
