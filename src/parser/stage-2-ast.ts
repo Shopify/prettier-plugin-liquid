@@ -588,16 +588,27 @@ class ASTBuilder {
       this.cursor.pop();
     }
 
+    if (!this.parent) {
+      throw new LiquidHTMLASTParsingError(
+        `Attempting to close ${nodeType} '${getName(
+          node,
+        )}' before it was opened`,
+        this.source,
+        node.locStart,
+        node.locEnd,
+      );
+    }
+
     if (
       getName(this.parent) !== getName(node) ||
-      this.parent?.type !== nodeType
+      this.parent.type !== nodeType
     ) {
       throw new LiquidHTMLASTParsingError(
-        `Attempting to close ${nodeType} '${node.name}' before ${
-          this.parent?.type
+        `Attempting to close ${nodeType} '${getName(node)}' before ${
+          this.parent.type
         } '${getName(this.parent)}' was closed`,
         this.source,
-        this.parent?.position?.start || 0,
+        this.parent.position.start,
         node.locEnd,
       );
     }

@@ -627,6 +627,38 @@ describe('Unit: toLiquidHtmlAST', () => {
         expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
       } catch (e) {
         expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.message).to.match(/Attempting to close \w+ '[^']+' before \w+ '[^']+' was closed/);
+        expect(e.message).not.to.match(/undefined/i);
+        expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
+      }
+    }
+  });
+
+  it('should throw when closing at the top level', () => {
+    const testCases = ['<a>', '{% if %}'];
+    for (const testCase of testCases) {
+      try {
+        toLiquidHtmlAST(testCase);
+        expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
+      } catch (e) {
+        expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.message).to.match(/Attempting to end parsing before \w+ '[^']+' was closed/);
+        expect(e.message).not.to.match(/undefined/i);
+        expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
+      }
+    }
+  });
+
+  it('should throw when forgetting to close', () => {
+    const testCases = ['</a>', '{% endif %}'];
+    for (const testCase of testCases) {
+      try {
+        toLiquidHtmlAST(testCase);
+        expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
+      } catch (e) {
+        expect(e.name).to.eql('LiquidHTMLParsingError');
+        expect(e.message).to.match(/Attempting to close \w+ '[^']+' before it was opened/);
+        expect(e.message).not.to.match(/undefined/i);
         expect(e.loc, `expected ${e} to have location information`).not.to.be.undefined;
       }
     }
