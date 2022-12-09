@@ -323,7 +323,8 @@ function printNode(
       }
       if (
         node.body.includes('prettier-ignore') ||
-        node.body.startsWith('display:')
+        node.body.startsWith('display:') ||
+        node.body.startsWith('white-space:')
       ) {
         return node.source.slice(node.position.start, node.position.end);
       }
