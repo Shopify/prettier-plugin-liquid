@@ -6,6 +6,7 @@
   "author": "CP Clermont <@charlespwd>",
   "license": "MIT",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "homepage": "https://github.com/shopify/prettier-plugin-liquid#readme",
   "publishConfig": {
     "access": "public",
@@ -17,7 +18,9 @@
   "files": [
     "grammar/*",
     "dist/**/*.js",
+    "dist/**/*.ts",
     "standalone.js",
+    "standalone.d.ts",
     "standalone.js.LICENSE.txt",
     "ThirdPartyNotices.txt"
   ],
