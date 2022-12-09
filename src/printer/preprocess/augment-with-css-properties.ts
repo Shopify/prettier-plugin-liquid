@@ -17,15 +17,35 @@ import {
 } from '~/types';
 import { assertNever } from '~/utils';
 
+function getCssDisplayFromComment(body: string) {
+  return body.match(/^\s*display:\s*([a-z]+)\s*$/)?.[1];
+}
+
+function getCssWhitespaceFromComment(body: string) {
+  return body.match(/^\s*white-?space:\s*([a-z]+)\s*$/)?.[1];
+}
+
 function getCssDisplay(
   node: AugmentedNode<WithSiblings>,
   options: LiquidParserOptions,
 ): string {
   if (node.prev && node.prev.type === NodeTypes.HtmlComment) {
     // <!-- display: block -->
-    const match = node.prev.body.match(/^\s*display:\s*([a-z]+)\s*$/);
-    if (match) {
-      return match[1];
+    const cssDisplay = getCssDisplayFromComment(node.prev.body);
+    if (cssDisplay) {
+      return cssDisplay;
+    }
+  }
+
+  if (
+    node.prev &&
+    node.prev.type === NodeTypes.LiquidTag &&
+    node.prev.name === '#'
+  ) {
+    // {% # display: block %}
+    const cssDisplay = getCssDisplayFromComment(node.prev.markup);
+    if (cssDisplay) {
+      return cssDisplay;
     }
   }
 
@@ -123,6 +143,26 @@ function getCssDisplay(
 }
 
 function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
+  if (node.prev && node.prev.type === NodeTypes.HtmlComment) {
+    // <!-- white-space: normal -->
+    const whitespace = getCssWhitespaceFromComment(node.prev.body);
+    if (whitespace) {
+      return whitespace;
+    }
+  }
+
+  if (
+    node.prev &&
+    node.prev.type === NodeTypes.LiquidTag &&
+    node.prev.name === '#'
+  ) {
+    // {% # white-space: normal %}
+    const whitespace = getCssWhitespaceFromComment(node.prev.markup);
+    if (whitespace) {
+      return whitespace;
+    }
+  }
+
   switch (node.type) {
     case NodeTypes.HtmlElement:
     case NodeTypes.HtmlSelfClosingElement: {
