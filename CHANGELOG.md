@@ -1,4 +1,22 @@
 
+1.0.0 / 2022-12-09
+==================
+
+:tada: The Liquid prettier plugin is now officially ready for production!
+
+Astute devs might have noticed that it is also enabled inside [Shopify's Online Store Code Editor](https://shopify.dev/themes/tools/code-editor#formatting-theme-code).
+
+## Features
+
+  * Stability :)
+  * No major changes
+  * Compatible with `v0.4`
+
+## Fixes
+
+  * Add support for `<!-- white-space: normal -->` comment ([#142](https://github.com/shopify/prettier-plugin-liquid/issues/142))
+  * Fix parsing error messages ([#143](https://github.com/shopify/prettier-plugin-liquid/issues/143))
+
 1.0.0-rc.3 / 2022-12-07
 =======================
 
