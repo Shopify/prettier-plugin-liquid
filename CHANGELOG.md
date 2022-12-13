@@ -1,4 +1,12 @@
 
+1.0.1 / 2022-12-13
+==================
+
+## Fixes
+
+  * Fix trailing whitespace after opening raw tag breaking formatting ([#145](https://github.com/shopify/prettier-plugin-liquid/issues/145))
+  * Add typings for standalone.js
+
 1.0.0 / 2022-12-09
 ==================
 
