@@ -10,7 +10,7 @@ export const trimEnd = (x: string) => x.trimEnd();
 
 export function bodyLines(str: string): string[] {
   return str
-    .replace(/^\n*|\s*$/g, '') // only want the meat
+    .replace(/^(?: |\t)*(\r?\n)*|\s*$/g, '') // only want the meat
     .split(/\r?\n/);
 }
 
