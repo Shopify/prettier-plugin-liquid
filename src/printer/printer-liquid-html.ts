@@ -254,9 +254,13 @@ function printNode(
       }
 
       const lines = bodyLines(node.value);
-      const shouldSkipFirstLine =
-        !node.source[node.position.start].match(/\r|\n/);
-      return lines.length > 0 && lines[0].trim() !== ''
+
+      const rawFirstLineIsntIndented = !!node.value
+        .split(/\r?\n/)[0]
+        ?.match(/\S/);
+      const shouldSkipFirstLine = rawFirstLineIsntIndented;
+
+      return lines.length > 0 && lines.find((line) => line.trim() !== '')
         ? join(hardline, reindent(lines, shouldSkipFirstLine))
         : softline;
     }
