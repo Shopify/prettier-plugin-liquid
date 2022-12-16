@@ -22,14 +22,6 @@ module.exports = {
       root: 'prettier',
     },
   },
-  resolve: {
-    alias: {
-      '../../grammar/liquid-html.ohm.js': path.resolve(
-        __dirname,
-        'build/shims/liquid-html-ohm.js',
-      ),
-    },
-  },
   optimization: {
     minimize: PRODUCTION ? true : false,
   },
