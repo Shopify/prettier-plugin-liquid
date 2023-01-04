@@ -1,4 +1,4 @@
 {
-  "require": ["ts-node/register/transpile-only", "tsconfig-paths/register"],
+  "require": ["./build/shims", "ts-node/register/transpile-only", "tsconfig-paths/register"],
   "reporter": "spec"
 }
