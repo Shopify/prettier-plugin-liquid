@@ -196,6 +196,9 @@ function printNamedLiquidBlockStart(
     case NamedTags.section: {
       return tag(' ');
     }
+    case NamedTags.sections: {
+      return tag(' ');
+    }
 
     case NamedTags.form: {
       const trailingWhitespace = node.markup.length > 1 ? line : ' ';

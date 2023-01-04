@@ -57,6 +57,7 @@ Liquid <: Helpers {
     | liquidTagLiquid
     | liquidTagRender
     | liquidTagSection
+    | liquidTagSections
     | liquidTagWhen
     | liquidTagBaseCase
 
@@ -96,6 +97,9 @@ Liquid <: Helpers {
 
   liquidTagSection = liquidTagRule<"section", liquidTagSectionMarkup>
   liquidTagSectionMarkup = liquidString space*
+
+  liquidTagSections = liquidTagRule<"sections", liquidTagSectionsMarkup>
+  liquidTagSectionsMarkup = liquidString space*
 
   liquidTagLayout = liquidTagRule<"layout", liquidTagLayoutMarkup>
   liquidTagLayoutMarkup = liquidExpression space*
