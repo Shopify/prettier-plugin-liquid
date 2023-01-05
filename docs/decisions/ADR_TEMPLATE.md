@@ -28,4 +28,7 @@ Feel free to elaborate here. Consider including:
 Discuss the consequences or drawbacks of the decided approach.
 If your answer is "there are none," it's possible you haven't
 fully considered the impact of your decision.
+
+For drawbacks, you can also include a section that documents ways to
+undo the decision, workarounds or mitigation strategies.
 -->
