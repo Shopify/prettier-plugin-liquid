@@ -39,3 +39,11 @@ If we want to do a prettier plugin for Liquid & HTML, we need to do what the Han
     - mean 20ms
     - median 8.9ms
   - Full theme parse of ~2000ms
+
+### Ways to undo
+
+- Write a parser from scratch (hard) that fits the [`LiquidHTMLNode`](https://github.com/Shopify/prettier-plugin-liquid/blob/d4033f793d98b6ea164fd4a44e487d6e626d719e/src/parser/stage-2-ast.ts#L90-L110) type.
+
+### Ways to mitigate
+
+- Parse using [Worker threads](https://nodejs.org/api/worker_threads.html#Worker-threads) to parallelize parsing of multiple files on multiple CPU threads
