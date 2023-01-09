@@ -8,6 +8,7 @@
 ## Status
 
 <!-- What is the status? If it was decided, when did that happen? -->
+<!-- Example statuses: proposed, accepted, rejected, deprecated, superseded, etc. -->
 
 ## tl;dr
 
