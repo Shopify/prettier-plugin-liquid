@@ -5,6 +5,7 @@ export const liquidHtmlGrammars = ohm.grammars(
 );
 
 export const liquidHtmlGrammar = liquidHtmlGrammars['LiquidHTML'];
+export const liquidStatementsGrammar = liquidHtmlGrammars['LiquidStatement'];
 
 // see ../../grammar/liquid-html.ohm for full list
 export const BLOCKS = (

@@ -164,7 +164,7 @@ Liquid <: Helpers {
 
   liquidTagOpenPaginate = liquidTagOpenRule<"paginate", liquidTagOpenPaginateMarkup>
   liquidTagOpenPaginateMarkup =
-    liquidExpression space+ "by" space+ liquidExpression (argumentSeparatorOptionalComma tagArguments)? space*
+    liquidExpression space+ "by" space+ liquidExpression argumentSeparatorOptionalComma tagArguments space*
 
   liquidDrop = "{{" "-"? space* liquidDropCases "-"? "}}"
   liquidDropCases = liquidVariable | liquidDropBaseCase
