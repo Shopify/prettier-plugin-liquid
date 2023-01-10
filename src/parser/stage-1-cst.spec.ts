@@ -101,6 +101,24 @@ describe('Unit: toLiquidHtmlCST(text)', () => {
       expectPath(cst, '1.body').to.eql('\n#id {}\n');
     });
 
+    it('should parse nested svg tags as a dump', () => {
+      const parts = ['<svg disabled a=1>', '<svg><path d=1></svg>', '</svg>'];
+      cst = toLiquidHtmlCST(parts.join(''));
+      expectPath(cst, '0.type').to.eql('HtmlRawTag');
+      expectPath(cst, '0.name').to.eql('svg');
+      expectPath(cst, '0.body').to.eql('<svg><path d=1></svg>');
+      expectPath(cst, '0.attrList.0.name.0.type').to.eql('TextNode');
+      expectPath(cst, '0.attrList.0.name.0.value').to.eql('disabled');
+      expectPath(cst, '0.locStart').to.eql(0);
+      expectPath(cst, '0.locEnd').to.eql(parts[0].length + parts[1].length + parts[2].length);
+      expectPath(cst, '0.blockStartLocStart').to.eql(0);
+      expectPath(cst, '0.blockStartLocEnd').to.eql(parts[0].length);
+      expectPath(cst, '0.blockEndLocStart').to.eql(parts[0].length + parts[1].length);
+      expectPath(cst, '0.blockEndLocEnd').to.eql(
+        parts[0].length + parts[1].length + parts[2].length,
+      );
+    });
+
     it('should properly return block{Start,End}Loc{Start,End} locations of raw tags', () => {
       const source = '<script>const a = {{ product | json }}</script>';
       cst = toLiquidHtmlCST(source);

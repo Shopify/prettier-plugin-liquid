@@ -376,10 +376,11 @@ LiquidHTML <: Liquid {
     | HtmlRawTagImpl<"svg">
 
   HtmlRawTagImpl<name> =
-    #("<" name) AttrList ">" #(anyExceptStar<endTag<name>> endTag<name>)
-
-  endTag<name> =
-    "</" name space* ">"
+    TagStart<name>
+      (HtmlRawTagImpl<name> | AnyExceptPlus<(TagStart<name> | TagEnd<name>)>)*
+    TagEnd<name>
+  TagStart<name> = "<" name AttrList ">"
+  TagEnd<name> = "</" name ">"
 
   HtmlVoidElement =
     #("<" voidElementName &(space | "/" | ">")) AttrList "/"? ">"
