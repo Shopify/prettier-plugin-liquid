@@ -1,4 +1,9 @@
 
+1.0.5 / 2023-01-10
+==================
+
+  * Allow for nested HTML raw tags ([#157](https://github.com/shopify/prettier-plugin-liquid/issues/157))
+
 1.0.4 / 2023-01-10
 ==================
 
