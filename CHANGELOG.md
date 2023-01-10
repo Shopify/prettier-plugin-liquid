@@ -1,8 +1,13 @@
 
+1.0.4 / 2023-01-10
+==================
+
+  * Fix `{% paginate %}` parsing error ([#155](https://github.com/shopify/prettier-plugin-liquid/issues/155))
+
 1.0.3 / 2023-01-04
 ==================
 
-##Features
+## Features
 
  * Add support for sections tag
 
