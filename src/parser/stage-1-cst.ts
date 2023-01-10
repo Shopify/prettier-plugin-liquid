@@ -1056,16 +1056,20 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
 
     HtmlRawTagImpl: {
       type: ConcreteNodeTypes.HtmlRawTag,
-      name: 1,
-      attrList: 2,
-      body: 4,
+      name: (tokens: Node[]) => tokens[0].children[1].sourceString,
+      attrList(tokens: Node[]) {
+        const mappings = (this as any).args.mapping;
+        return tokens[0].children[2].toAST(mappings);
+      },
+      body: (tokens: Node[]) =>
+        source.slice(tokens[0].source.endIdx, tokens[2].source.startIdx),
       locStart,
       locEnd,
       source,
       blockStartLocStart: (tokens: any) => tokens[0].source.startIdx,
-      blockStartLocEnd: (tokens: any) => tokens[3].source.endIdx,
-      blockEndLocStart: (tokens: any) => tokens[5].source.startIdx,
-      blockEndLocEnd: (tokens: any) => tokens[5].source.endIdx,
+      blockStartLocEnd: (tokens: any) => tokens[0].source.endIdx,
+      blockEndLocStart: (tokens: any) => tokens[2].source.startIdx,
+      blockEndLocEnd: (tokens: any) => tokens[2].source.endIdx,
     },
 
     HtmlVoidElement: {

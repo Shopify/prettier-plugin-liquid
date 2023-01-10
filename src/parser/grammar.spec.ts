@@ -48,6 +48,13 @@ describe('Unit: liquidHtmlGrammar', () => {
         [[/ isRefined ]]
       />
     `).to.be.true;
+    expectMatchSucceeded(`
+      <svg>
+          <svg a=1><svg b=2>
+            <path d="M12"></path>
+          </svg></svg>
+      </svg>
+    `).to.be.true;
     expectMatchSucceeded(`<div data-popup-{{ section.id }}="size-{{ section.id }}">`).to.be.true;
     expectMatchSucceeded('<img {% if aboveFold %} loading="lazy"{% endif %} />').to.be.true;
     expectMatchSucceeded('<svg><use></svg>').to.be.true;
