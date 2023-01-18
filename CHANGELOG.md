@@ -1,4 +1,9 @@
 
+1.0.6 / 2023-01-18
+==================
+
+  * Maintain at most 1 newline between tag attributes ([#159](https://github.com/shopify/prettier-plugin-liquid/issues/159))
+
 1.0.5 / 2023-01-10
 ==================
 
