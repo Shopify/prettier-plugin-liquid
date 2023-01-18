@@ -28,6 +28,7 @@ import {
   last,
   first,
   isPrettierIgnoreAttributeNode,
+  hasMoreThanOneNewLineBetweenNodes,
 } from '~/printer/utils';
 
 const {
@@ -271,10 +272,22 @@ function printAttributes(
 
   const prettierIgnoreAttributes = isPrettierIgnoreAttributeNode(node.prev);
 
-  const printedAttributes = path.map(
-    (attr) => print(attr, { trailingSpaceGroupId: attrGroupId }),
-    'attributes',
-  );
+  const printedAttributes = path.map((attr) => {
+    const attrNode = attr.getValue();
+    let extraNewline: Doc = '';
+    if (
+      attrNode.prev &&
+      hasMoreThanOneNewLineBetweenNodes(
+        attrNode.source,
+        attrNode.prev,
+        attrNode,
+      )
+    ) {
+      extraNewline = hardline;
+    }
+    const printed = print(attr, { trailingSpaceGroupId: attrGroupId });
+    return [extraNewline, printed];
+  }, 'attributes');
 
   const forceBreakAttrContent = node.source
     .slice(node.blockStartPosition.start, last(node.attributes).position.end)
