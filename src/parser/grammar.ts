@@ -4,6 +4,7 @@ export const liquidHtmlGrammars = ohm.grammars(
   require('../../grammar/liquid-html.ohm.js'),
 );
 
+export const liquidGrammar = liquidHtmlGrammars['Liquid'];
 export const liquidHtmlGrammar = liquidHtmlGrammars['LiquidHTML'];
 export const liquidStatementsGrammar = liquidHtmlGrammars['LiquidStatement'];
 
