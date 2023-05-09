@@ -31,9 +31,13 @@
  */
 
 import { Parser } from 'prettier';
-import { Node } from 'ohm-js';
+import ohm, { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { liquidHtmlGrammar, liquidHtmlGrammars } from '~/parser/grammar';
+import {
+  liquidGrammar,
+  liquidHtmlGrammar,
+  liquidHtmlGrammars,
+} from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { Comparators, NamedTags } from '~/types';
 
@@ -473,7 +477,14 @@ export type LiquidHtmlConcreteNode =
   | ConcreteTextNode
   | ConcreteYamlFrontmatterNode;
 
+export type LiquidConcreteNode =
+  | ConcreteLiquidNode
+  | ConcreteTextNode
+  | ConcreteYamlFrontmatterNode;
+
 export type LiquidHtmlCST = LiquidHtmlConcreteNode[];
+
+export type LiquidCST = LiquidConcreteNode[];
 
 interface Mapping {
   [k: string]: number | TemplateMapping | TopLevelFunctionMapping;
@@ -495,6 +506,22 @@ const markupTrimEnd = (i: number) => (tokens: Node[]) =>
   tokens[i].sourceString.trimEnd();
 
 export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
+  return toCST(source, liquidHtmlGrammar, [
+    'HelperMappings',
+    'LiquidMappings',
+    'LiquidHTMLMappings',
+  ]);
+}
+
+export function toLiquidCST(source: string): LiquidCST {
+  return toCST(source, liquidGrammar, ['HelperMappings', 'LiquidMappings']);
+}
+
+function toCST<T>(
+  source: string,
+  cstGrammar: ohm.Grammar,
+  cstMappings: ('HelperMappings' | 'LiquidMappings' | 'LiquidHTMLMappings')[],
+): T {
   // When we switch parser, our locStart and locEnd functions must account
   // for the offset of the {% liquid %} markup
   let liquidStatementOffset = 0;
@@ -515,7 +542,7 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
     source,
   };
 
-  const res = liquidHtmlGrammar.match(source, 'Node');
+  const res = cstGrammar.match(source, 'Node');
   if (res.failed()) {
     throw new LiquidHTMLCSTParsingError(res);
   }
@@ -1163,11 +1190,19 @@ export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
     attrUnquotedTextNode: textNode,
   };
 
-  const ohmAST = toAST(res, {
-    ...HelperMappings,
-    ...LiquidMappings,
-    ...LiquidHTMLMappings,
-  });
+  const defaultMappings = {
+    HelperMappings,
+    LiquidMappings,
+    LiquidHTMLMappings,
+  };
 
-  return ohmAST as LiquidHtmlCST;
+  const selectedMappings = cstMappings.reduce(
+    (mappings, key) => ({
+      ...mappings,
+      ...defaultMappings[key],
+    }),
+    {},
+  );
+
+  return toAST(res, selectedMappings) as T;
 }

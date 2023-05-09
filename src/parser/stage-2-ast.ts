@@ -43,6 +43,7 @@ import {
   ConcreteLiquidTagClose,
   ConcreteNodeTypes,
   ConcreteTextNode,
+  LiquidCST,
   LiquidHtmlCST,
   toLiquidHtmlCST,
   ConcreteHtmlSelfClosingElement,
@@ -81,6 +82,7 @@ import {
 import { assertNever, deepGet, dropLast } from '~/utils';
 import { LiquidHTMLASTParsingError } from '~/parser/errors';
 import { TAGS_WITHOUT_MARKUP } from '~/parser/grammar';
+import { toLiquidCST } from '~/parser/stage-1-cst';
 
 interface HasPosition {
   locStart: number;
@@ -94,6 +96,24 @@ export type LiquidHtmlNode =
   | HtmlDoctype
   | HtmlNode
   | AttributeNode
+  | LiquidVariable
+  | LiquidExpression
+  | LiquidFilter
+  | LiquidNamedArgument
+  | AssignMarkup
+  | CycleMarkup
+  | ForMarkup
+  | RenderMarkup
+  | PaginateMarkup
+  | RawMarkup
+  | RenderVariableExpression
+  | LiquidLogicalExpression
+  | LiquidComparison
+  | TextNode;
+
+export type LiquidAST =
+  | DocumentNode
+  | LiquidNode
   | LiquidVariable
   | LiquidExpression
   | LiquidFilter
@@ -495,6 +515,10 @@ export interface ASTNode<T> {
   source: string;
 }
 
+interface AstBuildOptions {
+  mode: 'strict' | 'tolerant';
+}
+
 export function isBranchedTag(node: LiquidHtmlNode) {
   return (
     node.type === NodeTypes.LiquidTag &&
@@ -512,12 +536,27 @@ function isLiquidBranchDisguisedAsTag(
   );
 }
 
+export function toLiquidAST(source: string) {
+  const cst = toLiquidCST(source);
+  const root: DocumentNode = {
+    type: NodeTypes.Document,
+    source: source,
+    children: cstToAst(cst, { mode: 'tolerant' }),
+    name: '#document',
+    position: {
+      start: 0,
+      end: source.length,
+    },
+  };
+  return root;
+}
+
 export function toLiquidHtmlAST(source: string): DocumentNode {
   const cst = toLiquidHtmlCST(source);
   const root: DocumentNode = {
     type: NodeTypes.Document,
     source: source,
-    children: cstToAst(cst),
+    children: cstToAst(cst, { mode: 'strict' }),
     name: '#document',
     position: {
       start: 0,
@@ -678,9 +717,32 @@ function getName(
 }
 
 export function cstToAst(
-  cst: LiquidHtmlCST | ConcreteAttributeNode[],
+  cst: LiquidHtmlCST | LiquidCST | ConcreteAttributeNode[],
+  options: AstBuildOptions,
 ): LiquidHtmlNode[] {
   if (cst.length === 0) return [];
+
+  const builder = buildAst(cst, options);
+  const isStrictParser = options.mode === 'strict';
+
+  if (isStrictParser && builder.cursor.length !== 0) {
+    throw new LiquidHTMLASTParsingError(
+      `Attempting to end parsing before ${builder.parent?.type} '${getName(
+        builder.parent,
+      )}' was closed`,
+      builder.source,
+      builder.source.length - 1,
+      builder.source.length,
+    );
+  }
+
+  return builder.ast;
+}
+
+function buildAst(
+  cst: LiquidHtmlCST | LiquidCST | ConcreteAttributeNode[],
+  options: AstBuildOptions,
+) {
   const builder = new ASTBuilder(cst[0].source);
 
   for (const node of cst) {
@@ -696,7 +758,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.LiquidTagOpen: {
-        builder.open(toLiquidTag(node, { isBlockTag: true }));
+        builder.open(toLiquidTag(node, { isBlockTag: true, ...options }));
         break;
       }
 
@@ -706,7 +768,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.LiquidTag: {
-        builder.push(toLiquidTag(node));
+        builder.push(toLiquidTag(node, { isBlockTag: false, ...options }));
         break;
       }
 
@@ -735,7 +797,7 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlTagOpen: {
-        builder.open(toHtmlElement(node));
+        builder.open(toHtmlElement(node, options));
         break;
       }
 
@@ -745,12 +807,12 @@ export function cstToAst(
       }
 
       case ConcreteNodeTypes.HtmlVoidElement: {
-        builder.push(toHtmlVoidElement(node));
+        builder.push(toHtmlVoidElement(node, options));
         break;
       }
 
       case ConcreteNodeTypes.HtmlSelfClosingElement: {
-        builder.push(toHtmlSelfClosingElement(node));
+        builder.push(toHtmlSelfClosingElement(node, options));
         break;
       }
 
@@ -779,7 +841,7 @@ export function cstToAst(
           type: NodeTypes.HtmlRawNode,
           name: node.name,
           body: toRawMarkup(node),
-          attributes: toAttributes(node.attrList || []),
+          attributes: toAttributes(node.attrList || [], options),
           position: position(node),
           source: node.source,
           blockStartPosition: {
@@ -797,7 +859,7 @@ export function cstToAst(
       case ConcreteNodeTypes.AttrEmpty: {
         builder.push({
           type: NodeTypes.AttrEmpty,
-          name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
+          name: cstToAst(node.name, options) as (TextNode | LiquidDrop)[],
           position: position(node),
           source: node.source,
         });
@@ -813,7 +875,7 @@ export function cstToAst(
               | NodeTypes.AttrSingleQuoted
               | NodeTypes.AttrDoubleQuoted
               | NodeTypes.AttrUnquoted,
-            name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
+            name: cstToAst(node.name, options) as (TextNode | LiquidDrop)[],
             position: position(node),
             source: node.source,
 
@@ -821,7 +883,7 @@ export function cstToAst(
             attributePosition: { start: -1, end: -1 },
             value: [],
           };
-        const value = toAttributeValue(node.value);
+        const value = toAttributeValue(node.value, options);
         abstractNode.value = value;
         abstractNode.attributePosition = toAttributePosition(node, value);
         builder.push(abstractNode);
@@ -844,18 +906,7 @@ export function cstToAst(
     }
   }
 
-  if (builder.cursor.length !== 0) {
-    throw new LiquidHTMLASTParsingError(
-      `Attempting to end parsing before ${builder.parent?.type} '${getName(
-        builder.parent,
-      )}' was closed`,
-      builder.source,
-      builder.source.length - 1,
-      builder.source.length,
-    );
-  }
-
-  return builder.ast;
+  return builder;
 }
 
 function toAttributePosition(
@@ -890,12 +941,16 @@ function toAttributePosition(
 
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
+  options: AstBuildOptions,
 ): (LiquidNode | TextNode)[] {
-  return cstToAst(value) as (LiquidNode | TextNode)[];
+  return cstToAst(value, options) as (LiquidNode | TextNode)[];
 }
 
-function toAttributes(attrList: ConcreteAttributeNode[]): AttributeNode[] {
-  return cstToAst(attrList) as AttributeNode[];
+function toAttributes(
+  attrList: ConcreteAttributeNode[],
+  options: AstBuildOptions,
+): AttributeNode[] {
+  return cstToAst(attrList, options) as AttributeNode[];
 }
 
 function liquidTagBaseAttributes(
@@ -927,15 +982,15 @@ function liquidBranchBaseAttributes(
 
 function toLiquidTag(
   node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
-  { isBlockTag } = { isBlockTag: false },
+  options: AstBuildOptions & { isBlockTag: boolean },
 ): LiquidTag | LiquidBranch {
   if (typeof node.markup !== 'string') {
-    return toNamedLiquidTag(node as ConcreteLiquidTagNamed);
-  } else if (isBlockTag) {
+    return toNamedLiquidTag(node as ConcreteLiquidTagNamed, options);
+  } else if (options.isBlockTag) {
     return {
       name: node.name,
       markup: markup(node.name, node.markup),
-      children: isBlockTag ? [] : undefined,
+      children: options.isBlockTag ? [] : undefined,
       ...liquidTagBaseAttributes(node),
     };
   }
@@ -948,6 +1003,7 @@ function toLiquidTag(
 
 function toNamedLiquidTag(
   node: ConcreteLiquidTagNamed | ConcreteLiquidTagOpenNamed,
+  options: AstBuildOptions,
 ): LiquidTagNamed | LiquidBranchNamed {
   switch (node.name) {
     case NamedTags.echo: {
@@ -1084,7 +1140,7 @@ function toNamedLiquidTag(
       return {
         ...liquidTagBaseAttributes(node),
         name: node.name,
-        markup: cstToAst(node.markup) as LiquidStatement[],
+        markup: cstToAst(node.markup, options) as LiquidStatement[],
       };
     }
 
@@ -1457,11 +1513,14 @@ function toNamedArgument(
   };
 }
 
-function toHtmlElement(node: ConcreteHtmlTagOpen): HtmlElement {
+function toHtmlElement(
+  node: ConcreteHtmlTagOpen,
+  options: AstBuildOptions,
+): HtmlElement {
   return {
     type: NodeTypes.HtmlElement,
-    name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
-    attributes: toAttributes(node.attrList || []),
+    name: cstToAst(node.name, options) as (TextNode | LiquidDrop)[],
+    attributes: toAttributes(node.attrList || [], options),
     position: position(node),
     blockStartPosition: position(node),
     blockEndPosition: { start: -1, end: -1 },
@@ -1470,11 +1529,14 @@ function toHtmlElement(node: ConcreteHtmlTagOpen): HtmlElement {
   };
 }
 
-function toHtmlVoidElement(node: ConcreteHtmlVoidElement): HtmlVoidElement {
+function toHtmlVoidElement(
+  node: ConcreteHtmlVoidElement,
+  options: AstBuildOptions,
+): HtmlVoidElement {
   return {
     type: NodeTypes.HtmlVoidElement,
     name: node.name,
-    attributes: toAttributes(node.attrList || []),
+    attributes: toAttributes(node.attrList || [], options),
     position: position(node),
     blockStartPosition: position(node),
     source: node.source,
@@ -1483,11 +1545,12 @@ function toHtmlVoidElement(node: ConcreteHtmlVoidElement): HtmlVoidElement {
 
 function toHtmlSelfClosingElement(
   node: ConcreteHtmlSelfClosingElement,
+  options: AstBuildOptions,
 ): HtmlSelfClosingElement {
   return {
     type: NodeTypes.HtmlSelfClosingElement,
-    name: cstToAst(node.name) as (TextNode | LiquidDrop)[],
-    attributes: toAttributes(node.attrList || []),
+    name: cstToAst(node.name, options) as (TextNode | LiquidDrop)[],
+    attributes: toAttributes(node.attrList || [], options),
     position: position(node),
     blockStartPosition: position(node),
     source: node.source,
