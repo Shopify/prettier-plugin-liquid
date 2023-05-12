@@ -260,6 +260,7 @@ function printAttributes(
   const node = path.getValue();
 
   if (isHtmlComment(node)) return '';
+  if (node.type === NodeTypes.HtmlDanglingMarkerClose) return '';
 
   if (node.attributes.length === 0) {
     return isSelfClosing(node)

@@ -107,6 +107,7 @@ export function isAttributeNode(
 ): node is AttributeNode & { parentNode: HtmlNode } {
   return (
     isHtmlNode(node.parentNode) &&
+    'attributes' in node.parentNode &&
     node.parentNode.attributes.indexOf(node as AttributeNode) !== -1
   );
 }
