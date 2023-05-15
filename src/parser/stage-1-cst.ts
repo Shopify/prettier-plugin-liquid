@@ -33,11 +33,7 @@
 import { Parser } from 'prettier';
 import ohm, { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import {
-  liquidGrammar,
-  liquidHtmlGrammar,
-  liquidHtmlGrammars,
-} from '~/parser/grammar';
+import { strictGrammars, tolerantGrammars } from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { Comparators, NamedTags } from '~/types';
 
@@ -505,21 +501,45 @@ const markup = (i: number) => (tokens: Node[]) => tokens[i].sourceString.trim();
 const markupTrimEnd = (i: number) => (tokens: Node[]) =>
   tokens[i].sourceString.trimEnd();
 
-export function toLiquidHtmlCST(source: string): LiquidHtmlCST {
-  return toCST(source, liquidHtmlGrammar, [
+export interface CSTBuildOptions {
+  /**
+   * 'strict' will disable the Liquid parsing base cases. Which means that we will
+   * throw an error if we can't parse the node `markup` properly.
+   *
+   * 'tolerant' is the default case so that prettier can pretty print nodes
+   * that it doesn't understand.
+   */
+  mode: 'strict' | 'tolerant';
+}
+
+export function toLiquidHtmlCST(
+  source: string,
+  options: CSTBuildOptions = { mode: 'tolerant' },
+): LiquidHtmlCST {
+  const grammars =
+    options.mode === 'tolerant' ? tolerantGrammars : strictGrammars;
+  const grammar = grammars.LiquidHTML;
+  return toCST(source, grammars, grammar, [
     'HelperMappings',
     'LiquidMappings',
     'LiquidHTMLMappings',
   ]);
 }
 
-export function toLiquidCST(source: string): LiquidCST {
-  return toCST(source, liquidGrammar, ['HelperMappings', 'LiquidMappings']);
+export function toLiquidCST(
+  source: string,
+  options: CSTBuildOptions = { mode: 'tolerant' },
+): LiquidCST {
+  const grammars =
+    options.mode === 'tolerant' ? tolerantGrammars : strictGrammars;
+  const grammar = grammars.Liquid;
+  return toCST(source, grammars, grammar, ['HelperMappings', 'LiquidMappings']);
 }
 
 function toCST<T>(
   source: string,
-  cstGrammar: ohm.Grammar,
+  grammars: typeof strictGrammars,
+  grammar: ohm.Grammar,
   cstMappings: ('HelperMappings' | 'LiquidMappings' | 'LiquidHTMLMappings')[],
 ): T {
   // When we switch parser, our locStart and locEnd functions must account
@@ -542,7 +562,7 @@ function toCST<T>(
     source,
   };
 
-  const res = cstGrammar.match(source, 'Node');
+  const res = grammar.match(source, 'Node');
   if (res.failed()) {
     throw new LiquidHTMLCSTParsingError(res);
   }
@@ -625,6 +645,7 @@ function toCST<T>(
     },
 
     liquidTagOpen: 0,
+    liquidTagOpenStrict: 0,
     liquidTagOpenBaseCase: 0,
     liquidTagOpenRule: {
       type: ConcreteNodeTypes.LiquidTagOpen,
@@ -658,6 +679,8 @@ function toCST<T>(
       locEnd,
       source,
     },
+    liquidTagBreak: 0,
+    liquidTagContinue: 0,
     liquidTagOpenTablerow: 0,
     liquidTagOpenPaginate: 0,
     liquidTagOpenPaginateMarkup: {
@@ -676,6 +699,7 @@ function toCST<T>(
     liquidTagOpenIf: 0,
     liquidTagOpenUnless: 0,
     liquidTagElsif: 0,
+    liquidTagElse: 0,
     liquidTagOpenConditionalMarkup: 0,
     condition: {
       type: ConcreteNodeTypes.Condition,
@@ -706,6 +730,7 @@ function toCST<T>(
     },
 
     liquidTag: 0,
+    liquidTagStrict: 0,
     liquidTagBaseCase: 0,
     liquidTagAssign: 0,
     liquidTagEcho: 0,
@@ -737,7 +762,7 @@ function toCST<T>(
 
     liquidTagLiquid: 0,
     liquidTagLiquidMarkup(tagMarkup: Node) {
-      const res = liquidHtmlGrammars['LiquidStatement'].match(
+      const res = grammars['LiquidStatement'].match(
         tagMarkup.sourceString,
         'Node',
       );
