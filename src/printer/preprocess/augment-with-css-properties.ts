@@ -51,6 +51,8 @@ function getCssDisplay(
 
   switch (node.type) {
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlDanglingMarkerOpen:
+    case NodeTypes.HtmlDanglingMarkerClose:
     case NodeTypes.HtmlSelfClosingElement: {
       switch (options.htmlWhitespaceSensitivity) {
         case 'strict':
@@ -165,6 +167,8 @@ function getNodeCssStyleWhiteSpace(node: AugmentedNode<WithSiblings>): string {
 
   switch (node.type) {
     case NodeTypes.HtmlElement:
+    case NodeTypes.HtmlDanglingMarkerOpen:
+    case NodeTypes.HtmlDanglingMarkerClose:
     case NodeTypes.HtmlSelfClosingElement: {
       return (
         (node.name.length === 1 &&

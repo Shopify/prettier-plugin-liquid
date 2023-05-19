@@ -111,9 +111,34 @@ function isIndentationSensitiveNode(node: AugmentedAstNode) {
  * rendered output.
  * <div attr-{{ hi }}
  */
-function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
+function isLeadingWhitespaceSensitiveNode(
+  node: AugmentedAstNode | undefined,
+): boolean {
   if (!node) {
     return false;
+  }
+
+  if (node.type === NodeTypes.LiquidBranch) {
+    const isDefaultBranch = node.name === null;
+    const hasNoChildren = !!node.firstChild;
+    const isParentInnerRightSensitive = isInnerLeftSpaceSensitiveCssDisplay(
+      node.parentNode!.cssDisplay,
+    );
+    const isFirstChildLeadingSensitive = isLeadingWhitespaceSensitiveNode(
+      node.firstChild,
+    );
+
+    // {% if %}<emptythis>{% endif %}
+    // {% if %}this{% endif %}
+    if (isDefaultBranch) {
+      return (
+        isParentInnerRightSensitive &&
+        (!hasNoChildren || isFirstChildLeadingSensitive)
+      );
+    }
+
+    // {% if %}{% <elseasthis> %}anything{% endif %}
+    return isParentInnerRightSensitive;
   }
 
   // <a data-{{ this }}="hi">
@@ -220,6 +245,38 @@ function isLeadingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
  * the actual solution. We'll default to true and consider the edge cases.
  */
 function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
+  if (!node) {
+    return false;
+  }
+
+  if (node.type === NodeTypes.LiquidBranch) {
+    const isLastBranch = node.parentNode && node.parentNode.lastChild === node;
+    const hasNoLastChild = !node.lastChild;
+    const isLastChildTrailingSensitive =
+      !!node.lastChild && isTrailingWhitespaceSensitiveNode(node.lastChild);
+
+    // {% if %}{% elsif cond %}<emptythis>{% endif %}
+    // {% if %}{% elsif cond %}this{% endif %}
+    // {% if %}{% else %}<emptythis>{% endif %}
+    // {% if %}{% else %}this{% endif %}
+    if (isLastBranch) {
+      const isParentInnerRightSensitive =
+        isInnerRightWhitespaceSensitiveCssDisplay(node.parentNode!.cssDisplay);
+      return (
+        isParentInnerRightSensitive &&
+        (hasNoLastChild || isLastChildTrailingSensitive)
+      );
+    }
+
+    // {% if %}<emptythis>{% endif %}
+    // {% if %}<emptythis>{% else %}{% endif %}
+    // {% if %}{% elsif cond %}<emptythis>{% else %}{% endif %}
+    // {% if %}this{% endif %}
+    // {% if %}this{% else %}{% endif %}
+    // {% if %}{% elsif cond %}this{% else %}{% endif %}
+    return hasNoLastChild || isLastChildTrailingSensitive;
+  }
+
   // '{{ drop -}} text'
   if (isTrimmingOuterRight(node)) {
     return false;
@@ -262,38 +319,36 @@ function isTrailingWhitespaceSensitiveNode(node: AugmentedAstNode): boolean {
     return false;
   }
 
-  // Adapted from prettier/language-html. This branch is for the last
-  // children of an array.
+  // The following block handles the case when the node is the last child of its parent.
   //
-  // The node would not be trailing whitespace sensitive if either of the
-  // following is true.
+  // The node would not be trailing whitespace sensitive if any of the following conditions are true:
   //  - the parent is the root
   //  - this node is pre-like (whitespace outside pre tags is irrelevant)
   //  - this node is script-like (since the whitespace following a script is irrelevant)
   //  - the parent is not (inner) trailing whitespace sensitive (e.g. block)
   //  - the parent is trimming the inner right (e.g. {% form %} hello {%- endform %})
+  //  - the node is an attribute node
   //
-  //  prettier-ignore
+  // prettier-ignore
   if (
     !node.next && (
-      node.parentNode.type === NodeTypes.Document
-      || isPreLikeNode(node)
-      || isScriptLikeTag(node.parentNode) // technically we don't use this one.
-      || !isInnerRightWhitespaceSensitiveCssDisplay(node.parentNode.cssDisplay)
-      || isTrimmingInnerRight(node.parentNode)
-      || isAttributeNode(node as any)
+      node.parentNode.type === NodeTypes.Document ||
+      isPreLikeNode(node) ||
+      isScriptLikeTag(node.parentNode) ||
+      !isInnerRightWhitespaceSensitiveCssDisplay(node.parentNode.cssDisplay) ||
+      isTrimmingInnerRight(node.parentNode) ||
+      isAttributeNode(node as any)
     )
   ) {
     return false;
   }
 
-  // A bit of a mouthful. When the next child is not whitespace sensitive to
-  // the outer left.
+  // When the next child is not whitespace sensitive to the outer left.
   //
   // example:
   //  <p>Hello <div>world</div></p>
   //
-  // Hello is not whitespace sensitive to the right because the next
+  // 'Hello' is not whitespace sensitive to the right because the next
   // element is a block and doesn't care about whitespace to its left.
   if (
     node.next &&

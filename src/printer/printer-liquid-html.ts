@@ -1,27 +1,29 @@
 import { Printer, AstPath, Doc, doc } from 'prettier';
 import {
-  LiquidHtmlNode,
-  LiquidExpression,
-  LiquidTag,
+  AttrDoubleQuoted,
+  AttrEmpty,
+  AttrSingleQuoted,
+  AttrUnquoted,
+  DocumentNode,
+  HtmlDanglingMarkerClose,
+  HtmlDanglingMarkerOpen,
+  HtmlElement,
+  HtmlRawNode,
+  HtmlSelfClosingElement,
+  HtmlVoidElement,
+  LiquidAstPath,
   LiquidBranch,
   LiquidDrop,
-  TextNode,
-  HtmlElement,
-  HtmlVoidElement,
-  HtmlSelfClosingElement,
-  HtmlRawNode,
-  AttrUnquoted,
-  AttrSingleQuoted,
-  AttrDoubleQuoted,
-  LiquidAstPath,
+  LiquidExpression,
+  LiquidHtmlNode,
   LiquidParserOptions,
   LiquidPrinter,
+  LiquidPrinterArgs,
+  LiquidRawTag,
+  LiquidTag,
   NodeTypes,
   Position,
-  LiquidPrinterArgs,
-  DocumentNode,
-  LiquidRawTag,
-  AttrEmpty,
+  TextNode,
   nonTraversableProperties,
 } from '~/types';
 import { assertNever } from '~/utils';
@@ -212,6 +214,24 @@ function printNode(
 
     case NodeTypes.HtmlElement: {
       return printElement(path as AstPath<HtmlElement>, options, print, args);
+    }
+
+    case NodeTypes.HtmlDanglingMarkerOpen: {
+      return printElement(
+        path as AstPath<HtmlDanglingMarkerOpen>,
+        options,
+        print,
+        args,
+      );
+    }
+
+    case NodeTypes.HtmlDanglingMarkerClose: {
+      return printElement(
+        path as AstPath<HtmlDanglingMarkerClose>,
+        options,
+        print,
+        args,
+      );
     }
 
     case NodeTypes.HtmlVoidElement: {

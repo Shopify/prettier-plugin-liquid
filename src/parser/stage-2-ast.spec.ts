@@ -3,6 +3,7 @@ import { toLiquidHtmlAST, toLiquidAST, LiquidHtmlNode } from '~/parser/stage-2-a
 import { deepGet } from '~/utils';
 
 describe('Unit: Stage 2 (AST)', () => {
+  let ast: any;
   describe('Unit: toLiquidHtmlAST(text) and toLiquidAST(text)', () => {
     [
       {
@@ -14,8 +15,6 @@ describe('Unit: Stage 2 (AST)', () => {
         fn: toLiquidAST,
       },
     ].forEach((testContext) => {
-      let ast: any;
-
       const title = testContext.title;
       const toAST = testContext.fn;
 
@@ -727,10 +726,55 @@ describe('Unit: Stage 2 (AST)', () => {
       expectPath(ast, 'children.0.name.1.value').to.eql('--header');
     });
 
+    it('should allow for at most 2 unclosed nodes in a LiquidBranch', () => {
+      // two empty nodes = ok
+      let testCases = [
+        '{% if cond %}<div>{% endif %}',
+        '{% if cond %}{% else %}<div>{% endif %}',
+        '{% if cond %}<div>{% else %}{% endif %}',
+        '{% if cond %}{% elsif cond %}<div>{% endif %}',
+        '{% if cond %}<div><a>{% endif %}',
+        '{% if cond %}{% else %}<div><a>{% endif %}',
+        '{% if cond %}{% elsif cond %}<div><a>{% endif %}',
+        '{% case cond %}{% when %}<div><a>{% endcase %}',
+      ];
+      for (const testCase of testCases) {
+        expect(() => toLiquidHtmlAST(testCase), testCase).not.to.throw();
+      }
+
+      // 3 nodes = not ok
+      testCases = [
+        '{% if cond %}<a><b><c>{% endif %}',
+        '{% if cond %}{% else %}<a><b><c>{% endif %}',
+        '{% if cond %}{% elsif cond %}<a><b><c>{% endif %}',
+        '{% case cond %}{% when %}<a><b><c>{% endcase %}',
+      ];
+      for (const testCase of testCases) {
+        expect(() => toLiquidHtmlAST(testCase), testCase).to.throw(
+          /Attempting to close LiquidTag '[^']+' before HtmlElement 'c' was closed/,
+        );
+      }
+
+      // 2 nodes but with children = not ok
+      testCases = [
+        '{% if cond %}<a>hi</a><b>{% endif %}',
+        '{% if cond %}<b><a>hi</a>{% endif %}',
+        '{% if cond %}{% else %}<a>hi</a><b>{% endif %}',
+        '{% if cond %}{% else %}<b><a>hi</a>{% endif %}',
+        '{% if cond %}{% elsif cond %}<a>hi</a><b>{% endif %}',
+        '{% if cond %}{% elsif cond %}<b><a>hi</a>{% endif %}',
+        '{% case cond %}{% when %}<a>hi</a><b>{% endcase %}',
+      ];
+      for (const testCase of testCases) {
+        expect(() => toLiquidHtmlAST(testCase), testCase).to.throw(
+          /Attempting to close LiquidTag '[^']+' before HtmlElement 'b' was closed/,
+        );
+      }
+    });
+
     it('should throw when trying to close the wrong node', () => {
       const testCases = [
         '<a><div></a>',
-        '<a>{% if condition %}</a>',
         '{% for a in b %}<div>{% endfor %}',
         '{% for a in b %}{% if condition %}{% endfor %}',
         '<{{ node_type }}><div></{{ node_type }}>',
@@ -742,7 +786,7 @@ describe('Unit: Stage 2 (AST)', () => {
           expect(true, `expected ${testCase} to throw LiquidHTMLCSTParsingError`).to.be.false;
         } catch (e: any) {
           expect(e.name).to.eql('LiquidHTMLParsingError');
-          expect(e.message).to.match(
+          expect(e.message, testCase).to.match(
             /Attempting to close \w+ '[^']+' before \w+ '[^']+' was closed/,
           );
           expect(e.message).not.to.match(/undefined/i);
@@ -905,6 +949,76 @@ describe('Unit: Stage 2 (AST)', () => {
 
       expectPath(ast, 'children.0.type').to.eql('TextNode');
       expectPath(ast, 'children.0.value').to.eql('<style>\n  :root { --bg:');
+    });
+  });
+
+  it('should allow for dangling html open tags inside branches when the conditions are right', () => {
+    ['if', 'unless'].forEach((conditional) => {
+      ast = toLiquidHtmlAST(`
+        {% ${conditional} condition %}
+          <section class="unclosed">
+        {% end${conditional} %}
+      `);
+      expectPath(ast, 'children.0.children.0.type').to.equal('LiquidBranch');
+      expectPath(ast, 'children.0.children.0.children.0.type').to.equal('HtmlDanglingMarkerOpen');
+      expectPath(ast, 'children.0.children.0.children.0.attributes.0.name.0.value').to.equal(
+        'class',
+      );
+      expectPath(ast, 'children.0.children.0.children.0.attributes.0.value.0.value').to.equal(
+        'unclosed',
+      );
+
+      ast = toLiquidHtmlAST(`
+        {% ${conditional} condition %}
+          <section class="unclosed">
+        {% else %}
+          <section class="unclosed">
+        {% end${conditional} %}
+      `);
+      expectPath(ast, 'children.0.children.0.type').to.equal('LiquidBranch');
+      expectPath(ast, 'children.0.children.0.children.0.type').to.equal('HtmlDanglingMarkerOpen');
+      expectPath(ast, 'children.0.children.0.children.0.attributes.0.name.0.value').to.equal(
+        'class',
+      );
+      expectPath(ast, 'children.0.children.0.children.0.attributes.0.value.0.value').to.equal(
+        'unclosed',
+      );
+
+      expectPath(ast, 'children.0.children.1.type').to.equal('LiquidBranch');
+      expectPath(ast, 'children.0.children.1.children.0.type').to.equal('HtmlDanglingMarkerOpen');
+      expectPath(ast, 'children.0.children.1.children.0.attributes.0.name.0.value').to.equal(
+        'class',
+      );
+      expectPath(ast, 'children.0.children.1.children.0.attributes.0.value.0.value').to.equal(
+        'unclosed',
+      );
+    });
+  });
+
+  it('should allow for dangling html close tags inside branches when the conditions are right', () => {
+    ['if', 'unless'].forEach((conditional) => {
+      ast = toLiquidHtmlAST(`
+        {% ${conditional} condition %}
+          </section>
+        {% end${conditional} %}
+      `);
+      expectPath(ast, 'children.0.children.0.type').to.equal('LiquidBranch');
+      expectPath(ast, 'children.0.children.0.children.0.type').to.equal('HtmlDanglingMarkerClose');
+
+      ast = toLiquidHtmlAST(`
+        {% ${conditional} condition %}
+          </section>
+        {% else %}
+          </main>
+        {% end${conditional} %}
+      `);
+      expectPath(ast, 'children.0.children.0.type').to.equal('LiquidBranch');
+      expectPath(ast, 'children.0.children.0.children.0.type').to.equal('HtmlDanglingMarkerClose');
+      expectPath(ast, 'children.0.children.0.children.0.name.0.value').to.equal('section');
+
+      expectPath(ast, 'children.0.children.1.type').to.equal('LiquidBranch');
+      expectPath(ast, 'children.0.children.1.children.0.type').to.equal('HtmlDanglingMarkerClose');
+      expectPath(ast, 'children.0.children.1.children.0.name.0.value').to.equal('main');
     });
   });
 
