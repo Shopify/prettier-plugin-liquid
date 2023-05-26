@@ -571,7 +571,7 @@ describe('Unit: Stage 2 (AST)', () => {
       });
 
       it(`${title} - should parse liquid case as branches`, () => {
-        ast = toAST(`{% case A %}{% when A %}A{% when "B" %}B{% else %}C{% endcase %}`);
+        ast = toAST(`{% case A %}{% when A %}A{% when "B" %}B{% else    %}C{% endcase %}`);
         expectPath(ast, 'children.0').to.exist;
         expectPath(ast, 'children.0.type').to.eql('LiquidTag');
         expectPath(ast, 'children.0.name').to.eql('case');
@@ -599,6 +599,7 @@ describe('Unit: Stage 2 (AST)', () => {
 
         expectPath(ast, 'children.0.children.3.type').to.eql('LiquidBranch');
         expectPath(ast, 'children.0.children.3.name').to.eql('else');
+        expectPath(ast, 'children.0.children.3.markup').to.eql('');
         expectPath(ast, 'children.0.children.3.children.0.type').to.eql('TextNode');
         expectPath(ast, 'children.0.children.3.children.0.value').to.eql('C');
       });

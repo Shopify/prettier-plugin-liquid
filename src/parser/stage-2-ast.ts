@@ -532,7 +532,19 @@ export interface ASTNode<T> {
   source: string;
 }
 
-interface AstBuildOptions {
+interface ASTBuildOptions {
+  /**
+   * Whether the parser should throw if the document node isn't closed
+   */
+  allowUnclosedDocumentNode: boolean;
+
+  /**
+   * 'strict' will disable the Liquid parsing base cases. Which means that we will
+   * throw an error if we can't parse the node `markup` properly.
+   *
+   * 'tolerant' is the default case so that prettier can pretty print nodes
+   * that it doesn't understand.
+   */
   mode: 'strict' | 'tolerant';
 }
 
@@ -562,12 +574,18 @@ function isConcreteLiquidBranchDisguisedAsTag(
   );
 }
 
-export function toLiquidAST(source: string) {
-  const cst = toLiquidCST(source);
+export function toLiquidAST(
+  source: string,
+  options: ASTBuildOptions = {
+    allowUnclosedDocumentNode: true,
+    mode: 'tolerant',
+  },
+) {
+  const cst = toLiquidCST(source, { mode: options.mode });
   const root: DocumentNode = {
     type: NodeTypes.Document,
     source: source,
-    children: cstToAst(cst, { mode: 'tolerant' }),
+    children: cstToAst(cst, options),
     name: '#document',
     position: {
       start: 0,
@@ -577,12 +595,18 @@ export function toLiquidAST(source: string) {
   return root;
 }
 
-export function toLiquidHtmlAST(source: string): DocumentNode {
+export function toLiquidHtmlAST(
+  source: string,
+  options: ASTBuildOptions = {
+    allowUnclosedDocumentNode: false,
+    mode: 'tolerant',
+  },
+): DocumentNode {
   const cst = toLiquidHtmlCST(source);
   const root: DocumentNode = {
     type: NodeTypes.Document,
     source: source,
-    children: cstToAst(cst, { mode: 'strict' }),
+    children: cstToAst(cst, options),
     name: '#document',
     position: {
       start: 0,
@@ -752,14 +776,13 @@ function getName(
 
 export function cstToAst(
   cst: LiquidHtmlCST | LiquidCST | ConcreteAttributeNode[],
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): LiquidHtmlNode[] {
   if (cst.length === 0) return [];
 
   const builder = buildAst(cst, options);
-  const isStrictParser = options.mode === 'strict';
 
-  if (isStrictParser && builder.cursor.length !== 0) {
+  if (!options.allowUnclosedDocumentNode && builder.cursor.length !== 0) {
     throw new LiquidHTMLASTParsingError(
       `Attempting to end parsing before ${builder.parent?.type} '${getName(
         builder.parent,
@@ -775,7 +798,7 @@ export function cstToAst(
 
 function buildAst(
   cst: LiquidHtmlCST | LiquidCST | ConcreteAttributeNode[],
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ) {
   const builder = new ASTBuilder(cst[0].source);
 
@@ -985,14 +1008,14 @@ function toAttributePosition(
 
 function toAttributeValue(
   value: (ConcreteLiquidNode | ConcreteTextNode)[],
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): (LiquidNode | TextNode)[] {
   return cstToAst(value, options) as (LiquidNode | TextNode)[];
 }
 
 function toAttributes(
   attrList: ConcreteAttributeNode[],
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): AttributeNode[] {
   return cstToAst(attrList, options) as AttributeNode[];
 }
@@ -1026,7 +1049,7 @@ function liquidBranchBaseAttributes(
 
 function toLiquidTag(
   node: ConcreteLiquidTag | ConcreteLiquidTagOpen,
-  options: AstBuildOptions & { isBlockTag: boolean },
+  options: ASTBuildOptions & { isBlockTag: boolean },
 ): LiquidTag | LiquidBranch {
   if (typeof node.markup !== 'string') {
     return toNamedLiquidTag(node as ConcreteLiquidTagNamed, options);
@@ -1047,7 +1070,7 @@ function toLiquidTag(
 
 function toNamedLiquidTag(
   node: ConcreteLiquidTagNamed | ConcreteLiquidTagOpenNamed,
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): LiquidTagNamed | LiquidBranchNamed {
   switch (node.name) {
     case NamedTags.echo: {
@@ -1559,7 +1582,7 @@ function toNamedArgument(
 
 function toHtmlElement(
   node: ConcreteHtmlTagOpen,
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): HtmlElement {
   return {
     type: NodeTypes.HtmlElement,
@@ -1575,7 +1598,7 @@ function toHtmlElement(
 
 function toHtmlDanglingMarkerOpen(
   node: ConcreteHtmlTagOpen,
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): HtmlDanglingMarkerOpen {
   return {
     type: NodeTypes.HtmlDanglingMarkerOpen,
@@ -1589,7 +1612,7 @@ function toHtmlDanglingMarkerOpen(
 
 function toHtmlDanglingMarkerClose(
   node: ConcreteHtmlTagClose,
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): HtmlDanglingMarkerClose {
   return {
     type: NodeTypes.HtmlDanglingMarkerClose,
@@ -1602,7 +1625,7 @@ function toHtmlDanglingMarkerClose(
 
 function toHtmlVoidElement(
   node: ConcreteHtmlVoidElement,
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): HtmlVoidElement {
   return {
     type: NodeTypes.HtmlVoidElement,
@@ -1616,7 +1639,7 @@ function toHtmlVoidElement(
 
 function toHtmlSelfClosingElement(
   node: ConcreteHtmlSelfClosingElement,
-  options: AstBuildOptions,
+  options: ASTBuildOptions,
 ): HtmlSelfClosingElement {
   return {
     type: NodeTypes.HtmlSelfClosingElement,

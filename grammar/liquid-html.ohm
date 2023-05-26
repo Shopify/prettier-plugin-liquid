@@ -45,11 +45,14 @@ Liquid <: Helpers {
     | liquidTag
     | liquidInlineComment
 
-  liquidTag =
+  liquidTagStrict =
     | liquidTagAssign
+    | liquidTagBreak
+    | liquidTagContinue
     | liquidTagCycle
     | liquidTagDecrement
     | liquidTagEcho
+    | liquidTagElse
     | liquidTagElsif
     | liquidTagInclude
     | liquidTagIncrement
@@ -59,9 +62,12 @@ Liquid <: Helpers {
     | liquidTagSection
     | liquidTagSections
     | liquidTagWhen
+
+  liquidTag =
+    | liquidTagStrict
     | liquidTagBaseCase
 
-  liquidTagOpen =
+  liquidTagOpenStrict =
     | liquidTagOpenCase
     | liquidTagOpenCapture
     | liquidTagOpenForm
@@ -70,7 +76,11 @@ Liquid <: Helpers {
     | liquidTagOpenIf
     | liquidTagOpenPaginate
     | liquidTagOpenUnless
+
+  liquidTagOpen =
+    | liquidTagOpenStrict
     | liquidTagOpenBaseCase
+
   liquidTagClose = "{%" "-"? space* "end" blockName space* tagMarkup "-"? "%}"
 
   // These two are the same but transformed differently
@@ -147,6 +157,10 @@ Liquid <: Helpers {
   liquidTagOpenIf = liquidTagOpenRule<"if", liquidTagOpenConditionalMarkup>
   liquidTagOpenUnless = liquidTagOpenRule<"unless", liquidTagOpenConditionalMarkup>
   liquidTagElsif = liquidTagRule<"elsif", liquidTagOpenConditionalMarkup>
+
+  liquidTagBreak = liquidTagRule<"break", empty>
+  liquidTagContinue = liquidTagRule<"continue", empty>
+  liquidTagElse = liquidTagRule<"else", empty>
 
   liquidTagOpenConditionalMarkup = nonemptyListOf<condition, conditionSeparator> space*
   conditionSeparator = &logicalOperator
@@ -454,4 +468,19 @@ LiquidHTML <: Liquid {
     | caseInsensitive<"track">
     | caseInsensitive<"wbr">
     ) ~identifierCharacter
+}
+
+StrictLiquid <: Liquid {
+  liquidTag := liquidTagStrict
+  liquidTagOpen := liquidTagOpenStrict
+}
+
+StrictLiquidStatement <: LiquidStatement {
+  liquidTag := liquidTagStrict
+  liquidTagOpen := liquidTagOpenStrict
+}
+
+StrictLiquidHTML <: LiquidHTML {
+  liquidTag := liquidTagStrict
+  liquidTagOpen := liquidTagOpenStrict
 }
