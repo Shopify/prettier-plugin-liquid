@@ -1,4 +1,35 @@
 
+1.1.0 / 2023-05-26
+==================
+
+  * Add support for Strict Liquid Markup parsing ([#187](https://github.com/shopify/prettier-plugin-liquid/issues/187))
+  * Add support for dangling HTML nodes inside Liquid if statements ([#186](https://github.com/shopify/prettier-plugin-liquid/issues/186))
+
+    That is, the following liquid code _no longer_ throws a LiquidHTMLParsingError
+
+    ```liquid
+    <div>
+      {% if href %}
+        <a href="{{ href }}">
+      {% endif %}
+
+      <div class="content-wrapper">
+        <p>...</p>
+      </div>
+
+      {% if href %}
+        </a>
+      {% endif %}
+    </div>
+    ```
+
+    The heuristic we're going for is the following:
+
+    - Only supported inside a LiquidBranch (if,else,when)
+    - At most 2 of the same type (2 dangling open, or 2 dangling close)
+
+    Everything else still throws a LiquidHTMLParsingError. The idea is that those are likely errors, whereas the heuristic isn't.
+
 1.0.6 / 2023-01-18
 ==================
 
