@@ -12,8 +12,8 @@ const languages: SupportLanguage[] = [
   {
     name: 'LiquidHTML',
     parsers: [liquidHtmlLanguageName],
-    extensions: ['.liquid'],
-    vscodeLanguageIds: ['liquid', 'Liquid'],
+    extensions: ['.liquid', '.twig'],
+    vscodeLanguageIds: ['liquid', 'Liquid', 'twig', 'Twig'],
   },
 ];
 
