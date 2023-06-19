@@ -72,3 +72,13 @@ It should not convert tabs to spaces inside "paste-as-is" docs (pre)
 	hello
 </pre>
 </div>
+
+It should useTabs inside attributes too
+useTabs: true
+singleQuote: true
+<div
+	class='test'
+	{% if foo != blank %}
+		id='{{ foo }}'
+	{% endif %}
+></div>
