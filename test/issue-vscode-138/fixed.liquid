@@ -1,0 +1,11 @@
+It should not put capture on a new line
+printWidth: 40
+{% capture current %}{% cycle 1, 2 %}{% endcapture %}
+
+It should pretty print an a tag differently
+printWidth: 1
+<a
+  class="slide-link"
+  href="{{ link_url }}"
+  title="{{ alt | escape }}"
+></a>
