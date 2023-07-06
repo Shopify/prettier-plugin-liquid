@@ -4,16 +4,28 @@ export const liquidHtmlGrammars = ohm.grammars(
   require('../../grammar/liquid-html.ohm.js'),
 );
 
-export const strictGrammars = {
+export interface LiquidGrammars {
+  Liquid: ohm.Grammar;
+  LiquidHTML: ohm.Grammar;
+  LiquidStatement: ohm.Grammar;
+}
+
+export const strictGrammars: LiquidGrammars = {
   Liquid: liquidHtmlGrammars['StrictLiquid'],
   LiquidHTML: liquidHtmlGrammars['StrictLiquidHTML'],
   LiquidStatement: liquidHtmlGrammars['StrictLiquidStatement'],
 };
 
-export const tolerantGrammars = {
+export const tolerantGrammars: LiquidGrammars = {
   Liquid: liquidHtmlGrammars['Liquid'],
   LiquidHTML: liquidHtmlGrammars['LiquidHTML'],
   LiquidStatement: liquidHtmlGrammars['LiquidStatement'],
+};
+
+export const placeholderGrammars: LiquidGrammars = {
+  Liquid: liquidHtmlGrammars['WithPlaceholderLiquid'],
+  LiquidHTML: liquidHtmlGrammars['WithPlaceholderLiquidHTML'],
+  LiquidStatement: liquidHtmlGrammars['WithPlaceholderLiquidStatement'],
 };
 
 // see ../../grammar/liquid-html.ohm for full list

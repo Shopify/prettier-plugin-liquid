@@ -545,7 +545,7 @@ interface ASTBuildOptions {
    * 'tolerant' is the default case so that prettier can pretty print nodes
    * that it doesn't understand.
    */
-  mode: 'strict' | 'tolerant';
+  mode: 'strict' | 'tolerant' | 'completion';
 }
 
 export function isBranchedTag(node: LiquidHtmlNode) {
