@@ -484,3 +484,18 @@ StrictLiquidHTML <: LiquidHTML {
   liquidTag := liquidTagStrict
   liquidTagOpen := liquidTagOpenStrict
 }
+
+WithPlaceholderLiquid <: Liquid {
+  liquidTagName := (letter | "█") (alnum | "_")*
+  variableSegment := (letter | "_" | "█") identifierCharacter*
+}
+
+WithPlaceholderLiquidStatement <: LiquidStatement {
+  liquidTagName := (letter | "█") (alnum | "_")*
+  variableSegment := (letter | "_" | "█") identifierCharacter*
+}
+
+WithPlaceholderLiquidHTML <: LiquidHTML {
+  liquidTagName := (letter | "█") (alnum | "_")*
+  variableSegment := (letter | "_" | "█") identifierCharacter*
+}

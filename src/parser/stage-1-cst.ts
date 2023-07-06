@@ -33,7 +33,12 @@
 import { Parser } from 'prettier';
 import ohm, { Node } from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { strictGrammars, tolerantGrammars } from '~/parser/grammar';
+import {
+  LiquidGrammars,
+  placeholderGrammars,
+  strictGrammars,
+  tolerantGrammars,
+} from '~/parser/grammar';
 import { LiquidHTMLCSTParsingError } from '~/parser/errors';
 import { Comparators, NamedTags } from '~/types';
 
@@ -509,15 +514,20 @@ export interface CSTBuildOptions {
    * 'tolerant' is the default case so that prettier can pretty print nodes
    * that it doesn't understand.
    */
-  mode: 'strict' | 'tolerant';
+  mode: 'strict' | 'tolerant' | 'completion';
 }
+
+const Grammars: Record<CSTBuildOptions['mode'], LiquidGrammars> = {
+  strict: strictGrammars,
+  tolerant: tolerantGrammars,
+  completion: placeholderGrammars,
+};
 
 export function toLiquidHtmlCST(
   source: string,
   options: CSTBuildOptions = { mode: 'tolerant' },
 ): LiquidHtmlCST {
-  const grammars =
-    options.mode === 'tolerant' ? tolerantGrammars : strictGrammars;
+  const grammars = Grammars[options.mode];
   const grammar = grammars.LiquidHTML;
   return toCST(source, grammars, grammar, [
     'HelperMappings',
@@ -530,15 +540,14 @@ export function toLiquidCST(
   source: string,
   options: CSTBuildOptions = { mode: 'tolerant' },
 ): LiquidCST {
-  const grammars =
-    options.mode === 'tolerant' ? tolerantGrammars : strictGrammars;
+  const grammars = Grammars[options.mode];
   const grammar = grammars.Liquid;
   return toCST(source, grammars, grammar, ['HelperMappings', 'LiquidMappings']);
 }
 
 function toCST<T>(
   source: string,
-  grammars: typeof strictGrammars,
+  grammars: LiquidGrammars,
   grammar: ohm.Grammar,
   cstMappings: ('HelperMappings' | 'LiquidMappings' | 'LiquidHTMLMappings')[],
 ): T {

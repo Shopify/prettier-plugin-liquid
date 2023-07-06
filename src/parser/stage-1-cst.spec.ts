@@ -1114,6 +1114,70 @@ describe('Unit: Stage 1 (CST)', () => {
     });
   });
 
+  describe('Unit: toLiquidHtmlCST(text, { mode: "completion" })', () => {
+    let cst: LiquidHtmlCST;
+    it('should parse special placeholder characters', () => {
+      const toCST = (source: string) => toLiquidHtmlCST(source, { mode: 'completion' });
+      cst = toCST('{% █ %}');
+      expectPath(cst, '0.type').to.eql('LiquidTag');
+      expectPath(cst, '0.name').to.eql('█');
+
+      cst = toCST('{{ █ }}');
+      expectPath(cst, '0.type').to.eql('LiquidDrop');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.expression.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.expression.name').to.eql('█');
+
+      cst = toCST('{{ var.█ }}');
+      expectPath(cst, '0.type').to.eql('LiquidDrop');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.expression.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.expression.lookups.0.type').to.eql('String');
+      expectPath(cst, '0.markup.expression.lookups.0.value').to.eql('█');
+
+      cst = toCST('{{ var[█] }}');
+      expectPath(cst, '0.type').to.eql('LiquidDrop');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.expression.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.expression.lookups.0.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.expression.lookups.0.name').to.eql('█');
+
+      cst = toCST('{% echo █ %}');
+      expectPath(cst, '0.type').to.eql('LiquidTag');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.expression.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.expression.name').to.eql('█');
+
+      cst = toCST('{% echo var | █ %}');
+      expectPath(cst, '0.type').to.eql('LiquidTag');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.filters.0.type').to.eql('LiquidFilter');
+      expectPath(cst, '0.markup.filters.0.name').to.eql('█');
+
+      cst = toCST('{% echo var | replace: █ %}');
+      expectPath(cst, '0.type').to.eql('LiquidTag');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.filters.0.type').to.eql('LiquidFilter');
+      expectPath(cst, '0.markup.filters.0.args.0.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.filters.0.args.0.name').to.eql('█');
+
+      cst = toCST('{% echo var | replace: "foo", █ %}');
+      expectPath(cst, '0.type').to.eql('LiquidTag');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.filters.0.type').to.eql('LiquidFilter');
+      expectPath(cst, '0.markup.filters.0.args.1.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.filters.0.args.1.name').to.eql('█');
+
+      cst = toCST('{% echo var | replace: "foo", var: █ %}');
+      expectPath(cst, '0.type').to.eql('LiquidTag');
+      expectPath(cst, '0.markup.type').to.eql('LiquidVariable');
+      expectPath(cst, '0.markup.filters.0.type').to.eql('LiquidFilter');
+      expectPath(cst, '0.markup.filters.0.args.1.type').to.eql('NamedArgument');
+      expectPath(cst, '0.markup.filters.0.args.1.value.type').to.eql('VariableLookup');
+      expectPath(cst, '0.markup.filters.0.args.1.value.name').to.eql('█');
+    });
+  });
+
   function expectPath(cst: LiquidHtmlCST, path: string) {
     return expect(deepGet(path.split('.'), cst));
   }

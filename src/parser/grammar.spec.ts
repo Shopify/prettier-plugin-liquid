@@ -1,15 +1,16 @@
 import { expect } from 'chai';
-import { strictGrammars, tolerantGrammars } from '~/parser/grammar';
+import { placeholderGrammars, strictGrammars, tolerantGrammars } from '~/parser/grammar';
 
 describe('Unit: liquidHtmlGrammar', () => {
   const grammars = [
     { mode: 'strict', grammar: strictGrammars },
     { mode: 'tolerant', grammar: tolerantGrammars },
+    { mode: 'completion', grammar: placeholderGrammars },
   ];
 
-  grammars.forEach(({ mode, grammar }) => {
-    describe(`Case: ${mode}`, () => {
-      it('should parse or not parse HTML+Liquid', () => {
+  describe(`Case: common to all grammars`, () => {
+    it('should parse or not parse HTML+Liquid', () => {
+      grammars.forEach(({ grammar }) => {
         expectMatchSucceeded('<h6 data-src="hello world">').to.be.true;
         expectMatchSucceeded('<a src="https://product"></a>').to.be.true;
         expectMatchSucceeded('<a src="https://google.com"></b>').to.be.true;
@@ -99,8 +100,10 @@ describe('Unit: liquidHtmlGrammar', () => {
           return expect(match.succeeded(), text);
         }
       });
+    });
 
-      it('should parse or not parse {% liquid %} lines', () => {
+    it('should parse or not parse {% liquid %} lines', () => {
+      grammars.forEach(({ grammar }) => {
         expectMatchSucceeded(`
           layout none
 
@@ -121,5 +124,26 @@ describe('Unit: liquidHtmlGrammar', () => {
         }
       });
     });
+  });
+
+  describe('Case: placeholderGrammars', () => {
+    it('should parse special placeholder characters', () => {
+      expectMatchSucceeded('{% █ %}').to.be.true;
+      expectMatchSucceeded('{{ █ }}').to.be.true;
+      expectMatchSucceeded('{{ var.█ }}').to.be.true;
+      expectMatchSucceeded('{{ var[█] }}').to.be.true;
+      expectMatchSucceeded('{% echo █ %}').to.be.true;
+      expectMatchSucceeded('{% echo var.█ %}').to.be.true;
+      expectMatchSucceeded('{% echo var[█] %}').to.be.true;
+      expectMatchSucceeded('{% echo var | █ %}').to.be.true;
+      expectMatchSucceeded('{% echo var | replace: █ %}').to.be.true;
+      expectMatchSucceeded('{% echo var | replace: "foo", █ %}').to.be.true;
+      expectMatchSucceeded('{% echo var | replace: "foo", var: █ %}').to.be.true;
+    });
+
+    function expectMatchSucceeded(text: string) {
+      const match = placeholderGrammars.Liquid.match(text.trimStart(), 'Node');
+      return expect(match.succeeded(), text);
+    }
   });
 });
