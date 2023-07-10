@@ -438,7 +438,7 @@ export interface ConcreteNumberLiteral
 export interface ConcreteLiquidLiteral
   extends ConcreteBasicNode<ConcreteNodeTypes.LiquidLiteral> {
   keyword: keyof typeof LiquidLiteralValues;
-  value: typeof LiquidLiteralValues[keyof typeof LiquidLiteralValues];
+  value: (typeof LiquidLiteralValues)[keyof typeof LiquidLiteralValues];
 }
 
 export interface ConcreteLiquidRange

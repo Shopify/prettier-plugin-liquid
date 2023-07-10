@@ -1,11 +1,13 @@
 import {
-  Plugin,
   RequiredOptions,
   SupportLanguage,
   SupportOptions,
+  version,
 } from 'prettier';
+import type { Plugin as Plugin2 } from 'prettier';
+import type { Plugin as Plugin3 } from 'prettier3';
 import { parsers, liquidHtmlLanguageName } from '~/parser';
-import { printers } from '~/printer';
+import { printers2, printers3 } from '~/printer';
 import { LiquidHtmlNode } from '~/types';
 
 const languages: SupportLanguage[] = [
@@ -50,16 +52,26 @@ const options: SupportOptions = {
   },
 };
 
-const defaultOptions: Partial<RequiredOptions> = {
+const defaultOptions = {
   printWidth: 120,
 };
 
-const plugin: Plugin<LiquidHtmlNode> = {
+const plugin2: Plugin2<LiquidHtmlNode> = {
   languages,
-  parsers,
-  printers,
+  parsers: parsers as Plugin2['parsers'],
+  printers: printers2,
   options,
   defaultOptions,
 };
 
-export = plugin;
+const plugin3: Plugin3<LiquidHtmlNode> = {
+  languages,
+  parsers: parsers as Plugin3['parsers'],
+  printers: printers3 as any,
+  options,
+  defaultOptions,
+};
+
+const prettierMajor = version.split('.')[0]!;
+
+export = prettierMajor === '2' ? plugin2 : plugin3;

@@ -1,5 +1,6 @@
-import { AstPath, Doc, doc } from 'prettier';
+import { Doc, doc } from 'prettier';
 import {
+  AstPath,
   LiquidAstPath,
   LiquidBranch,
   LiquidDrop,
@@ -42,7 +43,7 @@ const LIQUID_TAGS_THAT_ALWAYS_BREAK = ['for', 'case'];
 const { builders, utils } = doc;
 const { group, hardline, ifBreak, indent, join, line, softline, literalline } =
   builders;
-const { replaceTextEndOfLine } = doc.utils as any;
+const { replaceEndOfLine } = doc.utils as any;
 
 export function printLiquidDrop(
   path: LiquidAstPath,
@@ -420,7 +421,7 @@ export function printLiquidTag(
         leadingSpaceGroupId,
         trailingSpaceGroupId: FORCE_FLAT_GROUP_ID,
       }),
-      ...replaceTextEndOfLine(getNodeContent(node)),
+      ...replaceEndOfLine(getNodeContent(node)),
       printLiquidBlockEnd(path, options, print, {
         ...args,
         leadingSpaceGroupId: FORCE_FLAT_GROUP_ID,

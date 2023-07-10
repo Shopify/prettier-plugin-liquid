@@ -423,7 +423,7 @@ type ParentNode = Extract<AugmentedAstNode, { children?: AugmentedAstNode[] }>;
 
 type HtmlNode = Extract<
   AugmentedAstNode,
-  { type: typeof HtmlNodeTypes[number] }
+  { type: (typeof HtmlNodeTypes)[number] }
 >;
 
 export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
@@ -432,7 +432,7 @@ export function isHtmlNode(node: AugmentedAstNode): node is HtmlNode {
 
 type LiquidNode = Extract<
   AugmentedAstNode,
-  { type: typeof LiquidNodeTypes[number] }
+  { type: (typeof LiquidNodeTypes)[number] }
 >;
 
 export function isLiquidNode(
