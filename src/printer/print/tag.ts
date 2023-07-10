@@ -1,5 +1,6 @@
-import { AstPath, Doc, doc } from 'prettier';
+import { Doc, doc } from 'prettier';
 import {
+  AstPath,
   HtmlDanglingMarkerOpen,
   HtmlDanglingMarkerClose,
   HtmlElement,
@@ -35,7 +36,7 @@ import {
 const {
   builders: { breakParent, indent, join, line, softline, hardline },
 } = doc;
-const { replaceTextEndOfLine } = doc.utils as any;
+const { replaceEndOfLine } = doc.utils as any;
 
 export function printClosingTag(
   node: LiquidHtmlNode,
@@ -318,7 +319,7 @@ function printAttributes(
     : line;
 
   const attributes = prettierIgnoreAttributes
-    ? replaceTextEndOfLine(
+    ? replaceEndOfLine(
         node.source.slice(
           first(node.attributes).position.start,
           last(node.attributes).position.end,

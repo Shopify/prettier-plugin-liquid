@@ -1,6 +1,6 @@
 'use strict';
 
-import { AstPath, doc, Doc } from 'prettier';
+import { doc, Doc } from 'prettier';
 import {
   shouldPreserveContent,
   forceBreakContent,
@@ -17,6 +17,7 @@ import {
 } from '~/printer/print/tag';
 import { printChildren } from '~/printer/print/children';
 import {
+  AstPath,
   NodeTypes,
   LiquidParserOptions,
   LiquidPrinter,
@@ -37,7 +38,7 @@ const {
     softline,
   },
 } = doc;
-const { replaceTextEndOfLine } = doc.utils as any;
+const { replaceEndOfLine } = doc.utils as any;
 
 export function printRawElement(
   path: AstPath<HtmlRawNode>,
@@ -101,7 +102,7 @@ export function printElement(
       group(printOpeningTag(path, options, print, attrGroupId), {
         id: attrGroupId,
       }),
-      ...replaceTextEndOfLine(getNodeContent(node, options)),
+      ...replaceEndOfLine(getNodeContent(node, options)),
       ...printClosingTag(node, options),
       printClosingTagSuffix(node, options),
     ];

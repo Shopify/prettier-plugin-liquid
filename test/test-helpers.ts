@@ -50,16 +50,16 @@ export function assertFormattedEqualsFixed(
   for (let i = 0; i < chunks.length; i++) {
     const src = chunks[i];
     const testConfig = getTestSetup(src, i);
-    const test = () => {
+    const test = async () => {
       const testOptions = merge(options, testConfig.prettierOptions);
       const input = src.replace(TEST_MESSAGE, '').trimStart();
-      if (testConfig.debug) debug(input, testOptions);
-      let actual = format(input, testOptions).trimEnd();
+      if (testConfig.debug) await debug(input, testOptions);
+      let actual = (await format(input, testOptions)).trimEnd();
       let expected = expectedChunks[i].replace(TEST_MESSAGE, '').trimStart();
 
       if (TEST_IDEMPOTENCE) {
-        if (testConfig.debug) debug(actual, testOptions);
-        actual = format(actual, testOptions).trimEnd();
+        if (testConfig.debug) await debug(actual, testOptions);
+        actual = (await format(actual, testOptions)).trimEnd();
       }
 
       try {
@@ -114,11 +114,12 @@ function getTestSetup(paragraph: string, index: number) {
   const prettierOptions: Partial<LiquidParserOptions> = {
     printWidth: 80, // We changed the default, but the tests were written with 80 in mind.
     indentSchema: true, // We changed the default, but the tests were written with true in mind.
+    trailingComma: 'es5', // prettier 3 changed the default from "es5" to "all", but our tests were written for prettier 2
   };
   const optionsParser = /(?<name>\w+): (?<value>[^\s]*)/g;
   let match: RegExpExecArray;
-  while ((match = optionsParser.exec(message)) !== null) {
-    prettierOptions[match.groups.name] = JSON.parse(match.groups.value);
+  while ((match = optionsParser.exec(message)!) !== null) {
+    prettierOptions[match.groups!.name] = JSON.parse(match.groups!.value);
   }
 
   return {
@@ -157,7 +158,7 @@ export function writeFile(dirname: string, filename: string, contents: string) {
   return fs.writeFileSync(path.join(dirname, filename), contents, 'utf8');
 }
 
-export function format(content: string, options: any) {
+export async function format(content: string, options: any) {
   return prettier.format(content, {
     ...options,
     parser: 'liquid-html',
@@ -173,10 +174,10 @@ export function printToDoc(content: string, options: any = {}) {
   });
 }
 
-export function debug(content: string, options: any = {}) {
-  const ast = parse(content, plugin.parsers!, options);
+export async function debug(content: string, options: any = {}) {
+  const ast = parse(content);
   const processedAST = preprocess(ast, options);
-  const printed = format(content, options);
+  const printed = await format(content, options);
   const doc = printToDoc(content, options);
   debugger;
 }

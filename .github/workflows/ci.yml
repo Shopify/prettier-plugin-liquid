@@ -11,8 +11,12 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
         node-version: [16.x, 17.x]
+        prettier-major: [2, 3]
 
-    name: OS ${{ matrix.os }} / NodeJS ${{ matrix.node-version }}
+    name: OS ${{ matrix.os }} / NodeJS ${{ matrix.node-version }} / Prettier ${{ matrix.prettier-major }}
+
+    env:
+      PRETTIER_MAJOR: ${{ matrix.prettier-major }}
 
     steps:
       - uses: actions/checkout@v2

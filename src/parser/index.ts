@@ -1,5 +1,4 @@
 import {
-  Parsers,
   liquidHtmlParser,
   liquidHtmlAstFormat,
   liquidHtmlLanguageName,
@@ -9,6 +8,6 @@ export * from '~/parser/stage-2-ast';
 
 export { liquidHtmlLanguageName, liquidHtmlAstFormat };
 
-export const parsers: Parsers = {
+export const parsers = {
   [liquidHtmlLanguageName]: liquidHtmlParser,
 };

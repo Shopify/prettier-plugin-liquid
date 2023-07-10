@@ -40,7 +40,9 @@
     "prerelease": "scripts/prerelease",
     "prettier": "prettier --plugin . --parser=liquid-html",
     "test": "node_modules/.bin/mocha '{src,test}/**/*.spec.ts'",
+    "test:3": "cross-env PRETTIER_MAJOR=3 yarn test",
     "test:idempotence": "cross-env TEST_IDEMPOTENCE=true node_modules/.bin/mocha 'test/**/*.spec.ts'",
+    "test:idempotence:3": "cross-env PRETTIER_MAJOR=3 yarn test:idempotence",
     "type-check": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -58,8 +60,10 @@
     "cross-env": "^7.0.3",
     "husky": "^7.0.0",
     "mocha": "^9.1.3",
+    "module-alias": "^2.2.3",
     "nyc": "^15.1.0",
-    "prettier": "^2.6.1",
+    "prettier2": "npm:prettier@^2.6.1",
+    "prettier3": "npm:prettier@^3.0.0",
     "pretty-quick": "^3.1.3",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.4.0",

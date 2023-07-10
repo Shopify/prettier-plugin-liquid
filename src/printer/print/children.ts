@@ -1,12 +1,13 @@
-import { AstPath, doc } from 'prettier';
+import { doc } from 'prettier';
 import { locStart, locEnd } from '~/utils';
 import {
-  NodeTypes,
-  LiquidHtmlNode,
+  AstPath,
   LiquidAstPath,
+  LiquidHtmlNode,
   LiquidParserOptions,
   LiquidPrinter,
   LiquidPrinterArgs,
+  NodeTypes,
 } from '~/types';
 import {
   FORCE_BREAK_GROUP_ID,
@@ -33,7 +34,7 @@ import {
 const {
   builders: { breakParent, group, ifBreak, line, softline, hardline },
 } = doc;
-const { replaceTextEndOfLine } = doc.utils as any;
+const { replaceEndOfLine } = doc.utils as any;
 
 function printChild(
   childPath: LiquidAstPath,
@@ -80,7 +81,7 @@ function printChild(
 
     return [
       printOpeningTagPrefix(child, options),
-      ...replaceTextEndOfLine(rawContent),
+      ...replaceEndOfLine(rawContent),
       printClosingTagSuffix(child, options),
     ];
   }
@@ -166,7 +167,7 @@ interface WhitespaceBetweenNode {
   /**
    * @doc Leading, doesn't break content
    */
-  leadingHardlines: typeof hardline[];
+  leadingHardlines: (typeof hardline)[];
 
   /**
    * @doc Leading, breaks first if content doesn't fit.
@@ -186,7 +187,7 @@ interface WhitespaceBetweenNode {
   /**
    * @doc Trailing, doesn't break content
    */
-  trailingHardlines: typeof hardline[];
+  trailingHardlines: (typeof hardline)[];
 }
 
 // This code is adapted from prettier's language-html plugin.
@@ -259,11 +260,11 @@ export function printChildren(
     ): WhitespaceBetweenNode => {
       const childNode = childPath.getValue();
 
-      const leadingHardlines: typeof hardline[] = [];
+      const leadingHardlines: (typeof hardline)[] = [];
       const leadingWhitespace: Whitespace[] = [];
       const leadingDependentWhitespace: doc.builders.Softline[] = [];
       const trailingWhitespace: Whitespace[] = [];
-      const trailingHardlines: typeof hardline[] = [];
+      const trailingHardlines: (typeof hardline)[] = [];
 
       const prevBetweenLine = printBetweenLine(childNode.prev, childNode);
       const nextBetweenLine = printBetweenLine(childNode, childNode.next);
