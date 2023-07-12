@@ -1,4 +1,10 @@
 
+1.2.0 / 2023-07-12
+==================
+
+  * Add support for `prettier@^3` (in _addition_ to `prettier@^2`) ([#196](https://github.com/shopify/prettier-plugin-liquid/issues/196))
+  * Add `completion` mode to the parser ([#195](https://github.com/shopify/prettier-plugin-liquid/issues/195))
+
 1.1.0 / 2023-05-26
 ==================
 
