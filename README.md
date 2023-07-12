@@ -39,6 +39,14 @@ npm install --save-dev prettier @shopify/prettier-plugin-liquid
 yarn add --dev prettier @shopify/prettier-plugin-liquid
 ```
 
+For Prettier version 3 and above, the plugin must also be declared in the [configuration](https://prettier.io/docs/en/configuration.html).
+
+```
+{
+  "plugins": ["@shopify/prettier-plugin-liquid"]
+}
+```
+
 ## Usage
 
 See our [Wiki](https://github.com/Shopify/prettier-plugin-liquid/wiki) pages on the subject:
