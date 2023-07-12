@@ -1,4 +1,10 @@
 
+1.2.1 / 2023-07-12
+==================
+
+  * Add `|| prettier@^3` `peerDependencies` to package.json...
+  * Update README to account for prettier@3 breaking changes
+
 1.2.0 / 2023-07-12
 ==================
 
