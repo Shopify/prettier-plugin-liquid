@@ -1,9 +1,4 @@
-import {
-  RequiredOptions,
-  SupportLanguage,
-  SupportOptions,
-  version,
-} from 'prettier';
+import { SupportLanguage, SupportOptions, version } from 'prettier';
 import type { Plugin as Plugin2 } from 'prettier';
 import type { Plugin as Plugin3 } from 'prettier3';
 import { parsers, liquidHtmlLanguageName } from '~/parser';

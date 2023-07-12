@@ -34,6 +34,13 @@ export const BLOCKS = (
 ).blockName.body.factors[0].terms.map((x: any) => x.obj) as string[];
 
 // see ../../grammar/liquid-html.ohm for full list
+export const RAW_TAGS = (
+  strictGrammars.LiquidHTML.rules as any
+).liquidRawTag.body.terms
+  .map((term: any) => term.args[0].obj)
+  .concat('comment') as string[];
+
+// see ../../grammar/liquid-html.ohm for full list
 export const VOID_ELEMENTS = (
   strictGrammars.LiquidHTML.rules as any
 ).voidElementName.body.factors[0].terms.map(
