@@ -976,6 +976,12 @@ function buildAst(
   return builder;
 }
 
+function nameLength(names: (ConcreteLiquidDrop | ConcreteTextNode)[]) {
+  const start = names.at(0)!;
+  const end = names.at(-1)!;
+  return end.locEnd - start.locStart;
+}
+
 function toAttributePosition(
   node:
     | ConcreteAttrSingleQuoted
@@ -987,12 +993,12 @@ function toAttributePosition(
     // This is bugged when there's whitespace on either side. But I don't
     // think it's worth solving.
     return {
-      start: node.locStart + node.name.length + '='.length + '"'.length,
+      start: node.locStart + nameLength(node.name) + '='.length + '"'.length,
       // name=""
       // 012345678
       // 0 + 4 + 1 + 1
       // = 6
-      end: node.locStart + node.name.length + '='.length + '"'.length,
+      end: node.locStart + nameLength(node.name) + '='.length + '"'.length,
       // name=""
       // 012345678
       // 0 + 4 + 1 + 2
