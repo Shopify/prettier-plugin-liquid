@@ -1,0 +1,4 @@
+It should not consider the trailing whitespace of the last attribute to be sensitive
+printWidth: 40
+{% # prettier-ignore-attributes data-something %}
+<div data-something={{ someStringVar | json }}></div>
