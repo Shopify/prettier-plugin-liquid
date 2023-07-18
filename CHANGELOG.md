@@ -1,4 +1,11 @@
 
+1.2.2 / 2023-07-18
+==================
+
+  * Fixup mode passing in toLiquidHtmlAst
+  * Fixup toAttributePosition with array name (empty string)
+  * Add RAW_TAGS constant in parser/grammar.ts
+
 1.2.1 / 2023-07-12
 ==================
 
