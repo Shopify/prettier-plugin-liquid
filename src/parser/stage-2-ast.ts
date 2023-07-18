@@ -602,7 +602,7 @@ export function toLiquidHtmlAST(
     mode: 'tolerant',
   },
 ): DocumentNode {
-  const cst = toLiquidHtmlCST(source);
+  const cst = toLiquidHtmlCST(source, { mode: options.mode });
   const root: DocumentNode = {
     type: NodeTypes.Document,
     source: source,
