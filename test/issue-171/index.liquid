@@ -1,0 +1,23 @@
+It should not add new lines
+<script>
+  ({{ a }});
+  ``;
+</script>
+
+It should not fail on missing new line after opening script tag.
+<script>({{ a }});
+  ``;</script>
+
+It should not fail on missing new line before closing script tag.
+<script>
+({{ a }});
+  ``;</script>
+
+It should consume extra surrounding spaces.
+<script>
+   ({{ a }});
+  ``;   
+   </script>
+
+It should not fail on blank input.
+<script></script>
