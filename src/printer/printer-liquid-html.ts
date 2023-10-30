@@ -273,7 +273,8 @@ function printNode(
       };
 
       if (isRawMarkupIdentationSensitive()) {
-        return node.value;
+        // trim surrounding new lines
+        return node.value.trim();
       }
 
       const lines = bodyLines(node.value);
